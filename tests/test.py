@@ -11,7 +11,10 @@ https://docs.python.org/3.5/library/unittest.mock.html
 https://pypi.org/project/backports.unittest_mock/1.3/
 """
 
+import argparse
+import datetime
 import json
+import logging
 import os
 import sys
 import unittest
@@ -19,7 +22,7 @@ import unittest
 if sys.version_info.major < 3:
     import backports.unittest_mock
     backports.unittest_mock.install()
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -36,8 +39,6 @@ class Response(object):
     """Mock class for emulating requests.Response objects
     
     Look for existing use of this class for examples on how to use.
-    
-    @TODO Replace with stuff from unittest.mock once fully migrated to Python 3
     """
 
     def __init__(self, code, text):
@@ -45,6 +46,7 @@ class Response(object):
         self.text = text
         self.ok = code < 400
         self.url = 'https://api.pagerduty.com/resource/id'
+        self.elapsed = datetime.timedelta(0,1.5)
 
     def json(self):
         return json.loads(self.text)
@@ -52,20 +54,83 @@ class Response(object):
 
 class APISessionTest(unittest.TestCase):
 
+    def debug(self, sess):
+        """
+        Enables debug level logging to stderr in order to see logging 
+        """
+        sh = logging.StreamHandler()
+        sh.setLevel(logging.DEBUG)
+        sess.log.addHandler(sh)
+        sess.log.setLevel(logging.DEBUG)
+
     @patch.object(pdpyras.APISession, 'iter_all')
     def test_find(self, iter_all):
-        # TODO
-        # This function calls pdpyras.APISession.iter_all so we mock it here
-        pass 
-    
-    @patch.object(pdpyras.APISession, 'request')
-    def test_iter_all(self, request):
-        # TODO
-        # This function calls pdpyras.APISession.request repeatedly so we mock
-        # it here
-        pass
+        sess = pdpyras.APISession('token')
+        iter_all.return_value = iter([
+            {'type':'user', 'name': 'Someone Else', 'email':'some1@me.me.me'},
+            {'type':'user', 'name': 'Space Person', 'email':'some1@me.me '},
+            {'type':'user', 'name': 'Someone Personson', 'email':'some1@me.me'},
+        ])
+        self.assertEquals(
+            'Someone Personson',
+            sess.find('users', 'some1@me.me', attribute='email')['name']
+        )
+        iter_all.assert_called_with('users', params={'query':'some1@me.me'})
 
-    def test_request(self):
+    @patch.object(pdpyras.APISession, 'get')
+    def test_iter_all(self, get):
+        sess = pdpyras.APISession('token')
+        sess.default_page_size = 10
+        page = lambda n: json.dumps({
+            'users': [{'id':i} for i in range(10*n, 10*(n+1))],
+            'total': 30,
+            'more': n<2
+        })
+        iter_param = lambda p: json.dumps({
+            'limit':10, 'total': True, 'offset': 0
+        })
+        get.side_effect = [
+            Response(200, page(0)),
+            Response(200, page(1)),
+            Response(200, page(2)),
+        ]
+        self.debug(sess)
+        weirdurl='https://api.pagerduty.com/users?number=1'
+        hook = MagicMock()
+        items = list(sess.iter_all(weirdurl, item_hook=hook))
+        self.assertEquals(3, get.call_count)
+        self.assertEquals(30, len(items))
+        get.assert_has_calls(
+            [
+                call(weirdurl, params={'limit':10, 'total':True, 'offset':0}),
+                call(weirdurl, params={'limit':10, 'total':True, 'offset':10}),
+                call(weirdurl, params={'limit':10, 'total':True, 'offset':20}),
+            ],
+        )
+        hook.assert_any_call({'id':14}, 15, 30)
+
+    def test_profile(self):
+        response = Response(200, json.dumps({'key':'value'}))
+        response.url = 'https://api.pagerduty.com/users/PCWKOPZ/contact_methods'
+        sess = pdpyras.APISession('apikey')
+        sess.profile('POST', response)
+        # Nested index endpoint
+        self.assertEquals(
+            1,
+            sess.api_call_counts['post:users/{id}/contact_methods/{index}']
+        )
+        self.assertEquals(
+            1.5,
+            sess.api_time['post:users/{id}/contact_methods/{index}']
+        )
+        response.url = 'https://api.pagerduty.com/users/PCWKOPZ'
+        sess.profile('GET', response)
+        # Individual resource access endpoint
+        self.assertEquals(1, sess.api_call_counts['get:users/{id}'])
+        self.assertEquals(1.5, sess.api_time['get:users/{id}'])
+
+    @patch.object(pdpyras.APISession, 'profile')
+    def test_request(self, profile):
         sess = pdpyras.APISession('12345')
         parent = Session()
         request = MagicMock()
@@ -100,9 +165,10 @@ class APISessionTest(unittest.TestCase):
             }
             users = {'users': user} 
 
-            # Test basic GET 
+            # Test basic GET & profiling
             request.return_value = Response(200, json.dumps(users))
             r = sess.request('get', '/users')
+            profile.assert_called_with('get', request.return_value)
             headers = headers_get.copy()
             request.assert_called_once_with('GET',
                 'https://api.pagerduty.com/users', headers=headers_get,
@@ -189,7 +255,18 @@ class APISessionTest(unittest.TestCase):
 
     @patch.object(pdpyras.APISession, 'iter_all')
     def test_subdomain(self, iter_all):
-        # TODO
-        pass
+        iter_all.return_value = iter([
+            {'html_url': 'https://something.pagerduty.com'}
+        ])
+        sess = pdpyras.APISession('key')
+        self.assertEquals('something', sess.subdomain)
+        self.assertEquals('something', sess.subdomain)
+        iter_all.assert_called_once_with('users', params={'limit':1})
 
-unittest.main()
+def main():
+    ap=argparse.ArgumentParser()
+    ap.add_argument('-d', dest='debug', action='store_true', default=0)
+    unittest.main()
+
+if __name__ == '__main__':
+    main()

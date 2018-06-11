@@ -105,7 +105,6 @@ class APISession(requests.Session):
     parent = None
     sleep_timer = 1.5
     sleep_timer_base = 2
-    token = None
     url = 'https://api.pagerduty.com'
 
     def __init__(self, token, name=None):
@@ -120,6 +119,8 @@ class APISession(requests.Session):
         """
         if not (type(token) is str and token):
             raise ValueError("API token must be a non-empty string.")
+        self.api_call_counts = {}
+        self.api_time = {}
         self.parent = super(APISession, self)
         self.parent.__init__()
         self.token = token
@@ -128,9 +129,7 @@ class APISession(requests.Session):
         else:
             my_name = token[:-4]
         self.log = logging.getLogger('pdpyras.APISession(%s)'%my_name)
-        # Set default headers for all requests
         self.headers.update({
-            'Authorization': 'Token token='+token,
             'Accept': 'application/vnd.pagerduty+json;version=2',
         })
 
@@ -166,17 +165,16 @@ class APISession(requests.Session):
         if params is not None:
             query_params.update(params)
         query_params.update({'query':query})
-        # When determining uniqueness, web/the API doesn't care about case and
-        # trailing/leading whitespace, hence:
-        simplify = lambda s: s.lower().strip()
+        # When determining uniqueness, web/the API doesn't care about case.
+        simplify = lambda s: s.lower()
         search_term = simplify(query) 
         equiv = lambda s: simplify(s[attribute]) == search_term
         obj_iter = self.iter_all(resource_name, params=query_params)
         return next(iter(filter(equiv, obj_iter)), None)
 
-    def iter_all(self, path, params=None, paginate=True):
+    def iter_all(self, path, params=None, paginate=True, item_hook=None):
         """
-        Generator function for iteration over all results of an index endpoint
+        Generator function for iteration over all results from an index endpoint
 
         Automatically paginates and yields the results in each page, until all
         results have been yielded or an error occurs.
@@ -184,9 +182,7 @@ class APISession(requests.Session):
         Parameters
         ----------
         path : str
-            The index endpoint/URL to use. This should not contain an interro /
-            parameters (i.e. users?query=Dave); instead, the "params" keyword
-            argument should be used to include them.
+            The index endpoint/URL to use. 
         params : dict
             Additional URL parameters to include.
         paginate : bool
@@ -195,6 +191,9 @@ class APISession(requests.Session):
             Useful for special index endpoints that don't fully support
             pagination yet, i.e. "nested" endpoints like
             `/users/{id}/contact_methods` and `/services/{id}/integrations`
+        item_hook : obj
+            Callable that will be invoked for each iteration, ie. for printing
+            progress.
 
         Yields
         ------
@@ -219,7 +218,7 @@ class APISession(requests.Session):
         while more: # Paginate through all results
             if paginate:
                 data['offset'] = offset
-            r = self.get(path, params=data)
+            r = self.get(path, params=data.copy())
             if not r.ok:
                 self.log.debug("Stopping iteration on endpoint %s; API "
                     "responded with non-success status %d", path,
@@ -254,6 +253,7 @@ class APISession(requests.Session):
                 offset += data['limit']
             for result in response[r_name]:
                 n += 1 
+                # Call a callable object for each item, i.e. to print progress:
                 if hasattr(item_hook, '__call__'):
                     item_hook(result, n, total)
                 yield result
@@ -275,7 +275,7 @@ class APISession(requests.Session):
         self.api_call_counts.setdefault(key, 0)
         self.api_time.setdefault(key, 0.0)
         self.api_call_counts[key] += 1
-        self.api_call_counts[key] += response.elapsed.total_seconds
+        self.api_time[key] += response.elapsed.total_seconds()
 
     def profiler_key(self, method, path, suffix=None):
         """
@@ -315,7 +315,7 @@ class APISession(requests.Session):
             sub_resource = path_nodes[2].split('?')[0]
             if len(path_nodes) == 4:
                 sub_node_type = '{id}'
-            key = '%s:%s/%s/%s/%s%s'%(method, path_nodes[0], node_type,
+            key = '%s:%s/%s/%s/%s%s'%(method.lower(), path_nodes[0], node_type,
                 sub_resource, sub_node_type, my_suffix)
         return key
 
@@ -365,6 +365,7 @@ class APISession(requests.Session):
         while True:
             try:
                 response = self.parent.request(method, my_url, **req_kw)
+                self.profile(method.lower(), response)
             except ConnectionError as e:
                 attempts += 1
                 if attempts > self.max_attempts:
@@ -376,8 +377,6 @@ class APISession(requests.Session):
                     e, sleep_timer)
                 time.sleep(sleep_timer)
                 continue
-                
-            # TODO: Profiling using response.elapsed.total_seconds
             if response.status_code == 429:
                 sleep_timer *= self.sleep_timer_base
                 self.log.debug("Hit REST API rate limit (response status 429); "
@@ -404,7 +403,7 @@ class APISession(requests.Session):
         -------
         str
         """
-        if not hasattr(self, _subdomain):
+        if not hasattr(self, '_subdomain'):
             try:
                 url = next(self.iter_all(
                     'users', params={'limit':1}
@@ -413,7 +412,17 @@ class APISession(requests.Session):
             except StopIteration:
                 self._subdomain = None
         return self._subdomain
- 
+
+    @property
+    def token(self):
+        return self._token
+
+    @token.setter
+    def token(self, token):
+        self._token = token
+        self.headers.update({
+            'Authorization': 'Token token='+token,
+        })
 
     @property
     def total_call_counts(self):

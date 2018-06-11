@@ -16,10 +16,10 @@ Features
 - HTTP connection persistence for more efficient API requests
 - Automatic cooldown/reattempt for rate limiting and transient network issues
 - Inclusion of required headers for PagerDuty REST API requests
-- Iteration over `resource index`_ endpoints with automatic pagination_
+- Iteration over `resource index`_ endpoints with automatic pagination_ and filtering
 - Retrieval of individual objects matching a query
 - API request profiling
-- It gets the job done without getting in the way.
+- It gets the job done without getting in the way
 
 Usage
 -----
