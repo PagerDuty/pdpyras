@@ -1,3 +1,0 @@
-pytz == 2013.7
-requests == 2.10.0
-python_dateutil == 2.5.3
