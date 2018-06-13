@@ -258,7 +258,7 @@ class APISession(requests.Session):
             if not r.ok:
                 self.log.debug("Stopping iteration on endpoint %s; API "
                     "responded with non-success status %d", path,
-                    r.response_code)
+                    r.status_code)
                 raise StopIteration
             try:
                 response = r.json()

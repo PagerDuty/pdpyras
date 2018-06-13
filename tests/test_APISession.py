@@ -10,7 +10,6 @@ See:
 https://docs.python.org/3.5/library/unittest.mock.html
 https://pypi.org/project/backports.unittest_mock/1.3/
 """
-
 import argparse
 import datetime
 import json
@@ -84,18 +83,18 @@ class APISessionTest(unittest.TestCase):
     def test_iter_all(self, get):
         sess = pdpyras.APISession('token')
         sess.default_page_size = 10
-        page = lambda n: json.dumps({
+        page = lambda n, t: {
             'users': [{'id':i} for i in range(10*n, 10*(n+1))],
-            'total': 30,
-            'more': n<2
-        })
+            'total': t,
+            'more': n<(t/10)-1
+        }
         iter_param = lambda p: json.dumps({
             'limit':10, 'total': True, 'offset': 0
         })
         get.side_effect = [
-            Response(200, page(0)),
-            Response(200, page(1)),
-            Response(200, page(2)),
+            Response(200, json.dumps(page(0, 30))),
+            Response(200, json.dumps(page(1, 30))),
+            Response(200, json.dumps(page(2, 30))),
         ]
         self.debug(sess)
         weirdurl='https://api.pagerduty.com/users?number=1'
@@ -111,6 +110,16 @@ class APISessionTest(unittest.TestCase):
             ],
         )
         hook.assert_any_call({'id':14}, 15, 30)
+        get.reset_mock()
+        get.side_effect = [
+            Response(200, json.dumps(page(0, 40))),
+            Response(200, json.dumps(page(1, 40))),
+            Response(200, json.dumps(page(2, 40))),
+            Response(400, json.dumps(page(3, 40))), # StopIteration
+        ]
+        new_items = list(sess.iter_all(weirdurl))
+        self.assertEqual(items, new_items)
+
 
     def test_profile(self):
         response = Response(200, json.dumps({'key':'value'}))
