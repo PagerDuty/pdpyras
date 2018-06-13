@@ -16,6 +16,7 @@ import datetime
 import json
 import logging
 import os
+import pdpyras
 import sys
 import unittest
 
@@ -26,7 +27,6 @@ from unittest.mock import MagicMock, patch, call
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-import pdpyras
 
 class Session(object):
     """
@@ -54,6 +54,9 @@ class Response(object):
 
 class APISessionTest(unittest.TestCase):
 
+    def assertDictContainsSubset(self, d0, d1):
+        self.assertEqual(d0, dict([(k, d1[k]) for k in d0 if k in d1]))
+
     def debug(self, sess):
         """
         Enables debug level logging to stderr in order to see logging 
@@ -71,7 +74,7 @@ class APISessionTest(unittest.TestCase):
             {'type':'user', 'name': 'Space Person', 'email':'some1@me.me '},
             {'type':'user', 'name': 'Someone Personson', 'email':'some1@me.me'},
         ])
-        self.assertEquals(
+        self.assertEqual(
             'Someone Personson',
             sess.find('users', 'some1@me.me', attribute='email')['name']
         )
@@ -98,8 +101,8 @@ class APISessionTest(unittest.TestCase):
         weirdurl='https://api.pagerduty.com/users?number=1'
         hook = MagicMock()
         items = list(sess.iter_all(weirdurl, item_hook=hook))
-        self.assertEquals(3, get.call_count)
-        self.assertEquals(30, len(items))
+        self.assertEqual(3, get.call_count)
+        self.assertEqual(30, len(items))
         get.assert_has_calls(
             [
                 call(weirdurl, params={'limit':10, 'total':True, 'offset':0}),
@@ -115,19 +118,19 @@ class APISessionTest(unittest.TestCase):
         sess = pdpyras.APISession('apikey')
         sess.profile('POST', response)
         # Nested index endpoint
-        self.assertEquals(
+        self.assertEqual(
             1,
             sess.api_call_counts['post:users/{id}/contact_methods/{index}']
         )
-        self.assertEquals(
+        self.assertEqual(
             1.5,
             sess.api_time['post:users/{id}/contact_methods/{index}']
         )
         response.url = 'https://api.pagerduty.com/users/PCWKOPZ'
         sess.profile('GET', response)
         # Individual resource access endpoint
-        self.assertEquals(1, sess.api_call_counts['get:users/{id}'])
-        self.assertEquals(1.5, sess.api_time['get:users/{id}'])
+        self.assertEqual(1, sess.api_call_counts['get:users/{id}'])
+        self.assertEqual(1.5, sess.api_time['get:users/{id}'])
 
     @patch.object(pdpyras.APISession, 'profile')
     def test_request(self, profile):
@@ -214,8 +217,8 @@ class APISessionTest(unittest.TestCase):
             with patch.object(pdpyras.time, 'sleep') as sleep:
                 r = sess.get('/users')
                 self.assertTrue(r.ok) # should only return after success
-                self.assertEquals(3, request.call_count)
-                self.assertEquals(2, sleep.call_count)
+                self.assertEqual(3, request.call_count)
+                self.assertEqual(2, sleep.call_count)
             request.reset_mock()
             request.side_effect = None
 
@@ -239,8 +242,8 @@ class APISessionTest(unittest.TestCase):
                 returns.append(Response(200, json.dumps({'user': user})))
                 request.side_effect = returns
                 r = sess.get('/users/P123456')
-                self.assertEquals(sess.max_attempts+1, request.call_count)
-                self.assertEquals(sess.max_attempts, sleep.call_count)
+                self.assertEqual(sess.max_attempts+1, request.call_count)
+                self.assertEqual(sess.max_attempts, sleep.call_count)
                 self.assertTrue(r.ok)
                 request.reset_mock()
                 sleep.reset_mock()
@@ -250,8 +253,8 @@ class APISessionTest(unittest.TestCase):
                     pdpyras.ConnectionError("D'oh!")
                 ]*(sess.max_attempts+1)
                 self.assertRaises(pdpyras.PDClientError, sess.get, '/users')
-                self.assertEquals(sess.max_attempts+1, request.call_count)
-                self.assertEquals(sess.max_attempts, sleep.call_count)
+                self.assertEqual(sess.max_attempts+1, request.call_count)
+                self.assertEqual(sess.max_attempts, sleep.call_count)
 
     @patch.object(pdpyras.APISession, 'iter_all')
     def test_subdomain(self, iter_all):
@@ -259,8 +262,8 @@ class APISessionTest(unittest.TestCase):
             {'html_url': 'https://something.pagerduty.com'}
         ])
         sess = pdpyras.APISession('key')
-        self.assertEquals('something', sess.subdomain)
-        self.assertEquals('something', sess.subdomain)
+        self.assertEqual('something', sess.subdomain)
+        self.assertEqual('something', sess.subdomain)
         iter_all.assert_called_once_with('users', params={'limit':1})
 
 def main():

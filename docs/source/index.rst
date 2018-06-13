@@ -3,18 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to pdpyras: PagerDuty Python REST API Sessions's documentation!
+PagerDuty Python REST API Sessions
 =======================================================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. automodule:: pdpyras
+    :members:
