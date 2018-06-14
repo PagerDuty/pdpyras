@@ -163,7 +163,7 @@ class APISession(requests.Session):
         if type(name) is str and name:
             my_name = name
         else:
-            my_name = token[:-4]
+            my_name = token[-4:]
         self.log = logging.getLogger('pdpyras.APISession(%s)'%my_name)
         self.headers.update({
             'Accept': 'application/vnd.pagerduty+json;version=2',
