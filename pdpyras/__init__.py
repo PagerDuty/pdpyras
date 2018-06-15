@@ -163,7 +163,7 @@ class APISession(requests.Session):
         if type(name) is str and name:
             my_name = name
         else:
-            my_name = token[-4:]
+            my_name = "*"+token[-4:]
         self.log = logging.getLogger('pdpyras.APISession(%s)'%my_name)
         self.headers.update({
             'Accept': 'application/vnd.pagerduty+json;version=2',
@@ -208,7 +208,8 @@ class APISession(requests.Session):
         obj_iter = self.iter_all(resource_name, params=query_params)
         return next(iter(filter(equiv, obj_iter)), None)
 
-    def iter_all(self, path, params=None, paginate=True, item_hook=None):
+    def iter_all(self, path, params=None, paginate=True, item_hook=None,
+            total=True):
         """
         Generator function for iteration over all results from an index endpoint
 
@@ -229,7 +230,12 @@ class APISession(requests.Session):
             `/users/{id}/contact_methods` and `/services/{id}/integrations`
         item_hook : obj
             Callable that will be invoked for each iteration, ie. for printing
-            progress.
+            progress. It will be called with three parameters: a dict
+            representing a given result in the iteration, the number of the
+            item, and the total number of items in the series.
+        total : bool
+            If False, the ``total`` parameter will be omitted in API calls, and
+            the value for the third parameter to the item hook will be ``None.``
 
         Yields
         ------
@@ -245,7 +251,9 @@ class APISession(requests.Session):
         data = {}
         if paginate:
             # retrieve 100 at a time unless otherwise specified
-            data.update({'limit': self.default_page_size, 'total': 1}) 
+            data['limit'] = self.default_page_size
+        if total:
+            data['total'] = 1
         if params is not None:
             data.update(params)
         more = True
@@ -256,20 +264,19 @@ class APISession(requests.Session):
                 data['offset'] = offset
             r = self.get(path, params=data.copy())
             if not r.ok:
-                self.log.debug("Stopping iteration on endpoint %s; API "
-                    "responded with non-success status %d", path,
-                    r.status_code)
+                self.log.warn("Stopping iteration on endpoint \"%s\"; API "
+                    "responded with non-success status %d", path, r.status_code)
                 raise StopIteration
             try:
                 response = r.json()
             except ValueError: 
-                self.log.debug("Stopping iteration on endpoint %s; API "
+                self.log.warn("Stopping iteration on endpoint %s; API "
                     "responded with invalid JSON.", path)
                 raise StopIteration
             if 'limit' in response:
                 data['limit'] = response['limit']
             more = False
-            total = None
+            total_count = None
             if paginate:
                 if 'more' in response:
                     more = response['more']
@@ -279,7 +286,7 @@ class APISession(requests.Session):
                         " in the response. Only the first page of results, "
                         "however many can be gotten, will be included.", path)
                 if 'total' in response:
-                    total = response['total']
+                    total_count = response['total']
                 else: 
                     self.log.debug("Pagination and the \"total\" parameter "
                         "are enabled in iteration, but the index endpoint %s "
@@ -291,7 +298,7 @@ class APISession(requests.Session):
                 n += 1 
                 # Call a callable object for each item, i.e. to print progress:
                 if hasattr(item_hook, '__call__'):
-                    item_hook(result, n, total)
+                    item_hook(result, n, total_count)
                 yield result
 
     def profile(self, method, response, suffix=None):
