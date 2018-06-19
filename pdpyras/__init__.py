@@ -78,7 +78,8 @@ import time
 from copy import deepcopy
 
 import requests
-from urllib3.connection import ConnectionError
+from urllib3.connection import ConnectionError as Urllib3Error
+from requests.exceptions import ConnectionError as RequestsError
 
 __version__ = '1.0'
 
@@ -409,7 +410,7 @@ class APISession(requests.Session):
             try:
                 response = self.parent.request(method, my_url, **req_kw)
                 self.profile(method.lower(), response)
-            except ConnectionError as e:
+            except (Urllib3Error, RequestsError) as e:
                 attempts += 1
                 if attempts > self.max_attempts:
                     raise PDClientError("Non-transient network error; exceeded "

@@ -9,6 +9,6 @@ setup(
     license='MIT',
     url='https://github.com/PagerDuty/python-rest-sessions',
     download_url='https://github.com/PagerDuty/python-rest-sessions/archive/master.tar.gz',
-    install_requires=['requests']
+    install_requires=['requests', 'urllib3']
 )
 
