@@ -108,7 +108,7 @@ class APISession(requests.Session):
         Logger object for printing messages
     max_attempts : int
         Number of times that connecting to the API will be attempted before
-        allowing the exception from the underlying HTTP library to bubble up 
+        raising PDClientError
     parent : requests.Session
         The ``super`` object
     sleep_timer : float
@@ -138,7 +138,7 @@ class APISession(requests.Session):
     api_time = None
     default_page_size = 100
     log = None
-    max_attempts = 5
+    max_attempts = 3
     parent = None
     sleep_timer = 1.5
     sleep_timer_base = 2
@@ -415,7 +415,7 @@ class APISession(requests.Session):
                 if attempts > self.max_attempts:
                     raise PDClientError("Non-transient network error; exceeded "
                         "maximum number of attempts (%d) to connect to the REST"
-                        " API.", self.max_attempts)
+                        " API."%self.max_attempts)
                 sleep_timer *= self.sleep_timer_base
                 self.log.debug("Connection error: %s; retrying in %g seconds.",
                     e, sleep_timer)
