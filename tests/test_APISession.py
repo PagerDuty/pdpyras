@@ -15,17 +15,17 @@ import datetime
 import json
 import logging
 import os
-import pdpyras
 import sys
 import unittest
 
 if sys.version_info.major < 3:
     import backports.unittest_mock
     backports.unittest_mock.install()
+
 from unittest.mock import MagicMock, patch, call
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+import pdpyras
 
 class Session(object):
     """
@@ -82,6 +82,7 @@ class APISessionTest(unittest.TestCase):
     @patch.object(pdpyras.APISession, 'get')
     def test_iter_all(self, get):
         sess = pdpyras.APISession('token')
+        sess.log = MagicMock() # Or go with self.debug(sess) to see output
         sess.default_page_size = 10
         page = lambda n, t: {
             'users': [{'id':i} for i in range(10*n, 10*(n+1))],
@@ -96,30 +97,31 @@ class APISessionTest(unittest.TestCase):
             Response(200, json.dumps(page(1, 30))),
             Response(200, json.dumps(page(2, 30))),
         ]
-        self.debug(sess)
         weirdurl='https://api.pagerduty.com/users?number=1'
         hook = MagicMock()
-        items = list(sess.iter_all(weirdurl, item_hook=hook))
+        items = list(sess.iter_all(weirdurl, item_hook=hook, total=True))
         self.assertEqual(3, get.call_count)
         self.assertEqual(30, len(items))
         get.assert_has_calls(
             [
-                call(weirdurl, params={'limit':10, 'total':True, 'offset':0}),
-                call(weirdurl, params={'limit':10, 'total':True, 'offset':10}),
-                call(weirdurl, params={'limit':10, 'total':True, 'offset':20}),
+                call(weirdurl, params={'limit':10, 'total':1, 'offset':0}),
+                call(weirdurl, params={'limit':10, 'total':1, 'offset':10}),
+                call(weirdurl, params={'limit':10, 'total':1, 'offset':20}),
             ],
         )
         hook.assert_any_call({'id':14}, 15, 30)
         get.reset_mock()
+
+        # Test stopping iteration on non-success status
         get.side_effect = [
-            Response(200, json.dumps(page(0, 40))),
-            Response(200, json.dumps(page(1, 40))),
-            Response(200, json.dumps(page(2, 40))),
-            Response(400, json.dumps(page(3, 40))), # StopIteration
+            Response(200, json.dumps(page(0, 50))),
+            Response(200, json.dumps(page(1, 50))),
+            Response(200, json.dumps(page(2, 50))),
+            Response(400, json.dumps(page(3, 50))), # break
+            Response(200, json.dumps(page(4, 50))),
         ]
         new_items = list(sess.iter_all(weirdurl))
         self.assertEqual(items, new_items)
-
 
     def test_profile(self):
         response = Response(200, json.dumps({'key':'value'}))
@@ -246,7 +248,7 @@ class APISessionTest(unittest.TestCase):
             with patch.object(pdpyras.time, 'sleep') as sleep:
                 # Test getting a connection error and succeeding the final time.
                 returns = [
-                    pdpyras.ConnectionError("D'oh!")
+                    pdpyras.Urllib3Error("D'oh!")
                 ]*sess.max_attempts
                 returns.append(Response(200, json.dumps({'user': user})))
                 request.side_effect = returns
@@ -257,10 +259,10 @@ class APISessionTest(unittest.TestCase):
                 request.reset_mock()
                 sleep.reset_mock()
 
-                # Now test a non-transient error:
-                request.side_effect = [
-                    pdpyras.ConnectionError("D'oh!")
-                ]*(sess.max_attempts+1)
+                # Now test handling a non-transient error:
+                raises = [pdpyras.RequestsError("D'oh!")]*(sess.max_attempts-1)
+                raises.extend([pdpyras.Urllib3Error("D'oh!")]*2)
+                request.side_effect = raises
                 self.assertRaises(pdpyras.PDClientError, sess.get, '/users')
                 self.assertEqual(sess.max_attempts+1, request.call_count)
                 self.assertEqual(sess.max_attempts, sleep.call_count)

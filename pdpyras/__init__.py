@@ -1,76 +1,6 @@
-"""
-===========================================
-pdpyras: PagerDuty Python REST API Sessions
-===========================================
 
-A lightweight, practical REST API client for the PagerDuty REST API.
-
-About
------
-This library supplies a class ``APISession`` extending the class
-``requests.Session`` from the Requests_ library. This has the means to handle
-the most common tasks associated with accessing the PagerDuty REST API in a
-succinct manner.
-
-Its intention is to be a practical and efficient abstraction of PagerDuty REST
-API access with minimal differences on top of the underlying HTTP library. This
-makes it ideal to use as the foundation of anything from a feature-rich REST API
-client library to a quick-and-dirty API script.
-
-Higher-level features, i.e. model classes for handling the particulars of any
-given resource type, are left to the end user to develop as they see fit.
-
-Features
---------
-Supports Python 2.7 through 3.6
-
-- HTTP connection persistence for more efficient API requests
-- Automatic cooldown/reattempt for rate limiting and transient network issues
-- Inclusion of required headers for PagerDuty REST API requests
-- Iteration over `resource index`_ endpoints with automatic pagination
-- Retrieval of individual objects matching a query
-- API request profiling
-- It gets the job done without getting in the way
-
-Usage
------
-
-**Example 1:** get a user:
-
-::
-    from pdpyras import APISession
-    api_token = 'your-token-here'
-    session = APISession(api_token)
-    response = session.get('/users/PABC123')
-    if response.ok:
-        user = response.json()['user']
-
-**Example 2:** iterate over all users and print their ID, email and name:
-
-::
-    from pdpyras import APISession
-    api_token = 'your-token-here'
-    session = APISession(api_token)
-    for user in session.iter_all('/users'):
-        print(user['id'], user['email'], user['name'])
-
-**Example 3:** Find a user exactly matching email address ``jane@example35.com``
-and update their name to "Jane Doe":
-
-::
-    from pdpyras import APISession
-    api_token = 'your-token-here'
-    sesion = APISession(api_token)
-    user = session.find('users', 'jane@example35.com', attribute='email')
-    if user is not None:
-        session.put(user['self'], json={
-            'user':{'type':'user', 'name': 'Jane Doe'}
-        })
-
-.. _pagination: https://v2.developer.pagerduty.com/docs/pagination
-.. _Requests: http://docs.python-requests.org/en/master/
-.. _`resource index`: https://v2.developer.pagerduty.com/docs/endpoints#resources-index
-"""
+# Copyright (c) PagerDuty.
+# See LICENSE for details.
 
 import logging
 import time
@@ -82,8 +12,6 @@ from urllib3.connection import ConnectionError as Urllib3Error
 from requests.exceptions import ConnectionError as RequestsError
 
 __version__ = '1.0'
-
-_url = "https://api.pagerduty.com"
 
 class APISession(requests.Session):
     """
@@ -99,60 +27,69 @@ class APISession(requests.Session):
     - It will only perform GET, POST, PUT and DELETE requests, and will raise
       PDClientError for any other HTTP verbs.
 
-    Attributes
-    ----------
-    api_call_counts : dict
-    default_page_size : int
-        Default value for the ``limit`` parameter; see Pagination_
-    log : logging.Logger
-        Logger object for printing messages
-    max_attempts : int
-        Number of times that connecting to the API will be attempted before
-        raising PDClientError
-    parent : requests.Session
-        The ``super`` object
-    sleep_timer : float
-        Default initial cooldown time factor for API rate limiting and transient
-        network errors. Each time that the request makes a followup request,
-        there will be a delay in seconds equal to this number times
-        ``sleep_timer_base`` to the power of how many attempts have already been
-        made so far.
-    sleep_timer_base : float
-        After each retry, the time to sleep before reattempting the API
-        connection and request will increase by a factor of this amount.
-    subdomain : str
-        The subdomain of the account corresponding to the API token in use with
-        this session.
-    token : str
-        The API access token.
-    total_call_counts : int
-        Total number of API calls made by the current session object.
-    total_call_time : float
-        Total time spent making API requests.
-    url : str
-        Base URL of the API. Can be adjusted for functional tests with a
-        different host.
+    :members:
+
+    .. automethod:: __init__
     """
 
-    api_call_counts = None
-    api_time = None
-    default_page_size = 100
-    log = None
-    max_attempts = 3
-    parent = None
-    sleep_timer = 1.5
-    sleep_timer_base = 2
-    url = 'https://api.pagerduty.com'
+    api_call_counts = None 
+    """A dict object recording Number of API calls per endpoint"""
 
-    def __init__(self, token, name=None):
+    api_time = None
+    """A dict object recording the total time of API calls to each endpoint"""
+
+    default_from = None
+    """The default value to use as the ``From`` request header"""
+
+    default_page_size = 100
+    """
+    This will be the default number of results requested when iterating/querying
+    an index (the ``limit`` parameter). See: `pagination`_.
+    """
+
+    log = None
+    """A ``logging.Logger`` object for printing messages"""
+
+    max_attempts = 3
+    """
+    The number of times that connecting to the API will be attempted before
+    treating the failure as non-transient; a :class:`PDClientError` exception
+    will be raised if this happens.
+    """
+
+    parent = None
+    """The ``super`` object (`requests.Session`_)"""
+
+    sleep_timer = 1.5
+    """
+    Default initial cooldown time factor for API rate limiting and transient
+    network errors. Each time that the request makes a followup request, there
+    will be a delay in seconds equal to this number times ``sleep_timer_base``
+    to the power of how many attempts have already been made so far.
+    """
+
+    sleep_timer_base = 2
+    """
+    After each retry, the time to sleep before reattempting the API connection
+    and request will increase by a factor of this amount.
+    """
+
+    url = 'https://api.pagerduty.com'
+    """Base URL of the REST API"""
+
+    def __init__(self, token, name=None, default_from=None):
         """
         Constructor that sets defaults for API requests for a given API token.
 
-        token : str
-            REST API access token to use for HTTP requests
-        name : `str`
-            Optional name identifier for logging. If unspecified, it will be the
-            last four characters of the REST API token.
+        :param token: REST API access token to use for HTTP requests
+        :param name: Optional name identifier for logging. If unspecified, it
+            will be the last four characters of the REST API token.
+        :param default_from: Email address of a valid PagerDuty user to use in
+            API requests by default as the ``From`` header (see: `HTTP Request
+            Headers`_)
+        :type token: str
+        :type name: str or None
+        :type default_from: str or None
         """
         if not (type(token) is str and token):
             raise ValueError("API token must be a non-empty string.")
@@ -161,6 +98,7 @@ class APISession(requests.Session):
         self.parent = super(APISession, self)
         self.parent.__init__()
         self.token = token
+        self.default_from = default_from
         if type(name) is str and name:
             my_name = name
         else:
@@ -177,26 +115,26 @@ class APISession(requests.Session):
         Will query a given `resource index`_ endpoint using the ``query``
         parameter supported by most indexes.
 
-        Parameters
-        ----------
-        resource_name : str
-            The name of the resource to query, i.e. 
-        query : str
-            The value to use in the query_ parameter
-        str : attribute
-            The property of results to compare against the query value when
-            searching for an exact match; default is ``name``, but when
-            searching for user by email (for example) it can be ``email``
-        params : dict
-            Dictionary of optional additional parameters to use when querying
+        Returns dict if a result is found; it will be the entry in the list of
+        results from the index. Otherwise, it will return None if no result is
+        found.
 
-        Returns
-        -------
-        dict
-            If a result is found, it will be the entry in the list object of
-            results from the resource's `index endpoint
-        None
-            If no result is found
+        :param resource_name:
+            The name of the resource endpoint to query, i.e.
+            ``escalation_policies``
+        :param query:
+            The value to use in the query parameter to the index endpoint
+        :param attribute:
+            The property of each result to compare against the query value when
+            searching for an exact match. By default it is ``name``, but when
+            searching for user by email (for example) it can be set to ``email``
+        :param params:
+            Optional additional parameters to use when querying
+        :type resource_name: str
+        :type query: str
+        :type attribute: str
+        :type params: dict or None
+        :rtype: dict
         """
         query_params = {}
         if params is not None:
@@ -210,41 +148,45 @@ class APISession(requests.Session):
         return next(iter(filter(equiv, obj_iter)), None)
 
     def iter_all(self, path, params=None, paginate=True, item_hook=None,
-            total=True):
+            total=False):
         """
         Generator function for iteration over all results from an index endpoint
 
         Automatically paginates and yields the results in each page, until all
         results have been yielded or an error occurs.
 
-        Parameters
-        ----------
-        path : str
+        Each yielded value is a dict object representing a result returned from
+        the index. For example, if requesting the ``/users`` endpoint, each
+        yielded value will be an entry of the ``users`` array property in the
+        response; see: `List Users
+        <https://v2.developer.pagerduty.com/v2/page/api-reference#!/Users/get_users>`_
+
+        :param path:
             The index endpoint/URL to use. 
-        params : dict
+        :param params:
             Additional URL parameters to include.
-        paginate : bool
-            If True, employ pagination to get through all available results.  If
+        :param paginate:
+            If True, use `pagination`_ to get through all available results. If
             False, ignore / don't page through more than the first 100 results.
             Useful for special index endpoints that don't fully support
             pagination yet, i.e. "nested" endpoints like
-            `/users/{id}/contact_methods` and `/services/{id}/integrations`
-        item_hook : obj
-            Callable that will be invoked for each iteration, ie. for printing
-            progress. It will be called with three parameters: a dict
+            ``/users/{id}/contact_methods`` and ``/services/{id}/integrations``
+        :param item_hook:
+            Callable object that will be invoked for each iteration, i.e. for
+            printing progress. It will be called with three parameters: a dict
             representing a given result in the iteration, the number of the
             item, and the total number of items in the series.
-        total : bool
-            If False, the ``total`` parameter will be omitted in API calls, and
-            the value for the third parameter to the item hook will be ``None.``
-
-        Yields
-        ------
-        dict
-            Each result object returned from the index. For example, if
-            requesting the ``/users`` endpoint, each yielded value will be an
-            entry of the ``users`` array property in the response; see:
-            `List Users<https://v2.developer.pagerduty.com/v2/page/api-reference#!/Users/get_users>`_
+        :param total:
+            If True, the ``total`` parameter will be included in API calls, and
+            the value for the third parameter to the item hook will be the total
+            count of records that match the query. Leaving this as False confers
+            a small performance advantage, as the API in this case does not have
+            to compute the total count of results in the query.
+        :type path: str
+        :type params: dict or None
+        :type paginate: bool
+        :type total: bool
+        :rtype: dict
         """
         # Resource name:
         r_name = path.split('?')[0].split('/')[-1]
@@ -267,13 +209,13 @@ class APISession(requests.Session):
             if not r.ok:
                 self.log.warn("Stopping iteration on endpoint \"%s\"; API "
                     "responded with non-success status %d", path, r.status_code)
-                raise StopIteration
+                break
             try:
                 response = r.json()
             except ValueError: 
                 self.log.warn("Stopping iteration on endpoint %s; API "
                     "responded with invalid JSON.", path)
-                raise StopIteration
+                break
             if 'limit' in response:
                 data['limit'] = response['limit']
             more = False
@@ -304,16 +246,20 @@ class APISession(requests.Session):
 
     def profile(self, method, response, suffix=None):
         """
-        Records performance information about the API call
+        Records performance information about the API call.
 
-        Parameters
-        ----------
-        method : str
+        This method is called automatically by :func:`request` for all requests,
+        and can be extended in child classes.
+
+        :param method:
             Method of the request
-        response : requests.Response
+        :param response: 
             Response object
-        suffix : str
+        :param suffix: 
             Optional suffix to append to the key
+        :type method: str
+        :type response: `requests.Response`_
+        :type suffix: str or None
         """
         key = self.profiler_key(method, response.url.split('?')[0], suffix)
         self.api_call_counts.setdefault(key, 0)
@@ -323,23 +269,22 @@ class APISession(requests.Session):
 
     def profiler_key(self, method, path, suffix=None):
         """
-        Generates a fixed-format "key" to classify a request URL for profiling 
+        Generates a fixed-format "key" to classify a request URL for profiling.
 
-        Parameters
-        ----------
-        path : str
+        Returns a string that will have all instances of IDs replaced with
+        ``{id}``, and will begin with the method in lower case followed by a
+        colon, i.e. ``get:escalation_policies/{id}``
+
+        :param path: str
             The path/URI to classify
-        method : str
+        :param method:
             The reqeust method
-        suffix : str
+        :param suffix:
             Optional suffix to append to the key
-
-        Returns
-        -------
-        str
-            The profiler key. This will have all instances of IDs replaced with
-            ``{id}``, and will begin with the method in lower case followed by a
-            colon.
+        :type param: str
+        :type method: str
+        :type suffix: str
+        :rtype: str
         """
         path_nodes = path.replace(self.url, '').lstrip('/').split('/')
         my_suffix = "" if suffix is None else "#"+suffix 
@@ -366,23 +311,22 @@ class APISession(requests.Session):
 
     def request(self, method, url, **kwargs):
         """
-        Make a generic PagerDuty v2 REST API request.
+        Make a generic PagerDuty v2 REST API request. 
+        
+        Returns a `requests.Response`_ object (TODO: make this a link)
 
-        Parameters
-        ----------
-        method : str
+        :param method:
             The request method to use. Case-insensitive. May be one of get, put,
             post or delete.
-        url : str
+        :param url:
             The path/URL to request. If it does not start with the PagerDuty
             REST API's base URL, the base URL will be prepended.
-        **kwargs
-            Additional keyword arguments to pass to ``requests.Session.request``
-
-        Returns
-        -------
-        requests.Response
-            The response object
+        :param \*\*kwargs:
+            Additional keyword arguments to pass to `requests.Session.request
+            <http://docs.python-requests.org/en/master/api/#requests.Session.request>`_
+        :type method: str
+        :type url: str
+        :rtype: `requests.Response`_
         """
         sleep_timer = self.sleep_timer
         attempts = 0
@@ -394,8 +338,10 @@ class APISession(requests.Session):
         # Prepare headers
         req_kw = deepcopy(kwargs)
         my_headers = self.headers.copy()
+        if self.default_from is not None:
+            my_headers['From'] = self.default_from
         if method in ('POST', 'PUT'):
-            my_headers.update({'Content-Type': 'application/json'})
+            my_headers['Content-Type'] = 'application/json'
         # Merge, but do not replace, any headers specified in keyword arguments:
         if 'headers' in kwargs:
             my_headers.update(kwargs['headers'])
@@ -438,14 +384,12 @@ class APISession(requests.Session):
     @property
     def subdomain(self):
         """
-        Subdomain of the PagerDuty account of the API access token (getter)
+        Subdomain of the PagerDuty account of the API access token.
 
         If the token's access level excludes viewing any users, or if an error
-        occurs, this will be None.
+        occurs when retrieving, this will be False.
 
-        Returns
-        -------
-        str
+        :type: str or bool
         """
         if not hasattr(self, '_subdomain') or self._subdomain is None:
             try:
@@ -453,7 +397,7 @@ class APISession(requests.Session):
                     'users', params={'limit':1}
                 ))['html_url']
                 self._subdomain = url.split('/')[2].split('.')[0]
-            except StopIteration:
+            except (StopIteration, IndexError):
                 self._subdomain = False
         return self._subdomain
 
@@ -471,28 +415,13 @@ class APISession(requests.Session):
 
     @property
     def total_call_count(self):
-        """
-        Total count of API calls (getter)
-
-        Returns
-        -------
-        int
-        """
         return sum(self.api_call_counts.values())
 
     @property
     def total_call_time(self):
-        """
-        Total time spent making API calls (getter)
-
-        Returns
-        -------
-        float
-        """
         return sum(self.api_time.values())
 
 class PDClientError(Exception): 
     """
     General API client errors class.
     """
-
