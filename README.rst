@@ -114,6 +114,36 @@ and update their name to "Jane Doe":
             'user':{'type':'user', 'name': 'Jane Doe'}
         })
 
+Contributing
+-----------
+Bug reports and pull requests to fix issues are always welcome. 
+
+The ``tests`` directory contains a standalone script ``test_APISession.py``
+that performs unit testing.
+
+If adding features, or making changes, it is recommended to update or add tests
+and assertions to the class ``APISessionTest`` to ensure code coverage. If the
+change(s) fix a bug, please add assertions that reproduce the bug along with
+code changes themselves, and include the GitHub issue number in the commit
+message.
+
+Copyright
+---------
+All the code in this distribution is Copyright (c) 2018 PagerDuty.
+
+``pdpyras`` is made available under the MIT License. The `LICENSE <LICENSE>`
+file has the complete details.
+
+Warranty
+--------
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
 .. References:
 .. -----------
 
