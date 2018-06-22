@@ -62,11 +62,13 @@ If you have `make`_ installed, you can then run:
 Otherwise, run:
 
 ::
+
     python setup.py bdist
 
 To install locally:
 
 ::
+
     make install # if you have make
     python setup.py install # otherwise
 
