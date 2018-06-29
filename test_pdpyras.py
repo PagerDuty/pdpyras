@@ -24,7 +24,6 @@ if sys.version_info.major < 3:
 
 from unittest.mock import MagicMock, patch, call
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import pdpyras
 
 class Session(object):

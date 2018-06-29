@@ -1,6 +1,6 @@
 .PHONY: docs
 
-docs: pdpyras/__init__.py
+docs: pdpyras.py
 	cd docs && make html
 
 test:
