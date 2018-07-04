@@ -16,18 +16,10 @@ and well-documented underlying HTTP library. This makes it ideal to use as the
 foundation of anything from a feature-rich REST API client library to a
 quick-and-dirty API script. 
 
-**Why not pypd?**
-
 This module was borne of necessity for a basic, reusable API client library to
 eliminate code duplication in PagerDuty Support's internal Python-based API
 tools, and to get the job done without reinventing the wheel or getting in the
 way.
-
-We frequently find ourselves performing experimental REST API requests using
-non-documented API endpoints for one reason or another, so we also needed a
-client that provided easy access to low-level features of the `Requests`_
-library, but that eliminated tedious tasks like querying, `pagination`_ and
-header-setting. Ultimately, we deemed `pypd`_ to be overkill for this task.
 
 With :class:`pdpyras.APISession`, higher-level features, i.e. model classes for
 handling the particulars of any given resource type, are left to the end user
@@ -84,10 +76,15 @@ Usage
     from pdpyras import APISession
     api_token = 'your-token-here'
     session = APISession(api_token)
+
+    # Using requests.Session.get:
     response = session.get('/users/PABC123')
+    user = None
     if response.ok:
         user = response.json()['user']
 
+    # Or, more succinctly:
+    user = session.r_get('/users/PABC123')
 
 **Example 2:** iterate over all users and print their ID, email and name:
 
@@ -110,16 +107,21 @@ and update their name to "Jane Doe":
     sesion = APISession(api_token)
     user = session.find('users', 'jane@example35.com', attribute='email')
     if user is not None:
-        session.put(user['self'], json={
+        # Using requests.Session.put:
+        updated_user = session.put(user['self'], json={
             'user':{'type':'user', 'name': 'Jane Doe'}
         })
+        # Alternately:
+        updated_user = session.r_put(user['self'], json={
+            'type':'user', 'name': 'Jane Doe'
+        })
+    
 
 Contributing
 ------------
 Bug reports and pull requests to fix issues are always welcome. 
 
-The ``tests`` directory contains a standalone script ``test_APISession.py``
-that performs unit testing.
+The script ``test_pdpyras.py`` performs unit testing.
 
 If adding features, or making changes, it is recommended to update or add tests
 and assertions to the class ``APISessionTest`` to ensure code coverage. If the

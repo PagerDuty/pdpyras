@@ -12,6 +12,171 @@ from urllib3.connection import ConnectionError as Urllib3Error
 from requests.exceptions import ConnectionError as RequestsError
 
 __version__ = '1.0'
+_url = 'https://api.pagerduty.com'
+
+#########################
+### UTILITY FUNCTIONS ###
+#########################
+
+def object_type(r_name):
+    """
+    Derives an object type from a resource name
+
+    Parameters
+    ----------
+    r_name : str
+        Resource name, i.e. would be ``users`` for the URL
+        ``https://api.pagerduty.com/users``
+
+    Returns
+    -------
+    str
+    """
+    if r_name == 'escalation_policies':
+        return 'escalation_policy'
+    else:
+        return r_name.rstrip('s')
+
+def profiler_key(method, path, suffix=None):
+    """
+    Generates a fixed-format "key" to classify a request URL for profiling.
+
+    Returns a string that will have all instances of IDs replaced with
+    ``{id}``, and will begin with the method in lower case followed by a
+    colon, i.e. ``get:escalation_policies/{id}``
+
+    :param path: str
+        The path/URI to classify
+    :param method:
+        The reqeust method
+    :param suffix:
+        Optional suffix to append to the key
+    :type param: str
+    :type method: str
+    :type suffix: str
+    :rtype: str
+    """
+    path_nodes = path.replace(_url, '').lstrip('/').split('/')
+    my_suffix = "" if suffix is None else "#"+suffix 
+    node_type = '{id}'
+    sub_node_type = '{index}'
+    if len(path_nodes) < 3:
+        # Basic / root level resource, i.e. list, create, view, update
+        if len(path_nodes) == 1:
+            node_type = '{index}'
+        resource = path_nodes[0].split('?')[0]
+        key = '%s:%s/%s%s'%(method.lower(), resource, node_type, my_suffix)
+    else:
+        # It's an endpoint like one of the following 
+        # /{resource}/{id}/{sub-resource}
+        # We're interested in {resource} and {sub_resource}.
+        # More deeply-nested endpoints are not yet known to exist.
+        sub_resource = path_nodes[2].split('?')[0]
+        if len(path_nodes) == 4:
+            sub_node_type = '{id}'
+        key = '%s:%s/%s/%s/%s%s'%(method.lower(), path_nodes[0], node_type,
+            sub_resource, sub_node_type, my_suffix)
+    return key
+
+
+def resource_name(obj_type):
+    """
+    Transforms an object type into a resource name
+
+    Parameters
+    ----------
+    obj_type : str
+        The object type, i.e. `user` or `user_reference`
+
+    :rtype: str
+    """
+    if obj_type.endswith('_reference'):
+        # Strip down to basic type if it's a reference
+        obj_type = obj_type[:obj_type.index('_reference')]
+    if obj_type == 'escalation_policy':
+        return 'escalation_policies'
+    else:
+        return obj_type+'s'
+
+###############
+### CLASSES ###
+###############
+
+def resource_envelope(method):
+    """
+    Function decorator for resource retrieval convenience
+
+    Request methods that use this decorator and return a `requests.Response'_
+    object will JSON-decode the response body and return the encapsulated data
+    if the request was successful, and return None otherwise.
+
+    If the request is a POST or PUT, it will derive the object type (and
+    thus name of the envelope property) and automatically encapsulate the
+    payload as given in the ``json`` keyword argument, if it isn't that way
+    already.
+
+    :param method: Method being decorated. Must take one positional argument
+        after ``self`` that is the URL/path to the resource.
+    :rtype: dict or list
+    """
+    def call(self, path, **kw):
+        global _url
+        pass_kw = deepcopy(kw) # Make a copy for modification
+        if path.startswith(_url):
+            url = path
+        else:
+            url = _url+'/'+path.lstrip('/')
+        # The following should be, at the very least, four elements:
+        # ['http:', '', 'api.pagerduty.com', '{resource}']
+        nodes = url.split('?')[0].split('/')
+        if len(nodes) < 4: 
+            raise ValueError('Invalid resource URL.')
+        # The following will be ['{resource}'], or ['{resource}', '{id}'], 
+        # or ['{resource}', '{id}', '{subresource}'], etc.
+        pathnodes = nodes[3:]
+        # If there's an even number of path nodes: it's an individual resource
+        # URL, and the resource name will be the second to last path node.
+        # Otherwise, it is a resource index, and the resource name will be the
+        # last pathnode. However, if the request was GET, and made to an index
+        # endpoint, the envelope property should simply be a resource name. 
+        #
+        # This is a more or less ubiquitous pattern throughout the PagerDuty
+        # REST API: path nodes alternate between identifiers and resource names.
+        is_index = len(pathnodes)%2
+        resource = pathnodes[-(2-is_index)]
+        if bool(is_index):
+            envelope_name = resource
+        else:
+            envelope_name = object_type(resource)
+        if 'json' in pass_kw:
+            # Assumptions: if it's not already in an envelope, it should have a
+            # ``type`` property. Every object, even resource references, have a
+            # this property in the REST API.
+            if not ('type' in kw['json'] or envelope_name in kw['json']):
+                raise ValueError("Invalid payload for resource "+resource_name)
+            elif 'type' in kw['json']:
+                pass_kw['json'] = {envelope_name: pass_kw['json']}
+            # Otherwise, nothing to do; content might already be encapsulated
+        r = method(self, path, **kw)
+        if r.ok:
+            # Now let's try to unpack...
+            try:
+                response_obj = r.json()
+            except ValueError as e:
+                self.log.debug("API responded with invalid JSON: %s", r.text)
+                return None
+            # Get the encapsulated object
+            if not envelope_name in response_obj:
+                self.log.debug("Cannot extract object; top-level property "
+                    "\"%s\" not found in response schema.", envelope_name)
+                return None
+            return response_obj[envelope_name]
+        else:
+            self.log.debug("%s %s: API responded with non-success status (%d)",
+                r.request.method.upper, path, r.status_code)
+            self.log.debug("Error response text: %s", r.text)
+            return None
+    return call
 
 class APISession(requests.Session):
     """
@@ -207,13 +372,13 @@ class APISession(requests.Session):
                 data['offset'] = offset
             r = self.get(path, params=data.copy())
             if not r.ok:
-                self.log.warn("Stopping iteration on endpoint \"%s\"; API "
+                self.log.debug("Stopping iteration on endpoint \"%s\"; API "
                     "responded with non-success status %d", path, r.status_code)
                 break
             try:
                 response = r.json()
             except ValueError: 
-                self.log.warn("Stopping iteration on endpoint %s; API "
+                self.log.debug("Stopping iteration on endpoint %s; API "
                     "responded with invalid JSON.", path)
                 break
             if 'limit' in response:
@@ -244,7 +409,7 @@ class APISession(requests.Session):
                     item_hook(result, n, total_count)
                 yield result
 
-    def profile(self, method, response, suffix=None):
+    def profile(self, response, suffix=None):
         """
         Records performance information about the API call.
 
@@ -261,54 +426,50 @@ class APISession(requests.Session):
         :type response: `requests.Response`_
         :type suffix: str or None
         """
-        key = self.profiler_key(method, response.url.split('?')[0], suffix)
+        key = profiler_key(response.request.method,
+            response.url.split('?')[0], suffix)
         self.api_call_counts.setdefault(key, 0)
         self.api_time.setdefault(key, 0.0)
         self.api_call_counts[key] += 1
         self.api_time[key] += response.elapsed.total_seconds()
 
-    def profiler_key(self, method, path, suffix=None):
+    @resource_envelope
+    def r_get(self, path, **kw):
         """
-        Generates a fixed-format "key" to classify a request URL for profiling.
+        Get a resource, returning the object without the envelope.
 
-        Returns a string that will have all instances of IDs replaced with
-        ``{id}``, and will begin with the method in lower case followed by a
-        colon, i.e. ``get:escalation_policies/{id}``
+        This method is essentially a more succinct way of retrieving an object
+        that doesn't require checking for a success status, JSON-decoding and
+        then pulling the essential data out of the envelope (i.e. for ``GET
+        /escalation_policies/{id}`` one would have to access the
+        ``escalation_policy`` property of the object). It is intended for use
+        cases where access to the response object is not required and minimum
+        effort is paramount.
 
-        :param path: str
-            The path/URI to classify
-        :param method:
-            The reqeust method
-        :param suffix:
-            Optional suffix to append to the key
-        :type param: str
-        :type method: str
-        :type suffix: str
-        :rtype: str
+        One can also use it to get a list of objects from an index, although
+        iter_all is more recommended for this purpose as it automatically pages
+        through all results.
+
+        :param path: The path/URL to request.
+        :param \*\*kw: Keyword arguments to pass to ``requests.Session.get``
         """
-        path_nodes = path.replace(self.url, '').lstrip('/').split('/')
-        my_suffix = "" if suffix is None else "#"+suffix 
-        node_type = '{id}'
-        sub_node_type = '{index}'
-        if len(path_nodes) < 3:
-            # Basic / root level resource, i.e. list, create, view, update
-            if len(path_nodes) == 1:
-                node_type = '{index}'
-            resource = path_nodes[0].split('?')[0]
-            key = '%s:%s/%s%s'%(method.lower(), resource, node_type, my_suffix)
-        else:
-            # It's an endpoint like one of the following 
-            # /{resource}/{id}/{sub-resource}
-            # We're interested in {resource} and {sub_resource}.
-            # More deeply-nested endpoints are not yet known to exist.
-            sub_resource = path_nodes[2].split('?')[0]
-            if len(path_nodes) == 4:
-                sub_node_type = '{id}'
-            key = '%s:%s/%s/%s/%s%s'%(method.lower(), path_nodes[0], node_type,
-                sub_resource, sub_node_type, my_suffix)
-        return key
+        return self.get(path, **kw)
 
+    @resource_envelope
+    def r_post(self, path, **kw):
+        return self.post(path, **kw)
+        
 
+    @resource_envelope
+    def r_put(self, path, **kw):
+        """
+        Update an individual resource, returning the encapsulated object.
+
+        :param path: The path/URL to which to send the PUT request.
+        :param \*\*kw: Keyword arguments to pass to ``requests.Session.get``
+        """
+        return self.put(path, **kw)
+        
     def request(self, method, url, **kwargs):
         """
         Make a generic PagerDuty v2 REST API request. 
@@ -355,7 +516,7 @@ class APISession(requests.Session):
         while True:
             try:
                 response = self.parent.request(method, my_url, **req_kw)
-                self.profile(method.lower(), response)
+                self.profile(response)
             except (Urllib3Error, RequestsError) as e:
                 attempts += 1
                 if attempts > self.max_attempts:
