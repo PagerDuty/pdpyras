@@ -537,8 +537,11 @@ class APISession(requests.Session):
             elif response.status_code == 401:
                 # Stop. Authentication failed. We shouldn't try doing any more,
                 # because we'll run into problems later attempting to use the token.
-                raise PDClientError("Received 401 Unauthorized response from "
-                    "the REST API. The access key might not be valid.")
+                raise PDClientError(
+                    "Received 401 Unauthorized response from the REST API. "
+                    "The access key (%s) might not be valid."%("*"+token[-4:])
+                    )
+                )
             else:
                 return response
 
