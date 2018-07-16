@@ -140,8 +140,8 @@ def resource_envelope(method):
         # last pathnode. However, if the request was GET, and made to an index
         # endpoint, the envelope property should simply be a resource name. 
         #
-        # This is a more or less ubiquitous pattern throughout the PagerDuty
-        # REST API: path nodes alternate between identifiers and resource names.
+        # This is a ubiquitous pattern throughout the PagerDuty REST API: path
+        # nodes alternate between identifiers and resource names.
         is_index = len(pathnodes)%2
         resource = pathnodes[-(2-is_index)]
         if bool(is_index):
