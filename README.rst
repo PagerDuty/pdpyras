@@ -10,42 +10,36 @@ This library supplies a class ``APISession`` extending `requests.Session`_ from
 the Requests_ HTTP library, which provides the means to perform most basic
 tasks associated with accessing the PagerDuty REST API in a succinct manner.
 
-It is intended to be a practical and dead-simple abstraction layer for
-PagerDuty REST API access that differs minimally from the already well-known
-and well-documented underlying HTTP library. This makes it ideal to use as the
-foundation of anything from a feature-rich REST API client library to a
-quick-and-dirty API script. 
-
-**Why not pypd?**
+It is intended to be a practical and simple-as-possible-but-no-simpler
+abstraction layer for accessing the PagerDuty REST API. It differs minimally
+from the already well-known and well-documented underlying HTTP library. This
+makes it ideal to use as the foundation of anything from a feature-rich REST
+API client library to a quick-and-dirty API script. 
 
 This module was borne of necessity for a basic, reusable API client library to
-eliminate code duplication in PagerDuty Support's internal Python-based API
-tools, and to get the job done without reinventing the wheel or getting in the
-way.
+eliminate code duplication in some of PagerDuty Support's internal Python-based
+API tools, and to get the job done without reinventing the wheel or getting in
+the way. We also frequently found ourselves performing REST API requests using
+beta or non-documented API endpoints for one reason or another, so we also
+needed a client that provided easy access to low-level features of the
+`Requests`_ library, but that eliminated tedious tasks like querying,
+`pagination`_ and header-setting. Ultimately, we deemed most other libraries to
+be both overkill for this task and also not very conducive to use for
+experimental API calls.
 
-We frequently find ourselves performing experimental REST API requests using
-non-documented API endpoints for one reason or another, so we also needed a
-client that provided easy access to low-level features of the `Requests`_
-library, but that eliminated tedious tasks like querying, `pagination`_ and
-header-setting. Ultimately, we deemed `pypd`_ to be overkill for this task.
-
-With :class:`pdpyras.APISession`, higher-level features, i.e. model classes for
-handling the particulars of any given resource type, are left to the end user
-to develop as they see fit. Using this module by itself is thus a good approach
-for those who simply want to go by what the `REST API Reference`_ says and have
-explicit control over each resource schema feature.
+Higher-level features, i.e. model classes for handling the particulars of any
+given resource type, are left to the end user to develop as they see fit.
 
 Features
 --------
 - Efficient API access through automatic HTTP connection pooling and
   persistence 
 - Supports Python 2.7 through 3.6
-- Automatic cooldown/reattempt for rate limiting and momentary/transient
-  network issues
+- Automatic cooldown/reattempt for rate limiting and transient network problems
 - Inclusion of required `HTTP Request Headers`_ for PagerDuty REST API requests
 - Bulk data retrieval and iteration over `resource index`_ endpoints with
   automatic pagination
-- Lookup of individual objects matching a query
+- Individual object retrieval by name 
 - API request profiling
 
 Build & Install
@@ -73,7 +67,7 @@ To install locally:
     python setup.py install # otherwise
 
 Note, unless you are using a local/userspace virtual environment, you will need
-to run the above as root.
+to run the above as root (to install system-wide).
 
 Usage
 -----

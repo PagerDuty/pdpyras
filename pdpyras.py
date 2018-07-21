@@ -27,9 +27,17 @@ class APISession(requests.Session):
     - It will only perform GET, POST, PUT and DELETE requests, and will raise
       PDClientError for any other HTTP verbs.
 
-    :members:
+    :param token: REST API access token to use for HTTP requests
+    :param name: Optional name identifier for logging. If unspecified or
+        ``None``, it will be the last four characters of the REST API token.
+    :param default_from: Email address of a valid PagerDuty user to use in
+        API requests by default as the ``From`` header (see: `HTTP Request
+        Headers`_)
+    :type token: str
+    :type name: str or None
+    :type default_from: str or None
 
-    .. automethod:: __init__
+    :members:
     """
 
     api_call_counts = None 
@@ -43,12 +51,12 @@ class APISession(requests.Session):
 
     default_page_size = 100
     """
-    This will be the default number of results requested when iterating/querying
-    an index (the ``limit`` parameter). See: `pagination`_.
+    This will be the default number of results requested in each page when
+    iterating/querying an index (the ``limit`` parameter). See: `pagination`_.
     """
 
     log = None
-    """A ``logging.Logger`` object for printing messages"""
+    """A ``logging.Logger`` object for printing messages."""
 
     max_attempts = 3
     """
@@ -78,19 +86,6 @@ class APISession(requests.Session):
     """Base URL of the REST API"""
 
     def __init__(self, token, name=None, default_from=None):
-        """
-        Constructor that sets defaults for API requests for a given API token.
-
-        :param token: REST API access token to use for HTTP requests
-        :param name: Optional name identifier for logging. If unspecified, it
-            will be the last four characters of the REST API token.
-        :param default_from: Email address of a valid PagerDuty user to use in
-            API requests by default as the ``From`` header (see: `HTTP Request
-            Headers`_)
-        :type token: str
-        :type name: str or None
-        :type default_from: str or None
-        """
         if not (type(token) is str and token):
             raise ValueError("API token must be a non-empty string.")
         self.api_call_counts = {}
@@ -115,21 +110,21 @@ class APISession(requests.Session):
         Will query a given `resource index`_ endpoint using the ``query``
         parameter supported by most indexes.
 
-        Returns dict if a result is found; it will be the entry in the list of
-        results from the index. Otherwise, it will return None if no result is
-        found.
+        Returns a dict if a result is found. The structure will be that of an
+        entry in the index endpoint schema's array of results. Otherwise, it
+        will return `None` if no result is found or an error is encountered.
 
         :param resource_name:
             The name of the resource endpoint to query, i.e.
             ``escalation_policies``
         :param query:
-            The value to use in the query parameter to the index endpoint
+            The string to query for in the the index.
         :param attribute:
             The property of each result to compare against the query value when
             searching for an exact match. By default it is ``name``, but when
             searching for user by email (for example) it can be set to ``email``
         :param params:
-            Optional additional parameters to use when querying
+            Optional additional parameters to use when querying.
         :type resource_name: str
         :type query: str
         :type attribute: str
@@ -150,10 +145,10 @@ class APISession(requests.Session):
     def iter_all(self, path, params=None, paginate=True, item_hook=None,
             total=False):
         """
-        Generator function for iteration over all results from an index endpoint
+        Iterator for the contents of an index endpoint
 
         Automatically paginates and yields the results in each page, until all
-        results have been yielded or an error occurs.
+        matching results have been yielded.
 
         Each yielded value is a dict object representing a result returned from
         the index. For example, if requesting the ``/users`` endpoint, each
@@ -198,6 +193,7 @@ class APISession(requests.Session):
         if total:
             data['total'] = 1
         if params is not None:
+            # Override defaults with values given
             data.update(params)
         more = True
         offset = 0
@@ -313,7 +309,7 @@ class APISession(requests.Session):
         """
         Make a generic PagerDuty v2 REST API request. 
         
-        Returns a `requests.Response`_ object (TODO: make this a link)
+        Returns a `requests.Response`_ object.
 
         :param method:
             The request method to use. Case-insensitive. May be one of get, put,
