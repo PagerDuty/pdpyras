@@ -1,7 +1,7 @@
 .PHONY: docs
 
 docs: pdpyras.py
-	cd docs && make html
+	cd sphinx && make html
 
 test:
 	cd tests && ./test_pdpyras.py

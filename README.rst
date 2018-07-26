@@ -7,28 +7,22 @@ A minimal, practical client for the PagerDuty REST API.
 About
 -----
 This library supplies a class ``APISession`` extending `requests.Session`_ from
-the Requests_ HTTP library, which provides the means to perform most basic
-tasks associated with accessing the PagerDuty REST API in a succinct manner.
+the Requests_ HTTP library. It serves as a practical and
+simple-as-possible-but-no-simpler abstraction layer for accessing the PagerDuty
+REST API, differing minimally from the already well-known and well-documented
+underlying HTTP library. This makes it appropriate for use as the foundation of
+anything from a feature-rich REST API client library to a quick-and-dirty API
+script.
 
-It is intended to be a practical and simple-as-possible-but-no-simpler
-abstraction layer for accessing the PagerDuty REST API. It differs minimally
-from the already well-known and well-documented underlying HTTP library. This
-makes it ideal to use as the foundation of anything from a feature-rich REST
-API client library to a quick-and-dirty API script. 
-
-This module was borne of necessity for a basic, reusable API client library to
+This module was borne of necessity for a basic, reusable API client to
 eliminate code duplication in some of PagerDuty Support's internal Python-based
 API tools, and to get the job done without reinventing the wheel or getting in
 the way. We also frequently found ourselves performing REST API requests using
 beta or non-documented API endpoints for one reason or another, so we also
-needed a client that provided easy access to low-level features of the
-`Requests`_ library, but that eliminated tedious tasks like querying,
-`pagination`_ and header-setting. Ultimately, we deemed most other libraries to
-be both overkill for this task and also not very conducive to use for
-experimental API calls.
-
-Higher-level features, i.e. model classes for handling the particulars of any
-given resource type, are left to the end user to develop as they see fit.
+needed a client that provided easy access to features of the underlying HTTP
+library, but that eliminated tedious tasks like querying, `pagination`_ and
+header-setting. Ultimately, we deemed most other libraries to be both overkill
+for this task and also not very conducive to use for experimental API calls.
 
 Features
 --------
@@ -39,7 +33,7 @@ Features
 - Inclusion of required `HTTP Request Headers`_ for PagerDuty REST API requests
 - Bulk data retrieval and iteration over `resource index`_ endpoints with
   automatic pagination
-- Individual object retrieval by name 
+- Individual object retrieval by name
 - API request profiling
 
 Build & Install
@@ -71,7 +65,8 @@ to run the above as root (to install system-wide).
 
 Usage
 -----
-**Example 1:** get a user:
+
+**Basic getting:** Obtain a user profile as a dict object:
 
 ::
 
@@ -83,18 +78,26 @@ Usage
         user = response.json()['user']
 
 
-**Example 2:** iterate over all users and print their ID, email and name:
+**Iteration (1):** Iterate over all users and print their ID, email and name:
 
 ::
 
     from pdpyras import APISession
     api_token = 'your-token-here'
     session = APISession(api_token)
-    for user in session.iter_all('/users'):
+    for user in session.iter_all('users'):
         print(user['id'], user['email'], user['name'])
 
+**Iteration (2):** Compile a list of all servies with "SN" in their name:
 
-**Example 3:** Find a user exactly matching email address ``jane@example35.com``
+::
+
+    from pdpyras import APISession
+    api_token = 'your-token-here'
+    session = APISession(api_token)
+    services = list(session.iter_all('services', params={'query': 'SN'}))
+
+**Querying and updating:** Find a user exactly matching email address ``jane@example35.com``
 and update their name to "Jane Doe":
 
 ::
@@ -111,9 +114,6 @@ and update their name to "Jane Doe":
 Contributing
 ------------
 Bug reports and pull requests to fix issues are always welcome. 
-
-The ``tests`` directory contains a standalone script ``test_APISession.py``
-that performs unit testing.
 
 If adding features, or making changes, it is recommended to update or add tests
 and assertions to the class ``APISessionTest`` to ensure code coverage. If the
