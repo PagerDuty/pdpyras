@@ -2,7 +2,7 @@
 pdpyras: PagerDuty Python REST API Sessions
 ===========================================
 
-A minimal, practical client for the PagerDuty REST API.
+A minimal, practical Python client for the PagerDuty REST API.
 
 About
 -----
@@ -38,13 +38,15 @@ Features
 
 Installation
 ------------
-If ``pip`` is available, local installation from the Python Package Index (pypi.org) can be performed via
+If ``pip`` is available, it can be installed via:
 
 ::
 
     pip install pdpyras
 
-Alternately, one can simply copy ``pdpyras.py`` into the directory where it will be used.
+Alternately, if Requests_ has already been installed locally, and ``urllib3``
+is available, one can simply download `pdpyras.py`_ into the directory where it
+will be used.
 
 Usage
 -----
@@ -152,5 +154,6 @@ Warranty
 .. _`resource index`: https://v2.developer.pagerduty.com/docs/endpoints#resources-index
 .. _`REST API Reference`: v2.developer.pagerduty.com/v2/page/api-reference#!/API_Reference/get_api_reference
 .. _`setuptools`: https://pypi.org/project/setuptools/
+.. _`pdpyras.py`: https://raw.githubusercontent.com/PagerDuty/pdpyras/master/pdpyras.py
 
 .. codeauthor:: Demitri Morgan <demitri@pagerduty.com>

@@ -7,7 +7,7 @@ test:
 	cd tests && ./test_pdpyras.py
 
 build: 
-	python setup.py bdist
+	python setup.py sdist
 
 install: build
 	python setup.py install 

@@ -41,7 +41,7 @@ class APISession(requests.Session):
     """
 
     api_call_counts = None 
-    """A dict object recording Number of API calls per endpoint"""
+    """A dict object recording the number of API calls per endpoint"""
 
     api_time = None
     """A dict object recording the total time of API calls to each endpoint"""
