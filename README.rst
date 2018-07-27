@@ -36,32 +36,15 @@ Features
 - Individual object retrieval by name
 - API request profiling
 
-Build & Install
------------------
-To manually build and install the Python module to your local distribution
-packages, make sure you have `setuptools`_ installed.
-
-If you have `make`_ installed, you can then run:
+Installation
+------------
+If ``pip`` is available, local installation from the Python Package Index (pypi.org) can be performed via
 
 ::
 
-    make build
+    pip install pdpyras
 
-Otherwise, run:
-
-::
-
-    python setup.py bdist
-
-To install locally:
-
-::
-
-    make install # if you have make
-    python setup.py install # otherwise
-
-Note, unless you are using a local/userspace virtual environment, you will need
-to run the above as root (to install system-wide).
+Alternately, one can simply copy ``pdpyras.py`` into the directory where it will be used.
 
 Usage
 -----
@@ -169,3 +152,5 @@ Warranty
 .. _`resource index`: https://v2.developer.pagerduty.com/docs/endpoints#resources-index
 .. _`REST API Reference`: v2.developer.pagerduty.com/v2/page/api-reference#!/API_Reference/get_api_reference
 .. _`setuptools`: https://pypi.org/project/setuptools/
+
+.. codeauthor:: Demitri Morgan <demitri@pagerduty.com>

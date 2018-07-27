@@ -11,7 +11,7 @@ import requests
 from urllib3.connection import ConnectionError as Urllib3Error
 from requests.exceptions import ConnectionError as RequestsError
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 class APISession(requests.Session):
     """

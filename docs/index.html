@@ -65,25 +65,13 @@ automatic pagination</li>
 <li>API request profiling</li>
 </ul>
 </div>
-<div class="section" id="build-install">
-<h2>Build &amp; Install<a class="headerlink" href="#build-install" title="Permalink to this headline">¶</a></h2>
-<p>To manually build and install the Python module to your local distribution
-packages, make sure you have <a class="reference external" href="https://pypi.org/project/setuptools/">setuptools</a> installed.</p>
-<p>If you have <a class="reference external" href="https://www.gnu.org/software/make/">make</a> installed, you can then run:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">build</span>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>If <code class="docutils literal notranslate"><span class="pre">pip</span></code> is available, local installation from the Python Package Index (pypi.org) can be performed via</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">pdpyras</span>
 </pre></div>
 </div>
-<p>Otherwise, run:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">bdist</span>
-</pre></div>
-</div>
-<p>To install locally:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">install</span> <span class="c1"># if you have make</span>
-<span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">install</span> <span class="c1"># otherwise</span>
-</pre></div>
-</div>
-<p>Note, unless you are using a local/userspace virtual environment, you will need
-to run the above as root (to install system-wide).</p>
+<p>Alternately, one can simply copy <code class="docutils literal notranslate"><span class="pre">pdpyras.py</span></code> into the directory where it will be used.</p>
 </div>
 <div class="section" id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
@@ -165,6 +153,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.</div></blockquote>
+<p><em>Code author: Demitri Morgan &lt;<a class="reference external" href="mailto:demitri&#37;&#52;&#48;pagerduty&#46;com">demitri<span>&#64;</span>pagerduty<span>&#46;</span>com</a>&gt;</em></p>
 </div>
 <div class="section" id="module-pdpyras">
 <span id="developer-interface"></span><h2>Developer Interface<a class="headerlink" href="#module-pdpyras" title="Permalink to this headline">¶</a></h2>
@@ -450,7 +439,7 @@ occurs when retrieving, this will be False.</p>
 <li><a class="reference internal" href="#">pdpyras: PagerDuty Python REST API Sessions</a><ul>
 <li><a class="reference internal" href="#about">About</a></li>
 <li><a class="reference internal" href="#features">Features</a></li>
-<li><a class="reference internal" href="#build-install">Build &amp; Install</a></li>
+<li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#usage">Usage</a></li>
 <li><a class="reference internal" href="#contributing">Contributing</a></li>
 <li><a class="reference internal" href="#copyright">Copyright</a></li>
