@@ -1,7 +1,7 @@
 .PHONY: docs
 
 docs: pdpyras.py
-	cd sphinx && make html
+	rm -r ./docs && cd sphinx && make html && cd .. && mv sphinx/build/html ./docs && touch ./docs/.nojekyll
 
 test:
 	cd tests && ./test_pdpyras.py
