@@ -3,15 +3,20 @@
 # See LICENSE for details.
 
 import logging
+import sys
 import time
-
 from copy import deepcopy
 
 import requests
 from urllib3.connection import ConnectionError as Urllib3Error
 from requests.exceptions import ConnectionError as RequestsError
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
+
+if sys.version_info[0] == 3:
+    string_types = str
+else:
+    string_types = basestring
 
 class APISession(requests.Session):
     """
@@ -86,7 +91,7 @@ class APISession(requests.Session):
     """Base URL of the REST API"""
 
     def __init__(self, token, name=None, default_from=None):
-        if not (type(token) is str and token):
+        if not (isinstance(token, string_types) and token):
             raise ValueError("API token must be a non-empty string.")
         self.api_call_counts = {}
         self.api_time = {}
