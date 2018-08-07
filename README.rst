@@ -2,74 +2,58 @@
 pdpyras: PagerDuty Python REST API Sessions
 ===========================================
 
-A minimal, practical client for the PagerDuty REST API.
+A minimal, practical Python client for the PagerDuty REST API.
+
+GitHub: `PagerDuty/pdpyras <https://github.com/PagerDuty/pdpyras>`_
 
 About
 -----
 This library supplies a class ``APISession`` extending `requests.Session`_ from
-the Requests_ HTTP library, which provides the means to perform most basic
-tasks associated with accessing the PagerDuty REST API in a succinct manner.
+the Requests_ HTTP library. It serves as a practical and
+simple-as-possible-but-no-simpler abstraction layer for accessing the PagerDuty
+REST API, differing minimally from the already well-known and well-documented
+underlying HTTP library. This makes it appropriate for use as the foundation of
+anything from a feature-rich REST API client library to a quick-and-dirty API
+script.
 
-It is intended to be a practical and dead-simple abstraction layer for
-PagerDuty REST API access that differs minimally from the already well-known
-and well-documented underlying HTTP library. This makes it ideal to use as the
-foundation of anything from a feature-rich REST API client library to a
-quick-and-dirty API script. 
-
-This module was borne of necessity for a basic, reusable API client library to
-eliminate code duplication in PagerDuty Support's internal Python-based API
-tools, and to get the job done without reinventing the wheel or getting in the
-way.
-
-With :class:`pdpyras.APISession`, higher-level features, i.e. model classes for
-handling the particulars of any given resource type, are left to the end user
-to develop as they see fit. Using this module by itself is thus a good approach
-for those who simply want to go by what the `REST API Reference`_ says and have
-explicit control over each resource schema feature.
+This module was borne of necessity for a basic, reusable API client to
+eliminate code duplication in some of PagerDuty Support's internal Python-based
+API tools, and to get the job done without reinventing the wheel or getting in
+the way. We also frequently found ourselves performing REST API requests using
+beta or non-documented API endpoints for one reason or another, so we also
+needed a client that provided easy access to features of the underlying HTTP
+library, but that eliminated tedious tasks like querying, `pagination`_ and
+header-setting. Ultimately, we deemed most other libraries to be both overkill
+for this task and also not very conducive to use for experimental API calls.
 
 Features
 --------
 - Efficient API access through automatic HTTP connection pooling and
   persistence 
 - Supports Python 2.7 through 3.6
-- Automatic cooldown/reattempt for rate limiting and momentary/transient
-  network issues
+- Automatic cooldown/reattempt for rate limiting and transient network problems
 - Inclusion of required `HTTP Request Headers`_ for PagerDuty REST API requests
 - Bulk data retrieval and iteration over `resource index`_ endpoints with
   automatic pagination
-- Lookup of individual objects matching a query
+- Individual object retrieval by name
 - API request profiling
 
-Build & Install
------------------
-To manually build and install the Python module to your local distribution
-packages, make sure you have `setuptools`_ installed.
-
-If you have `make`_ installed, you can then run:
+Installation
+------------
+If ``pip`` is available, it can be installed via:
 
 ::
 
-    make build
+    pip install pdpyras
 
-Otherwise, run:
-
-::
-
-    python setup.py bdist
-
-To install locally:
-
-::
-
-    make install # if you have make
-    python setup.py install # otherwise
-
-Note, unless you are using a local/userspace virtual environment, you will need
-to run the above as root.
+Alternately, if Requests_ has already been installed locally, and ``urllib3``
+is available, one can simply download `pdpyras.py`_ into the directory where it
+will be used.
 
 Usage
 -----
-**Example 1:** get a user:
+
+**Basic getting:** Obtain a user profile as a dict object:
 
 ::
 
@@ -86,18 +70,26 @@ Usage
     # Or, more succinctly:
     user = session.r_get('/users/PABC123')
 
-**Example 2:** iterate over all users and print their ID, email and name:
+**Iteration (1):** Iterate over all users and print their ID, email and name:
 
 ::
 
     from pdpyras import APISession
     api_token = 'your-token-here'
     session = APISession(api_token)
-    for user in session.iter_all('/users'):
+    for user in session.iter_all('users'):
         print(user['id'], user['email'], user['name'])
 
+**Iteration (2):** Compile a list of all servies with "SN" in their name:
 
-**Example 3:** Find a user exactly matching email address ``jane@example35.com``
+::
+
+    from pdpyras import APISession
+    api_token = 'your-token-here'
+    session = APISession(api_token)
+    services = list(session.iter_all('services', params={'query': 'SN'}))
+
+**Querying and updating:** Find a user exactly matching email address ``jane@example35.com``
 and update their name to "Jane Doe":
 
 ::
@@ -120,8 +112,6 @@ and update their name to "Jane Doe":
 Contributing
 ------------
 Bug reports and pull requests to fix issues are always welcome. 
-
-The script ``test_pdpyras.py`` performs unit testing.
 
 If adding features, or making changes, it is recommended to update or add tests
 and assertions to the class ``APISessionTest`` to ensure code coverage. If the
@@ -177,3 +167,6 @@ Warranty
 .. _`resource index`: https://v2.developer.pagerduty.com/docs/endpoints#resources-index
 .. _`REST API Reference`: v2.developer.pagerduty.com/v2/page/api-reference#!/API_Reference/get_api_reference
 .. _`setuptools`: https://pypi.org/project/setuptools/
+.. _`pdpyras.py`: https://raw.githubusercontent.com/PagerDuty/pdpyras/master/pdpyras.py
+
+.. codeauthor:: Demitri Morgan <demitri@pagerduty.com>

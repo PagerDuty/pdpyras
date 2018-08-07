@@ -3,16 +3,20 @@
 # See LICENSE for details.
 
 import logging
+import sys
 import time
-
 from copy import deepcopy
 
 import requests
 from urllib3.connection import ConnectionError as Urllib3Error
 from requests.exceptions import ConnectionError as RequestsError
 
-__version__ = '1.0'
-_url = 'https://api.pagerduty.com'
+if sys.version_info[0] == 3:
+    string_types = str
+else:
+    string_types = basestring
+
+__version__ = '2.0.0a'
 
 #########################
 ### UTILITY FUNCTIONS ###
@@ -37,46 +41,7 @@ def object_type(r_name):
     else:
         return r_name.rstrip('s')
 
-def profiler_key(method, path, suffix=None):
-    """
-    Generates a fixed-format "key" to classify a request URL for profiling.
 
-    Returns a string that will have all instances of IDs replaced with
-    ``{id}``, and will begin with the method in lower case followed by a
-    colon, i.e. ``get:escalation_policies/{id}``
-
-    :param path: str
-        The path/URI to classify
-    :param method:
-        The reqeust method
-    :param suffix:
-        Optional suffix to append to the key
-    :type param: str
-    :type method: str
-    :type suffix: str
-    :rtype: str
-    """
-    path_nodes = path.replace(_url, '').lstrip('/').split('/')
-    my_suffix = "" if suffix is None else "#"+suffix 
-    node_type = '{id}'
-    sub_node_type = '{index}'
-    if len(path_nodes) < 3:
-        # Basic / root level resource, i.e. list, create, view, update
-        if len(path_nodes) == 1:
-            node_type = '{index}'
-        resource = path_nodes[0].split('?')[0]
-        key = '%s:%s/%s%s'%(method.lower(), resource, node_type, my_suffix)
-    else:
-        # It's an endpoint like one of the following 
-        # /{resource}/{id}/{sub-resource}
-        # We're interested in {resource} and {sub_resource}.
-        # More deeply-nested endpoints are not yet known to exist.
-        sub_resource = path_nodes[2].split('?')[0]
-        if len(path_nodes) == 4:
-            sub_node_type = '{id}'
-        key = '%s:%s/%s/%s/%s%s'%(method.lower(), path_nodes[0], node_type,
-            sub_resource, sub_node_type, my_suffix)
-    return key
 
 
 def resource_name(obj_type):
@@ -108,7 +73,16 @@ def resource_envelope(method):
 
     Request methods that use this decorator and return a `requests.Response'_
     object will JSON-decode the response body and return the encapsulated data
-    if the request was successful, and return None otherwise.
+    if the request was successful, and return ``None`` otherwise.
+
+    It allows creation of methods that can provide more succinct ways of making
+    API calls that don't require checking for a success status, JSON-decoding
+    and then pulling the essential data out of the envelope (i.e. for ``GET
+    /escalation_policies/{id}`` one would have to access the
+    ``escalation_policy`` property of the object). It is intended for use cases
+    where direct access to the `requests.Response`_ object is not required and
+    all that is really needed is the dictionary representation of the resource
+    if successful.
 
     If the request is a POST or PUT, it will derive the object type (and
     thus name of the envelope property) and automatically encapsulate the
@@ -120,12 +94,11 @@ def resource_envelope(method):
     :rtype: dict or list
     """
     def call(self, path, **kw):
-        global _url
         pass_kw = deepcopy(kw) # Make a copy for modification
-        if path.startswith(_url):
+        if path.startswith(self.url):
             url = path
         else:
-            url = _url+'/'+path.lstrip('/')
+            url = self.url+'/'+path.lstrip('/')
         # The following should be, at the very least, four elements:
         # ['http:', '', 'api.pagerduty.com', '{resource}']
         nodes = url.split('?')[0].split('/')
@@ -192,13 +165,21 @@ class APISession(requests.Session):
     - It will only perform GET, POST, PUT and DELETE requests, and will raise
       PDClientError for any other HTTP verbs.
 
-    :members:
+    :param token: REST API access token to use for HTTP requests
+    :param name: Optional name identifier for logging. If unspecified or
+        ``None``, it will be the last four characters of the REST API token.
+    :param default_from: Email address of a valid PagerDuty user to use in
+        API requests by default as the ``From`` header (see: `HTTP Request
+        Headers`_)
+    :type token: str
+    :type name: str or None
+    :type default_from: str or None
 
-    .. automethod:: __init__
+    :members:
     """
 
     api_call_counts = None 
-    """A dict object recording Number of API calls per endpoint"""
+    """A dict object recording the number of API calls per endpoint"""
 
     api_time = None
     """A dict object recording the total time of API calls to each endpoint"""
@@ -208,12 +189,12 @@ class APISession(requests.Session):
 
     default_page_size = 100
     """
-    This will be the default number of results requested when iterating/querying
-    an index (the ``limit`` parameter). See: `pagination`_.
+    This will be the default number of results requested in each page when
+    iterating/querying an index (the ``limit`` parameter). See: `pagination`_.
     """
 
     log = None
-    """A ``logging.Logger`` object for printing messages"""
+    """A ``logging.Logger`` object for printing messages."""
 
     max_attempts = 3
     """
@@ -243,20 +224,7 @@ class APISession(requests.Session):
     """Base URL of the REST API"""
 
     def __init__(self, token, name=None, default_from=None):
-        """
-        Constructor that sets defaults for API requests for a given API token.
-
-        :param token: REST API access token to use for HTTP requests
-        :param name: Optional name identifier for logging. If unspecified, it
-            will be the last four characters of the REST API token.
-        :param default_from: Email address of a valid PagerDuty user to use in
-            API requests by default as the ``From`` header (see: `HTTP Request
-            Headers`_)
-        :type token: str
-        :type name: str or None
-        :type default_from: str or None
-        """
-        if not (type(token) is str and token):
+        if not (isinstance(token, string_types) and token):
             raise ValueError("API token must be a non-empty string.")
         self.api_call_counts = {}
         self.api_time = {}
@@ -280,21 +248,21 @@ class APISession(requests.Session):
         Will query a given `resource index`_ endpoint using the ``query``
         parameter supported by most indexes.
 
-        Returns dict if a result is found; it will be the entry in the list of
-        results from the index. Otherwise, it will return None if no result is
-        found.
+        Returns a dict if a result is found. The structure will be that of an
+        entry in the index endpoint schema's array of results. Otherwise, it
+        will return `None` if no result is found or an error is encountered.
 
         :param resource_name:
             The name of the resource endpoint to query, i.e.
             ``escalation_policies``
         :param query:
-            The value to use in the query parameter to the index endpoint
+            The string to query for in the the index.
         :param attribute:
             The property of each result to compare against the query value when
             searching for an exact match. By default it is ``name``, but when
             searching for user by email (for example) it can be set to ``email``
         :param params:
-            Optional additional parameters to use when querying
+            Optional additional parameters to use when querying.
         :type resource_name: str
         :type query: str
         :type attribute: str
@@ -315,10 +283,10 @@ class APISession(requests.Session):
     def iter_all(self, path, params=None, paginate=True, item_hook=None,
             total=False):
         """
-        Generator function for iteration over all results from an index endpoint
+        Iterator for the contents of an index endpoint
 
         Automatically paginates and yields the results in each page, until all
-        results have been yielded or an error occurs.
+        matching results have been yielded.
 
         Each yielded value is a dict object representing a result returned from
         the index. For example, if requesting the ``/users`` endpoint, each
@@ -363,6 +331,7 @@ class APISession(requests.Session):
         if total:
             data['total'] = 1
         if params is not None:
+            # Override defaults with values given
             data.update(params)
         more = True
         offset = 0
@@ -426,25 +395,60 @@ class APISession(requests.Session):
         :type response: `requests.Response`_
         :type suffix: str or None
         """
-        key = profiler_key(response.request.method,
+        key = self.profiler_key(response.request.method,
             response.url.split('?')[0], suffix)
         self.api_call_counts.setdefault(key, 0)
         self.api_time.setdefault(key, 0.0)
         self.api_call_counts[key] += 1
         self.api_time[key] += response.elapsed.total_seconds()
 
+    def profiler_key(self, method, path, suffix=None):
+        """
+        Generates a fixed-format "key" to classify a request URL for profiling.
+
+        Returns a string that will have all instances of IDs replaced with
+        ``{id}``, and will begin with the method in lower case followed by a
+        colon, i.e. ``get:escalation_policies/{id}``
+
+        :param path: str
+            The path/URI to classify
+        :param method:
+            The reqeust method
+        :param suffix:
+            Optional suffix to append to the key
+        :type param: str
+        :type method: str
+        :type suffix: str
+        :rtype: str
+        """
+        path_nodes = path.replace(self.url, '').lstrip('/').split('/')
+        my_suffix = "" if suffix is None else "#"+suffix 
+        node_type = '{id}'
+        sub_node_type = '{index}'
+        if len(path_nodes) < 3:
+            # Basic / root level resource, i.e. list, create, view, update
+            if len(path_nodes) == 1:
+                node_type = '{index}'
+            resource = path_nodes[0].split('?')[0]
+            key = '%s:%s/%s%s'%(method.lower(), resource, node_type, my_suffix)
+        else:
+            # It's an endpoint like one of the following 
+            # /{resource}/{id}/{sub-resource}
+            # We're interested in {resource} and {sub_resource}.
+            # More deeply-nested endpoints are not yet known to exist.
+            sub_resource = path_nodes[2].split('?')[0]
+            if len(path_nodes) == 4:
+                sub_node_type = '{id}'
+            key = '%s:%s/%s/%s/%s%s'%(method.lower(), path_nodes[0], node_type,
+                sub_resource, sub_node_type, my_suffix)
+        return key
+
     @resource_envelope
     def r_get(self, path, **kw):
         """
-        Get a resource, returning the object without the envelope.
+        Get a resource, returning the object within the resource name envelope.
 
-        This method is essentially a more succinct way of retrieving an object
-        that doesn't require checking for a success status, JSON-decoding and
-        then pulling the essential data out of the envelope (i.e. for ``GET
-        /escalation_policies/{id}`` one would have to access the
-        ``escalation_policy`` property of the object). It is intended for use
-        cases where access to the response object is not required and minimum
-        effort is paramount.
+        
 
         One can also use it to get a list of objects from an index, although
         iter_all is more recommended for this purpose as it automatically pages
@@ -457,8 +461,13 @@ class APISession(requests.Session):
 
     @resource_envelope
     def r_post(self, path, **kw):
-        return self.post(path, **kw)
+        """
+        Create a resource 
         
+        Returns the dictionary object representation if creating it was
+        successful.
+        """
+        return self.post(path, **kw)
 
     @resource_envelope
     def r_put(self, path, **kw):
@@ -474,7 +483,7 @@ class APISession(requests.Session):
         """
         Make a generic PagerDuty v2 REST API request. 
         
-        Returns a `requests.Response`_ object (TODO: make this a link)
+        Returns a `requests.Response`_ object.
 
         :param method:
             The request method to use. Case-insensitive. May be one of get, put,
@@ -538,10 +547,8 @@ class APISession(requests.Session):
                 # Stop. Authentication failed. We shouldn't try doing any more,
                 # because we'll run into problems later attempting to use the token.
                 raise PDClientError(
-                    "Received 401 Unauthorized response from the REST API. "
-                    "The access key (%s) might not be valid."%("*"+token[-4:])
-                    )
-                )
+                    "Received 401 Unauthorized response from the REST API. The "
+                    "access key (%s) might not be valid."%("*"+self.token[-4:]))
             else:
                 return response
 

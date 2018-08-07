@@ -141,3 +141,4 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
+show_authors = True

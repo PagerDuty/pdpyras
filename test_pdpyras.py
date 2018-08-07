@@ -39,12 +39,14 @@ class Response(object):
     Look for existing use of this class for examples on how to use.
     """
 
-    def __init__(self, code, text):
+    def __init__(self, code, text, method='GET'):
         self.status_code = code
         self.text = text
         self.ok = code < 400
         self.url = 'https://api.pagerduty.com/resource/id'
         self.elapsed = datetime.timedelta(0,1.5)
+        self.request = MagicMock()
+        self.request.method = method
 
     def json(self):
         return json.loads(self.text)
@@ -123,10 +125,10 @@ class APISessionTest(unittest.TestCase):
         self.assertEqual(items, new_items)
 
     def test_profile(self):
-        response = Response(200, json.dumps({'key':'value'}))
+        response = Response(201, json.dumps({'key':'value'}), method='POST')
         response.url = 'https://api.pagerduty.com/users/PCWKOPZ/contact_methods'
         sess = pdpyras.APISession('apikey')
-        sess.profile('POST', response)
+        sess.profile(response)
         # Nested index endpoint
         self.assertEqual(
             1,
@@ -137,7 +139,8 @@ class APISessionTest(unittest.TestCase):
             sess.api_time['post:users/{id}/contact_methods/{index}']
         )
         response.url = 'https://api.pagerduty.com/users/PCWKOPZ'
-        sess.profile('GET', response)
+        response.request.method = 'GET'
+        sess.profile(response)
         # Individual resource access endpoint
         self.assertEqual(1, sess.api_call_counts['get:users/{id}'])
         self.assertEqual(1.5, sess.api_time['get:users/{id}'])
@@ -181,7 +184,7 @@ class APISessionTest(unittest.TestCase):
             # Test basic GET & profiling
             request.return_value = Response(200, json.dumps(users))
             r = sess.request('get', '/users')
-            profile.assert_called_with('get', request.return_value)
+            profile.assert_called_with(request.return_value)
             headers = headers_get.copy()
             request.assert_called_once_with('GET',
                 'https://api.pagerduty.com/users', headers=headers_get,
@@ -207,7 +210,8 @@ class APISessionTest(unittest.TestCase):
             request.reset_mock()
 
             # Test a POST request with additional headers 
-            request.return_value = Response(201, json.dumps({'user': user}))
+            request.return_value = Response(201, json.dumps({'user': user}),
+                method='POST')
             headers_special = headers_post.copy()
             headers_special.update({"X-Tra-Special-Header": "1"})
             r = sess.post('/users/PD6LYSO/future_endpoint',
