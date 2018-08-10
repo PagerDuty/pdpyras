@@ -41,8 +41,91 @@ def object_type(r_name):
     else:
         return r_name.rstrip('s')
 
+def resource_envelope(method):
+    """
+    Function decorator for HTTP verb functions.
 
+    This makes the request methods ``GET``, ``POST`` and ``PUT`` always return a
+    dictionary object representing the resource at the envelope property (i.e.
+    the ``{...}`` from ``{"escalation_policy":{...}}`` in a get/put request to
+    an escalation policy)  rather than a `requests.Response`_ object.
 
+    Methods using this decorator will raise a `PDClientError`_ containing the
+    `reqeusts.Response`_ object in the case of any error, so that the
+    implementer can access it by catching the exception, and thus design their
+    own custom logic around different types of error responses.
+
+    It allows creation of methods that can provide more succinct ways of making
+    API calls that don't require checking for a success status, JSON-decoding
+    and then pulling the essential data out of the envelope (i.e. for ``GET
+    /escalation_policies/{id}`` one would have to access the
+    ``escalation_policy`` property of the object decoded from the response
+    body, assuming nothing went wrong in the whole process). 
+
+    :param method: Method being decorated. Must take one positional argument
+        after ``self`` that is the URL/path to the resource.
+    :rtype: dict or list
+    """
+    def call(self, path, **kw):
+        pass_kw = deepcopy(kw) # Make a copy for modification
+        if path.startswith(self.url):
+            url = path
+        else:
+            url = self.url+'/'+path.lstrip('/')
+        # The following should be, at the very least, four elements:
+        # ['http:', '', 'api.pagerduty.com', '{resource}']
+        nodes = url.split('?')[0].split('/')
+        if len(nodes) < 4: 
+            raise ValueError('Invalid resource URL.')
+        # The following will be ['{resource}'], or ['{resource}', '{id}'],
+        # or ['{resource}', '{id}', '{subresource}'], etc.
+        pathnodes = nodes[3:]
+        # If there's an even number of path nodes: it's an individual resource
+        # URL, and the resource name will be the second to last path node.
+        # Otherwise, it is a resource index, and the resource name will be the
+        # last pathnode. However, if the request was GET, and made to an index
+        # endpoint, the envelope property should simply be a resource name. 
+        #
+        # This is a ubiquitous pattern throughout the PagerDuty REST API: path
+        # nodes alternate between identifiers and resource names.
+        is_index = len(pathnodes)%2
+        resource = pathnodes[-(2-is_index)]
+        envelope_name_plural = resource
+        envelope_name_single = object_type(resource)
+        if 'json' in pass_kw:
+            # Assumptions: if it's not already in an envelope, it should have a
+            # ``type`` property. Every object, even resource references, have a
+            # this property in the REST API.
+            if not ('type' in kw['json'] or envelope_name_single in kw['json']):
+                raise ValueError("Invalid payload for resource "+resource)
+            elif 'type' in kw['json']:
+                pass_kw['json'] = {envelope_name_single: pass_kw['json']}
+            # Otherwise, nothing to do; content might already be encapsulated
+        r = method(self, path, **kw)
+        if r.ok:
+            # Now let's try to unpack...
+            try:
+                response_obj = r.json()
+            except ValueError as e:
+                raise PDClientError("API responded with invalid JSON: "+r.text,
+                    response=r)
+            # Get the encapsulated object
+            envelope_name = next(iter(filter(
+                lambda n: n in response_obj,
+                [envelope_name_single, envelope_name_plural]
+            )), None)
+            if envelope_name is None:
+                raise PDClientError("Cannot extract object; expected top-level "
+                    "property \"%s\", but could not find it in the response "
+                    "schema. Response body=%s"%(envelope_name, r.text),
+                    response=r)
+                return None
+            return response_obj[envelope_name]
+        else:
+            raise PDClientError("%s %s: API responded with non-success status "
+                "(%d)"%(r.request.method.upper, path, r.status_code))
+            return None
+    return call
 
 def resource_name(obj_type):
     """
@@ -66,90 +149,6 @@ def resource_name(obj_type):
 ###############
 ### CLASSES ###
 ###############
-
-def resource_envelope(method):
-    """
-    Function decorator for resource retrieval convenience
-
-    Request methods that use this decorator and return a `requests.Response'_
-    object will JSON-decode the response body and return the encapsulated data
-    if the request was successful, and return ``None`` otherwise.
-
-    It allows creation of methods that can provide more succinct ways of making
-    API calls that don't require checking for a success status, JSON-decoding
-    and then pulling the essential data out of the envelope (i.e. for ``GET
-    /escalation_policies/{id}`` one would have to access the
-    ``escalation_policy`` property of the object). It is intended for use cases
-    where direct access to the `requests.Response`_ object is not required and
-    all that is really needed is the dictionary representation of the resource
-    if successful.
-
-    If the request is a POST or PUT, it will derive the object type (and
-    thus name of the envelope property) and automatically encapsulate the
-    payload as given in the ``json`` keyword argument, if it isn't that way
-    already.
-
-    :param method: Method being decorated. Must take one positional argument
-        after ``self`` that is the URL/path to the resource.
-    :rtype: dict or list
-    """
-    def call(self, path, **kw):
-        pass_kw = deepcopy(kw) # Make a copy for modification
-        if path.startswith(self.url):
-            url = path
-        else:
-            url = self.url+'/'+path.lstrip('/')
-        # The following should be, at the very least, four elements:
-        # ['http:', '', 'api.pagerduty.com', '{resource}']
-        nodes = url.split('?')[0].split('/')
-        if len(nodes) < 4: 
-            raise ValueError('Invalid resource URL.')
-        # The following will be ['{resource}'], or ['{resource}', '{id}'], 
-        # or ['{resource}', '{id}', '{subresource}'], etc.
-        pathnodes = nodes[3:]
-        # If there's an even number of path nodes: it's an individual resource
-        # URL, and the resource name will be the second to last path node.
-        # Otherwise, it is a resource index, and the resource name will be the
-        # last pathnode. However, if the request was GET, and made to an index
-        # endpoint, the envelope property should simply be a resource name. 
-        #
-        # This is a ubiquitous pattern throughout the PagerDuty REST API: path
-        # nodes alternate between identifiers and resource names.
-        is_index = len(pathnodes)%2
-        resource = pathnodes[-(2-is_index)]
-        if bool(is_index):
-            envelope_name = resource
-        else:
-            envelope_name = object_type(resource)
-        if 'json' in pass_kw:
-            # Assumptions: if it's not already in an envelope, it should have a
-            # ``type`` property. Every object, even resource references, have a
-            # this property in the REST API.
-            if not ('type' in kw['json'] or envelope_name in kw['json']):
-                raise ValueError("Invalid payload for resource "+resource_name)
-            elif 'type' in kw['json']:
-                pass_kw['json'] = {envelope_name: pass_kw['json']}
-            # Otherwise, nothing to do; content might already be encapsulated
-        r = method(self, path, **kw)
-        if r.ok:
-            # Now let's try to unpack...
-            try:
-                response_obj = r.json()
-            except ValueError as e:
-                self.log.debug("API responded with invalid JSON: %s", r.text)
-                return None
-            # Get the encapsulated object
-            if not envelope_name in response_obj:
-                self.log.debug("Cannot extract object; top-level property "
-                    "\"%s\" not found in response schema.", envelope_name)
-                return None
-            return response_obj[envelope_name]
-        else:
-            self.log.debug("%s %s: API responded with non-success status (%d)",
-                r.request.method.upper, path, r.status_code)
-            self.log.debug("Error response text: %s", r.text)
-            return None
-    return call
 
 class APISession(requests.Session):
     """
@@ -241,7 +240,7 @@ class APISession(requests.Session):
             'Accept': 'application/vnd.pagerduty+json;version=2',
         })
 
-    def find(self, resource_name, query, attribute='name', params=None):
+    def find(self, resource, query, attribute='name', params=None):
         """
         Finds an object of a given resource exactly matching a query.
 
@@ -252,7 +251,7 @@ class APISession(requests.Session):
         entry in the index endpoint schema's array of results. Otherwise, it
         will return `None` if no result is found or an error is encountered.
 
-        :param resource_name:
+        :param resource:
             The name of the resource endpoint to query, i.e.
             ``escalation_policies``
         :param query:
@@ -263,7 +262,7 @@ class APISession(requests.Session):
             searching for user by email (for example) it can be set to ``email``
         :param params:
             Optional additional parameters to use when querying.
-        :type resource_name: str
+        :type resource: str
         :type query: str
         :type attribute: str
         :type params: dict or None
@@ -277,7 +276,7 @@ class APISession(requests.Session):
         simplify = lambda s: s.lower()
         search_term = simplify(query) 
         equiv = lambda s: simplify(s[attribute]) == search_term
-        obj_iter = self.iter_all(resource_name, params=query_params)
+        obj_iter = self.iter_all(resource, params=query_params)
         return next(iter(filter(equiv, obj_iter)), None)
 
     def iter_all(self, path, params=None, paginate=True, item_hook=None,
@@ -448,11 +447,9 @@ class APISession(requests.Session):
         """
         Get a resource, returning the object within the resource name envelope.
 
-        
-
-        One can also use it to get a list of objects from an index, although
-        iter_all is more recommended for this purpose as it automatically pages
-        through all results.
+        One can also use it on a `resource index`_, although if the goal is to
+        get all results rather than a specific page, ``iter_all`` is recommended 
+        for this purpose, as it will automatically request all pages of results. 
 
         :param path: The path/URL to request.
         :param \*\*kw: Keyword arguments to pass to ``requests.Session.get``
@@ -503,7 +500,7 @@ class APISession(requests.Session):
         method = method.upper()
         if method not in ('GET', 'POST', 'PUT', 'DELETE'):
             raise PDClientError(
-                "Method %s not supported by PagerDuty REST API."%method
+                "Method %s not supported by PagerDuty REST API."%method 
             )
         # Prepare headers
         req_kw = deepcopy(kwargs)
@@ -548,7 +545,8 @@ class APISession(requests.Session):
                 # because we'll run into problems later attempting to use the token.
                 raise PDClientError(
                     "Received 401 Unauthorized response from the REST API. The "
-                    "access key (%s) might not be valid."%("*"+self.token[-4:]))
+                    "access key (%s) might not be valid."%("*"+self.token[-4:]),
+                    response=response)
             else:
                 return response
 
@@ -596,3 +594,8 @@ class PDClientError(Exception):
     """
     General API client errors class.
     """
+
+    def __init__(self, message, response=None):
+        self.msg = message
+        self.response = response
+        super(PDClientError, self).__init__(message)

@@ -247,7 +247,7 @@ class APISessionTest(unittest.TestCase):
                 '/services')
             request.reset_mock()
 
-            # Test retry logic;
+            # Test default retry logic;
             with patch.object(pdpyras.time, 'sleep') as sleep:
                 # Test getting a connection error and succeeding the final time.
                 returns = [
@@ -269,6 +269,55 @@ class APISessionTest(unittest.TestCase):
                 self.assertRaises(pdpyras.PDClientError, sess.get, '/users')
                 self.assertEqual(sess.max_attempts+1, request.call_count)
                 self.assertEqual(sess.max_attempts, sleep.call_count)
+
+    def test_resource_envelope(self):
+        do_http_things = MagicMock()
+        response = MagicMock()
+        do_http_things.return_value = response
+        my_self = pdpyras.APISession('some_key')
+        self.debug(my_self)
+        # OK response, good JSON: JSON-decode and unpack response
+        response.ok = True
+        response.json.return_value = {'something': {'property': 'value'}}
+        self.assertEquals(
+            pdpyras.resource_envelope(do_http_things)(my_self, 
+                '/somethings/PTHINGY'),
+            {'property': 'value'}
+        )
+        do_http_things.reset_mock()
+        response.reset_mock()
+        do_http_things.return_value = response
+
+        # OK response, bad JSON: raise exception.
+        response.ok = True
+        response.json.side_effect = [ValueError('Bad JSON!')]
+        self.assertRaises(pdpyras.PDClientError,
+            pdpyras.resource_envelope(do_http_things), my_self, '/somethings')
+        do_http_things.reset_mock()
+        response.reset_mock()
+        do_http_things.return_value = response
+
+        # OK response, but ruh-roh we hit an anti-pattern (probably won't exist
+        # except maybe in beta/reverse-engineered endpoints; this design is thus
+        # anticipatory rather than practical). Raise exception.
+        do_http_things.reset_mock()
+        response.reset_mock()
+        response.json = MagicMock()
+        do_http_things.return_value = response
+        response.json.return_value = {'nope': 'nopenope'}
+        self.assertRaises(pdpyras.PDClientError,
+            pdpyras.resource_envelope(do_http_things), my_self, '/somethings')
+        do_http_things.reset_mock()
+        response.reset_mock()
+        do_http_things.return_value = response
+
+        # Not OK response, raise.
+        response.reset_mock()
+        response.ok = False
+        self.assertRaises(pdpyras.PDClientError,
+            pdpyras.resource_envelope(do_http_things), my_self, '/somethings')
+
+
 
     @patch.object(pdpyras.APISession, 'iter_all')
     def test_subdomain(self, iter_all):
