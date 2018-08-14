@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(
     os.path.dirname(__file__),
     '..', '..'
 )))
+from setup import __version__
 import pdpyras
 
 # -- Project information -----------------------------------------------------
@@ -15,9 +16,9 @@ copyright = u'2018, PagerDuty Inc.'
 author = u'Demitri Morgan <demitri@pagerduty.com>'
 
 # The short X.Y version
-version = pdpyras.__version__
+version = __version__
 # The full version, including alpha/beta/rc tags
-release = pdpyras.__version__
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------
