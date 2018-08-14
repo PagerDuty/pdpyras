@@ -6,7 +6,7 @@ docs: pdpyras.py
 test:
 	cd tests && ./test_pdpyras.py
 
-build: 
+build:
 	python setup.py sdist
 
 install: build

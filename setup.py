@@ -1,12 +1,11 @@
 from setuptools import setup, find_packages
-from pdpyras import __version__
 
 setup(
     name='pdpyras',
     description="PagerDuty REST API client",
     long_description="A basic REST API client for PagerDuty based on Requests' Session class",
     py_modules=['pdpyras'],
-    version=__version__,
+    version='1.0.3',
     license='MIT',
     url='https://pagerduty.github.io/pdpyras',
     download_url='https://pypi.org/project/pdpyras/',
