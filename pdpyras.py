@@ -41,9 +41,28 @@ def object_type(r_name):
     else:
         return r_name.rstrip('s')
 
+def raise_on_error(method):
+    """
+    Function decorator for raising exceptions on HTTP error responses.
+
+    Parameters
+    ----------
+    :param method: Method being decorated. Must take one positional argument
+        after ``self`` that is the URL/path to the resource, and must return an
+        object of class `requests.Response`_.
+    """
+    def call(self, path, **kw):
+        r = method(self, path, **kw)
+        if r.ok:
+            return r
+        else:
+            raise PDClientError("%s %s: API responded with non-success status "
+                "(%d)"%(r.request.method.upper, path, r.status_code))
+    return call
+
 def resource_envelope(method):
     """
-    Function decorator for HTTP verb functions.
+    Convenience and consistency decorator for HTTP verb functions.
 
     This makes the request methods ``GET``, ``POST`` and ``PUT`` always return a
     dictionary object representing the resource at the envelope property (i.e.
@@ -62,10 +81,13 @@ def resource_envelope(method):
     ``escalation_policy`` property of the object decoded from the response
     body, assuming nothing went wrong in the whole process). 
 
+    Parameters
+    ----------
     :param method: Method being decorated. Must take one positional argument
-        after ``self`` that is the URL/path to the resource.
-    :rtype: dict or list
+        after ``self`` that is the URL/path to the resource, and must return an
+        object of class `requests.Response`_.
     """
+    http_method = method.__name__.lstrip('r')
     def call(self, path, **kw):
         pass_kw = deepcopy(kw) # Make a copy for modification
         if path.startswith(self.url):
@@ -90,41 +112,39 @@ def resource_envelope(method):
         # nodes alternate between identifiers and resource names.
         is_index = len(pathnodes)%2
         resource = pathnodes[-(2-is_index)]
-        envelope_name_plural = resource
         envelope_name_single = object_type(resource)
-        if 'json' in pass_kw:
+        if is_index and http_method == 'get':
+            envelope_name = resource
+        else:
+            envelope_name = envelope_name_single
+        if http_method in ('post', 'put') and 'json' in pass_kw:
             # Assumptions: if it's not already in an envelope, it should have a
             # ``type`` property. Every object, even resource references, have a
-            # this property in the REST API.
+            # this property in the REST API. We have to be explicit with this
+            # and can't fill it in for the end user because the type property
+            # isn't always implicit from which API we're using. For example, one
+            # can find ``"type": "webhook"`` entries in the /extensions API.
             if not ('type' in kw['json'] or envelope_name_single in kw['json']):
                 raise ValueError("Invalid payload for resource "+resource)
             elif 'type' in kw['json']:
+                # Add the envelope automatically
                 pass_kw['json'] = {envelope_name_single: pass_kw['json']}
-            # Otherwise, nothing to do; content might already be encapsulated
-        r = method(self, path, **kw)
-        if r.ok:
-            # Now let's try to unpack...
-            try:
-                response_obj = r.json()
-            except ValueError as e:
-                raise PDClientError("API responded with invalid JSON: "+r.text,
-                    response=r)
-            # Get the encapsulated object
-            envelope_name = next(iter(filter(
-                lambda n: n in response_obj,
-                [envelope_name_single, envelope_name_plural]
-            )), None)
-            if envelope_name is None:
-                raise PDClientError("Cannot extract object; expected top-level "
-                    "property \"%s\", but could not find it in the response "
-                    "schema. Response body=%s"%(envelope_name, r.text),
-                    response=r)
-                return None
-            return response_obj[envelope_name]
-        else:
-            raise PDClientError("%s %s: API responded with non-success status "
-                "(%d)"%(r.request.method.upper, path, r.status_code))
+            # Otherwise, nothing to do; content already in an envelope
+        r = raise_on_error(method)(self, path, **pass_kw)
+        # Now let's try to unpack...
+        try:
+            response_obj = r.json()
+        except ValueError as e:
+            raise PDClientError("API responded with invalid JSON: "+r.text,
+                response=r)
+        # Get the encapsulated object
+        if envelope_name not in response_obj:
+            raise PDClientError("Cannot extract object; expected top-level "
+                "property \"%s\", but could not find it in the response "
+                "schema. Response body=%s"%(envelope_name, r.text),
+                response=r)
             return None
+        return response_obj[envelope_name]
     return call
 
 def resource_name(obj_type):
@@ -135,7 +155,6 @@ def resource_name(obj_type):
     ----------
     obj_type : str
         The object type, i.e. `user` or `user_reference`
-
     :rtype: str
     """
     if obj_type.endswith('_reference'):
@@ -442,8 +461,12 @@ class APISession(requests.Session):
                 sub_resource, sub_node_type, my_suffix)
         return key
 
+    @raise_on_error
+    def rdelete(self, path, **kw):
+        return self.delete(path, **kw)
+
     @resource_envelope
-    def r_get(self, path, **kw):
+    def rget(self, path, **kw):
         """
         Get a resource, returning the object within the resource name envelope.
 
@@ -457,9 +480,9 @@ class APISession(requests.Session):
         return self.get(path, **kw)
 
     @resource_envelope
-    def r_post(self, path, **kw):
+    def rpost(self, path, **kw):
         """
-        Create a resource 
+        Create a resource.
         
         Returns the dictionary object representation if creating it was
         successful.
@@ -467,7 +490,7 @@ class APISession(requests.Session):
         return self.post(path, **kw)
 
     @resource_envelope
-    def r_put(self, path, **kw):
+    def rput(self, path, **kw):
         """
         Update an individual resource, returning the encapsulated object.
 

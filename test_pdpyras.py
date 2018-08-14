@@ -35,11 +35,12 @@ class Session(object):
 
 class Response(object):
     """Mock class for emulating requests.Response objects
-    
+
     Look for existing use of this class for examples on how to use.
     """
 
     def __init__(self, code, text, method='GET'):
+        super(Response, self).__init__()
         self.status_code = code
         self.text = text
         self.ok = code < 400
@@ -47,10 +48,8 @@ class Response(object):
         self.elapsed = datetime.timedelta(0,1.5)
         self.request = MagicMock()
         self.request.method = method
-
-    def json(self):
-        return json.loads(self.text)
-
+        self.json = MagicMock()
+        self.json.return_value = json.loads(text)
 
 class APISessionTest(unittest.TestCase):
 
@@ -59,7 +58,7 @@ class APISessionTest(unittest.TestCase):
 
     def debug(self, sess):
         """
-        Enables debug level logging to stderr in order to see logging 
+        Enables debug level logging to stderr in order to see logging
         """
         sh = logging.StreamHandler()
         sh.setLevel(logging.DEBUG)
@@ -179,7 +178,7 @@ class APISessionTest(unittest.TestCase):
                 "role": "limited_user",
                 "email": "user@example.com",
             }
-            users = {'users': user} 
+            users = {'users': user}
 
             # Test basic GET & profiling
             request.return_value = Response(200, json.dumps(users))
@@ -209,13 +208,13 @@ class APISessionTest(unittest.TestCase):
                 allow_redirects=True)
             request.reset_mock()
 
-            # Test a POST request with additional headers 
+            # Test a POST request with additional headers
             request.return_value = Response(201, json.dumps({'user': user}),
                 method='POST')
             headers_special = headers_post.copy()
             headers_special.update({"X-Tra-Special-Header": "1"})
             r = sess.post('/users/PD6LYSO/future_endpoint',
-                headers=headers_special, json={'user':user}) 
+                headers=headers_special, json={'user':user})
             request.assert_called_once_with('POST',
                 'https://api.pagerduty.com/users/PD6LYSO/future_endpoint',
                 headers=headers_special, json={'user': user}, stream=False,
@@ -243,7 +242,7 @@ class APISessionTest(unittest.TestCase):
                     'message': "You shall not pass.",
                 }
             }))
-            self.assertRaises(pdpyras.PDClientError, sess.request, 'get', 
+            self.assertRaises(pdpyras.PDClientError, sess.request, 'get',
                 '/services')
             request.reset_mock()
 
@@ -276,26 +275,31 @@ class APISessionTest(unittest.TestCase):
         do_http_things.return_value = response
         my_self = pdpyras.APISession('some_key')
         self.debug(my_self)
+        dummy_session = MagicMock()
+        def reset_mocks():
+            do_http_things.reset_mock()
+            response.reset_mock()
+            do_http_things.return_value = response
+            dummy_session.reset_mock()
+
         # OK response, good JSON: JSON-decode and unpack response
         response.ok = True
         response.json.return_value = {'something': {'property': 'value'}}
+        do_http_things.__name__ = 'rput' # just for instance
         self.assertEquals(
-            pdpyras.resource_envelope(do_http_things)(my_self, 
+            pdpyras.resource_envelope(do_http_things)(my_self,
                 '/somethings/PTHINGY'),
             {'property': 'value'}
         )
-        do_http_things.reset_mock()
-        response.reset_mock()
-        do_http_things.return_value = response
+        reset_mocks()
 
         # OK response, bad JSON: raise exception.
         response.ok = True
+        do_http_things.__name__ = 'rput' # just for instance
         response.json.side_effect = [ValueError('Bad JSON!')]
         self.assertRaises(pdpyras.PDClientError,
             pdpyras.resource_envelope(do_http_things), my_self, '/somethings')
-        do_http_things.reset_mock()
-        response.reset_mock()
-        do_http_things.return_value = response
+        reset_mocks()
 
         # OK response, but ruh-roh we hit an anti-pattern (probably won't exist
         # except maybe in beta/reverse-engineered endpoints; this design is thus
@@ -303,21 +307,73 @@ class APISessionTest(unittest.TestCase):
         do_http_things.reset_mock()
         response.reset_mock()
         response.json = MagicMock()
+        response.ok = True
         do_http_things.return_value = response
+        do_http_things.__name__ = 'rput' # just for instance
         response.json.return_value = {'nope': 'nopenope'}
         self.assertRaises(pdpyras.PDClientError,
             pdpyras.resource_envelope(do_http_things), my_self, '/somethings')
-        do_http_things.reset_mock()
-        response.reset_mock()
-        do_http_things.return_value = response
+        reset_mocks()
 
-        # Not OK response, raise.
+        # Not OK response, raise (daisy-chained w/raise_on_error decorator)
         response.reset_mock()
         response.ok = False
+        do_http_things.__name__ = 'rput' # just for instance
         self.assertRaises(pdpyras.PDClientError,
             pdpyras.resource_envelope(do_http_things), my_self, '/somethings')
+        reset_mocks()
 
+        # GET /<index>: use a different envelope name
+        response.ok = True
+        users_array = [{"type":"user","email":"user@example.com",
+            "summary":"User McUserson"}]
+        response.json.return_value = {'users': users_array}
+        do_http_things.__name__ = 'rget'
+        dummy_session.url = 'https://api.pagerduty.com'
+        self.assertEquals(users_array,
+            pdpyras.resource_envelope(do_http_things)(dummy_session, '/users',
+                query='user'))
+        reset_mocks()
 
+        # Test request body JSON envelope stuff in post/put
+        do_http_things.__name__ = 'rpost'
+        user_payload = {'email':'user@example.com', 'name':'User McUserson'}
+        # No type property; raise.
+        self.assertRaises(ValueError, pdpyras.resource_envelope(do_http_things),
+            dummy_session, '/users', json=user_payload)
+        reset_mocks()
+        # Add type property; should work now and automatically pack the user
+        # object into a JSON object inside the envelope.
+        user_payload['type'] = 'user'
+        do_http_things.__name__ = 'rpost'
+        response.ok = True
+        created_user = user_payload.copy()
+        created_user['id'] = 'P456XYZ'
+        response.json.return_value = {'user':created_user}
+        self.assertEquals(
+            created_user,
+            pdpyras.resource_envelope(do_http_things)(dummy_session, '/users',
+                json=user_payload)
+        )
+        do_http_things.assert_called_with(dummy_session, '/users',
+            json={'user':user_payload})
+
+    @patch.object(pdpyras.APISession, 'get')
+    def test_rget(self, get):
+        response200 = Response(200, '{"user":{"type":"user_reference",'
+            '"email":"user@example.com","summary":"User McUserson"}}')
+        get.return_value = response200
+        s = pdpyras.APISession('token')
+        self.assertEquals(
+            {"type":"user_reference","email":"user@example.com",
+                "summary":"User McUserson"},
+            s.rget('/user/P123ABC'))
+        # This is (forcefully) valid JSON but no matter; it should raise
+        # PDClientErorr nonetheless
+        response404 = Response(404, '{"user": {"email": "user@example.com"}}')
+        get.reset_mock()
+        get.return_value = response404
+        self.assertRaises(pdpyras.PDClientError, s.rget, '/user/P123ABC')
 
     @patch.object(pdpyras.APISession, 'iter_all')
     def test_subdomain(self, iter_all):
