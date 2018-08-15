@@ -1,15 +1,15 @@
 .PHONY: docs
 
 docs: pdpyras.py
-	rm -r ./docs && cd sphinx && make html && cd .. && mv sphinx/build/html ./docs && touch ./docs/.nojekyll
+	rm -fr ./docs && cd sphinx && make html && cd .. && mv sphinx/build/html ./docs && touch ./docs/.nojekyll
 
 test:
 	cd tests && ./test_pdpyras.py
 
-build: 
+dist: pdpyras.py
 	python setup.py sdist
 
-install: build
+install: dist
 	python setup.py install 
 
-%: build
+%: dist
