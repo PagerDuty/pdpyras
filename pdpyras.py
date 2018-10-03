@@ -27,12 +27,9 @@ def object_type(r_name):
     """
     Derives an object type (i.e. ``user``) from a resource name (i.e. ``users``)
 
-    Parameters
-    ----------
     :param r_name:
         Resource name, i.e. would be ``users`` for the resource index URL
         ``https://api.pagerduty.com/users``
-
     :returns: The object type name; usually the ``type`` property of an instance
         of the given resource.
     :rtype: str
@@ -46,8 +43,6 @@ def raise_on_error(method):
     """
     Function decorator for raising exceptions on HTTP error responses.
 
-    Parameters
-    ----------
     :param method: Method being decorated. Must take one positional argument
         after ``self`` that is the URL/path to the resource, and must return an
         object of class `requests.Response`_.
@@ -84,8 +79,8 @@ def resource_envelope(method):
     ``escalation_policy`` property of the object decoded from the response body,
     assuming nothing went wrong in the whole process).
 
-    Parameters
-    ----------
+    In :class:`APISession`, these methods are ``rget``, ``rpost`` and ``rput``.
+
     :param method: Method being decorated. Must take one positional argument
         after ``self`` that is the URL/path to the resource, and must return an
         object of class `requests.Response`_, and be named after the HTTP method
@@ -156,11 +151,8 @@ def resource_name(obj_type):
     """
     Transforms an object type into a resource name
 
-    Parameters
-    ----------
     :param obj_type:
         The object type, i.e. `user` or `user_reference`
-
     :returns: The name of the resource, i.e. the last part of the URL for the
         resource's index URL
     :rtype: str
@@ -188,7 +180,7 @@ class APISession(requests.Session):
       cooldown/retry intervals if encountering a network error or rate limit
     - When making requests, headers specified ad-hoc in calls to HTTP verb
       functions will not replace, but will be merged with, default headers.
-    - The reqeust URL, if it doesn't already start with the REST API base URL,
+    - The request URL, if it doesn't already start with the REST API base URL,
       will be prepended with the default REST API base URL.
     - It will only perform GET, POST, PUT and DELETE requests, and will raise
       :class:`PDClientError` for any other HTTP methods.
@@ -349,7 +341,7 @@ class APISession(requests.Session):
     def iter_all(self, path, params=None, paginate=True, item_hook=None,
             total=False):
         """
-        Iterator for the contents of an index endpoint
+        Iterator for the contents of an index endpoint or query.
 
         Automatically paginates and yields the results in each page, until all
         matching results have been yielded or a HTTP error response is received.
@@ -385,6 +377,7 @@ class APISession(requests.Session):
         :type params: dict or None
         :type paginate: bool
         :type total: bool
+        :yields: Results from the index endpoint.
         :rtype: dict
         """
         if not self.raise_if_http_error:
@@ -491,7 +484,7 @@ class APISession(requests.Session):
         :param path:
             The path/URI to classify
         :param method:
-            The reqeust method
+            The request method
         :param suffix:
             Optional suffix to append to the key
         :type path: str
@@ -528,14 +521,7 @@ class APISession(requests.Session):
     @resource_envelope
     def rget(self, path, **kw):
         """
-        Get a resource, returning the object within the resource name envelope.
-
-        One can also use it on a `resource index`_, although if the goal is to
-        get all results rather than a specific page, ``iter_all`` is recommended 
-        for this purpose, as it will automatically request all pages of results. 
-
-        :param path: The path/URL to request.
-        :param \*\*kw: Keyword arguments to pass to ``requests.Session.get``
+        
         """
         return self.get(path, **kw)
 
@@ -546,6 +532,11 @@ class APISession(requests.Session):
         
         Returns the dictionary object representation if creating it was
         successful.
+
+        :param path: The path/URL to which to send the POST request.
+        :param \*\*kw: Keyword arguments to pass to ``requests.Session.post``
+        :returns: Dictionary representation of the created object
+        :rtype: 
         """
         return self.post(path, **kw)
 
@@ -555,15 +546,13 @@ class APISession(requests.Session):
         Update an individual resource, returning the encapsulated object.
 
         :param path: The path/URL to which to send the PUT request.
-        :param \*\*kw: Keyword arguments to pass to ``requests.Session.get``
+        :param \*\*kw: Keyword arguments to pass to ``requests.Session.put``
         """
         return self.put(path, **kw)
 
     def request(self, method, url, **kwargs):
         """
         Make a generic PagerDuty v2 REST API request. 
-        
-        Returns a `requests.Response`_ object.
 
         :param method:
             The request method to use. Case-insensitive. May be one of get, put,
@@ -576,6 +565,7 @@ class APISession(requests.Session):
             <http://docs.python-requests.org/en/master/api/#requests.Session.request>`_
         :type method: str
         :type url: str
+        :returns: the HTTP response object
         :rtype: `requests.Response`_
         """
         sleep_timer = self.sleep_timer
@@ -661,7 +651,7 @@ class APISession(requests.Session):
         If the token's access level excludes viewing any users, or if an error
         occurs when retrieving, this will be False.
 
-        :type: str or bool
+        :type: str or None
         """
         if not hasattr(self, '_subdomain') or self._subdomain is None:
             try:
@@ -704,6 +694,13 @@ class APISession(requests.Session):
 class PDClientError(Exception): 
     """
     General API errors base class.
+    """
+
+    response = None
+    """
+    The HTTP response object, if a response was successfully received.
+
+    In the case of network errors, this property will be None.
     """
 
     def __init__(self, message, response=None):
