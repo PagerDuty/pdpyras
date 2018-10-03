@@ -4,5 +4,3 @@ Developer Interface
 -------------------
 .. automodule:: pdpyras
     :members:
-
-

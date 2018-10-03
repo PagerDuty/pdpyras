@@ -5,6 +5,7 @@
 import logging
 import sys
 import time
+import warnings
 from copy import deepcopy
 
 import requests
@@ -16,7 +17,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '2.0.0a'
+__version__ = '2.0.0'
 
 #########################
 ### UTILITY FUNCTIONS ###
@@ -24,17 +25,17 @@ __version__ = '2.0.0a'
 
 def object_type(r_name):
     """
-    Derives an object type from a resource name
+    Derives an object type (i.e. ``user``) from a resource name (i.e. ``users``)
 
     Parameters
     ----------
-    r_name : str
-        Resource name, i.e. would be ``users`` for the URL
+    :param r_name:
+        Resource name, i.e. would be ``users`` for the resource index URL
         ``https://api.pagerduty.com/users``
 
-    Returns
-    -------
-    str
+    :returns: The object type name; usually the ``type`` property of an instance
+        of the given resource.
+    :rtype: str
     """
     if r_name == 'escalation_policies':
         return 'escalation_policy'
@@ -69,23 +70,27 @@ def resource_envelope(method):
     the ``{...}`` from ``{"escalation_policy":{...}}`` in a get/put request to
     an escalation policy)  rather than a `requests.Response`_ object.
 
-    Methods using this decorator will raise a `PDClientError`_ containing the
-    `reqeusts.Response`_ object in the case of any error, so that the
-    implementer can access it by catching the exception, and thus design their
-    own custom logic around different types of error responses.
+    Methods using this decorator will raise a :class:`PDClientError` with its
+    ``response`` property being being the `requests.Response`_ object in the
+    case of any error, so that the implementer can access it by catching the
+    exception, and thus design their own custom logic around different types of
+    error responses.
 
     It allows creation of methods that can provide more succinct ways of making
-    API calls that don't require checking for a success status, JSON-decoding
-    and then pulling the essential data out of the envelope (i.e. for ``GET
+    API calls. In particular, the methods using this decorator don't require
+    checking for a success status, JSON-decoding the response body and then
+    pulling the essential data out of the envelope (i.e. for ``GET
     /escalation_policies/{id}`` one would have to access the
-    ``escalation_policy`` property of the object decoded from the response
-    body, assuming nothing went wrong in the whole process). 
+    ``escalation_policy`` property of the object decoded from the response body,
+    assuming nothing went wrong in the whole process).
 
     Parameters
     ----------
     :param method: Method being decorated. Must take one positional argument
         after ``self`` that is the URL/path to the resource, and must return an
-        object of class `requests.Response`_.
+        object of class `requests.Response`_, and be named after the HTTP method
+        but with "r" prepended.
+    :returns: A callable object; the reformed method
     """
     http_method = method.__name__.lstrip('r')
     def call(self, path, **kw):
@@ -111,8 +116,8 @@ def resource_envelope(method):
         # This is a ubiquitous pattern throughout the PagerDuty REST API: path
         # nodes alternate between identifiers and resource names.
         is_index = len(pathnodes)%2
-        resource = pathnodes[-(2-is_index)]
-        envelope_name_single = object_type(resource)
+        resource = pathnodes[-(2-is_index)] # The last or second to last node
+        envelope_name_single = object_type(resource) # Usually the "type"
         if is_index and http_method == 'get':
             envelope_name = resource
         else:
@@ -153,8 +158,11 @@ def resource_name(obj_type):
 
     Parameters
     ----------
-    obj_type : str
+    :param obj_type:
         The object type, i.e. `user` or `user_reference`
+
+    :returns: The name of the resource, i.e. the last part of the URL for the
+        resource's index URL
     :rtype: str
     """
     if obj_type.endswith('_reference'):
@@ -171,17 +179,20 @@ def resource_name(obj_type):
 
 class APISession(requests.Session):
     """
-    PagerDuty REST API session
+    Reusable PagerDuty REST API session objects for making API requests.
 
-    A ``requests.Session`` object, but with a few modifications:
+    These are essentially the same as `requests.Session`_ objects, but with a
+    few modifications:
 
-    - The client will reattempt the request if a network error is encountered
+    - The client will reattempt the request with configurable, auto-increasing
+      cooldown/retry intervals if encountering a network error or rate limit
     - When making requests, headers specified ad-hoc in calls to HTTP verb
       functions will not replace, but will be merged with, default headers.
     - The reqeust URL, if it doesn't already start with the REST API base URL,
       will be prepended with the default REST API base URL.
     - It will only perform GET, POST, PUT and DELETE requests, and will raise
-      PDClientError for any other HTTP verbs.
+      :class:`PDClientError` for any other HTTP methods.
+    - Some convenience functions, i.e. ``rget``, ``find`` and ``iter_all`` 
 
     :param token: REST API access token to use for HTTP requests
     :param name: Optional name identifier for logging. If unspecified or
@@ -214,7 +225,13 @@ class APISession(requests.Session):
     log = None
     """A ``logging.Logger`` object for printing messages."""
 
-    max_attempts = 3
+    max_http_attempts = 10
+    """
+    The number of times that the client will retry after error statuses, for any
+    that are defined greater than zero in ``retry``.
+    """
+
+    max_network_attempts = 3
     """
     The number of times that connecting to the API will be attempted before
     treating the failure as non-transient; a :class:`PDClientError` exception
@@ -224,12 +241,39 @@ class APISession(requests.Session):
     parent = None
     """The ``super`` object (`requests.Session`_)"""
 
+    raise_if_http_error = False
+    """
+    If set to true, an exception will be raised in ``iter_all`` if a HTTP error
+    is encountered. The default behavior is to halt iteration. In future
+    versions, it will be to raise on errors by default, so it is advised to set
+    this to True in existing code to enable the future behavior.
+    """
+
+    retry = None
+    """A dict defining the retry behavior for each HTTP response status code.
+
+    Each key in this dictionary represents a HTTP response code. The behavior is
+    specified by the value at each key as follows:
+
+    * ``-1`` to retry infinitely
+    * ``0`` to return the `requests.Response`_ object and exit (which is the
+      default behavior) 
+    * ``n``, where ``n > 0``, to retry ``n`` times (or up
+      to ``max_http_attempts`` total for all statuses, whichever is encountered
+      first), and rase a :class:`PDClientError` after that many attempts.
+
+    The default behavior is to retry infinitely on a 429, and return the
+    response in any other case (assuming a HTTP response was received from the
+    server).
+    """
+
     sleep_timer = 1.5
     """
-    Default initial cooldown time factor for API rate limiting and transient
-    network errors. Each time that the request makes a followup request, there
-    will be a delay in seconds equal to this number times ``sleep_timer_base``
-    to the power of how many attempts have already been made so far.
+    Default initial cooldown time factor for rate limiting and network errors.
+
+    Each time that the request makes a followup request, there will be a delay
+    in seconds equal to this number times ``sleep_timer_base`` to the power of
+    how many attempts have already been made so far.
     """
 
     sleep_timer_base = 2
@@ -253,11 +297,15 @@ class APISession(requests.Session):
         if type(name) is str and name:
             my_name = name
         else:
-            my_name = "*"+token[-4:]
+            my_name = self.trunc_token
         self.log = logging.getLogger('pdpyras.APISession(%s)'%my_name)
         self.headers.update({
             'Accept': 'application/vnd.pagerduty+json;version=2',
         })
+        self.retry = {}
+        # Retry only twice for network errors (total of three attempts).
+        # This behavior can be altered by setting index zero.
+        self.retry[0] = 2
 
     def find(self, resource, query, attribute='name', params=None):
         """
@@ -304,7 +352,7 @@ class APISession(requests.Session):
         Iterator for the contents of an index endpoint
 
         Automatically paginates and yields the results in each page, until all
-        matching results have been yielded.
+        matching results have been yielded or a HTTP error response is received.
 
         Each yielded value is a dict object representing a result returned from
         the index. For example, if requesting the ``/users`` endpoint, each
@@ -339,6 +387,13 @@ class APISession(requests.Session):
         :type total: bool
         :rtype: dict
         """
+        if not self.raise_if_http_error:
+            warnings.warn("Property raise_if_http_error is set to False. In "
+                "future versions, it will be True by default. When True, "
+                "functions such as find and iter_all that do not return a "
+                "requests.Response object, but rather that derive a value "
+                "from the HTTP response, will raise PDClientError when "
+                "encountering a HTTP error status.", DeprecationWarning)
         # Resource name:
         r_name = path.split('?')[0].split('/')[-1]
         # Parameters to send:
@@ -354,11 +409,16 @@ class APISession(requests.Session):
         more = True
         offset = 0
         n = 0
+
         while more: # Paginate through all results
             if paginate:
                 data['offset'] = offset
             r = self.get(path, params=data.copy())
             if not r.ok:
+                if self.raise_if_http_error:
+                    raise PDClientError("Encountered HTTP error status (%d) "
+                        "response while iterating through index endpoint %s."%(
+                            r.status_code, path), response=r)
                 self.log.debug("Stopping iteration on endpoint \"%s\"; API "
                     "responded with non-success status %d", path, r.status_code)
                 break
@@ -428,13 +488,13 @@ class APISession(requests.Session):
         ``{id}``, and will begin with the method in lower case followed by a
         colon, i.e. ``get:escalation_policies/{id}``
 
-        :param path: str
+        :param path:
             The path/URI to classify
         :param method:
             The reqeust method
         :param suffix:
             Optional suffix to append to the key
-        :type param: str
+        :type path: str
         :type method: str
         :type suffix: str
         :rtype: str
@@ -463,7 +523,7 @@ class APISession(requests.Session):
 
     @raise_on_error
     def rdelete(self, path, **kw):
-        return self.delete(path, **kw)
+        self.delete(path, **kw)
 
     @resource_envelope
     def rget(self, path, **kw):
@@ -498,7 +558,7 @@ class APISession(requests.Session):
         :param \*\*kw: Keyword arguments to pass to ``requests.Session.get``
         """
         return self.put(path, **kw)
-        
+
     def request(self, method, url, **kwargs):
         """
         Make a generic PagerDuty v2 REST API request. 
@@ -519,11 +579,12 @@ class APISession(requests.Session):
         :rtype: `requests.Response`_
         """
         sleep_timer = self.sleep_timer
-        attempts = 0
+        network_attempts = 0
+        http_attempts = {}
         method = method.upper()
         if method not in ('GET', 'POST', 'PUT', 'DELETE'):
             raise PDClientError(
-                "Method %s not supported by PagerDuty REST API."%method 
+                "Method %s is not supported by the PagerDuty REST API."%method
             )
         # Prepare headers
         req_kw = deepcopy(kwargs)
@@ -547,17 +608,36 @@ class APISession(requests.Session):
                 response = self.parent.request(method, my_url, **req_kw)
                 self.profile(response)
             except (Urllib3Error, RequestsError) as e:
-                attempts += 1
-                if attempts > self.max_attempts:
+                network_attempts += 1
+                if network_attempts > self.max_network_attempts:
                     raise PDClientError("Non-transient network error; exceeded "
                         "maximum number of attempts (%d) to connect to the REST"
-                        " API."%self.max_attempts)
+                        " API."%self.max_network_attempts)
                 sleep_timer *= self.sleep_timer_base
                 self.log.debug("Connection error: %s; retrying in %g seconds.",
                     e, sleep_timer)
                 time.sleep(sleep_timer)
                 continue
-            if response.status_code == 429:
+            status = response.status_code
+            retry_logic = self.retry.get(status, 0)
+            if not response.ok and retry_logic != 0:
+                # Take special action as defined by the retry logic
+                if retry_logic != -1:
+                    # Retry a specific number of times (-1 implies infinite)
+                    if http_attempts[status]>retry_logic or \
+                            sum(http_attempts.values())>self.max_http_attempts:
+                        raise PDClientError("Non-transient HTTP error: "
+                            "exceeded maximum number of attempts to make a "
+                            "successful request. Currently encountering status "
+                            "%d."%status, response=response)
+                    http_attempts[status] = 1 + \
+                        http_attempts.setdefault(status, 0)
+                sleep_timer *= self.sleep_timer_base
+                self.log.debug("HTTP error (%d); retrying in %g seconds.",
+                    status, sleep_timer)
+                time.sleep(sleep_timer)
+                continue
+            elif response.status_code == 429:
                 sleep_timer *= self.sleep_timer_base
                 self.log.debug("Hit REST API rate limit (response status 429); "
                     "retrying in %g seconds", sleep_timer)
@@ -565,10 +645,10 @@ class APISession(requests.Session):
                 continue
             elif response.status_code == 401:
                 # Stop. Authentication failed. We shouldn't try doing any more,
-                # because we'll run into problems later attempting to use the token.
+                # because we'll run into problems later anyway.
                 raise PDClientError(
                     "Received 401 Unauthorized response from the REST API. The "
-                    "access key (%s) might not be valid."%("*"+self.token[-4:]),
+                    "access key (%s) might not be valid."%self.trunc_token,
                     response=response)
             else:
                 return response
@@ -585,16 +665,17 @@ class APISession(requests.Session):
         """
         if not hasattr(self, '_subdomain') or self._subdomain is None:
             try:
-                url = next(self.iter_all(
-                    'users', params={'limit':1}
-                ))['html_url']
+                url = self.rget('users', params={'limit':1})[0]['html_url']
                 self._subdomain = url.split('/')[2].split('.')[0]
-            except (StopIteration, IndexError):
-                self._subdomain = False
+            except PDClientError as e:
+                self.log.error("Failed to obtain subdomain; encountered error.")
+                self._subdomain = None
+                raise e
         return self._subdomain
 
     @property
     def token(self):
+        """The REST API token to use."""
         return self._token
 
     @token.setter
@@ -607,15 +688,22 @@ class APISession(requests.Session):
 
     @property
     def total_call_count(self):
+        """The total number of API calls made by this instance."""
         return sum(self.api_call_counts.values())
 
     @property
     def total_call_time(self):
+        """The total time spent making API calls."""
         return sum(self.api_time.values())
+
+    @property
+    def trunc_token(self):
+        """Truncated token for secure display/identification purposes."""
+        return "*"+self.token[-4:]
 
 class PDClientError(Exception): 
     """
-    General API client errors class.
+    General API errors base class.
     """
 
     def __init__(self, message, response=None):

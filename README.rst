@@ -23,14 +23,17 @@ the way. We also frequently found ourselves performing REST API requests using
 beta or non-documented API endpoints for one reason or another, so we also
 needed a client that provided easy access to features of the underlying HTTP
 library, but that eliminated tedious tasks like querying, `pagination`_ and
-header-setting. Ultimately, we deemed most other libraries to be both overkill
-for this task and also not very conducive to use for experimental API calls.
+header-setting. Finally, we discovered that the way we were using `requests`_
+wasn't making use of connection re-use, and wanted a way to easily enforce this
+as a standard practice. Ultimately, we deemed most other libraries to be both
+overkill for this task and also not very conducive to use for experimental API
+calls.
 
 Features
 --------
 - Efficient API access through automatic HTTP connection pooling and
   persistence 
-- Supports Python 2.7 through 3.6
+- Tested in / support for Python 2.7 through 3.6
 - Automatic cooldown/reattempt for rate limiting and transient network problems
 - Inclusion of required `HTTP Request Headers`_ for PagerDuty REST API requests
 - Bulk data retrieval and iteration over `resource index`_ endpoints with
@@ -46,7 +49,7 @@ If ``pip`` is available, it can be installed via:
 
     pip install pdpyras
 
-Alternately, if Requests_ has already been installed locally, and ``urllib3``
+Alternately, if requests_ has already been installed locally, and ``urllib3``
 is available, one can simply download `pdpyras.py`_ into the directory where it
 will be used.
 
@@ -68,7 +71,7 @@ Usage
         user = response.json()['user']
 
     # Or, more succinctly:
-    user = session.r_get('/users/PABC123')
+    user = session.rget('/users/PABC123')
 
 **Iteration (1):** Iterate over all users and print their ID, email and name:
 
@@ -100,14 +103,13 @@ and update their name to "Jane Doe":
     user = session.find('users', 'jane@example35.com', attribute='email')
     if user is not None:
         # Using requests.Session.put:
-        updated_user = session.put(user['self'], json={
+        response = session.put(user['self'], json={
             'user':{'type':'user', 'name': 'Jane Doe'}
         })
         # Alternately:
-        updated_user = session.r_put(user['self'], json={
+        updated_user = session.rput(user['self'], json={
             'type':'user', 'name': 'Jane Doe'
         })
-    
 
 Contributing
 ------------
