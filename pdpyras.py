@@ -5,6 +5,7 @@
 import logging
 import sys
 import time
+import warnings
 from copy import deepcopy
 
 import requests
@@ -16,19 +17,174 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
+__version__ = '2.0.0'
+
+#########################
+### UTILITY FUNCTIONS ###
+#########################
+
+def object_type(r_name):
+    """
+    Derives an object type (i.e. ``user``) from a resource name (i.e. ``users``)
+
+    :param r_name:
+        Resource name, i.e. would be ``users`` for the resource index URL
+        ``https://api.pagerduty.com/users``
+    :returns: The object type name; usually the ``type`` property of an instance
+        of the given resource.
+    :rtype: str
+    """
+    if r_name == 'escalation_policies':
+        return 'escalation_policy'
+    else:
+        return r_name.rstrip('s')
+
+def raise_on_error(method):
+    """
+    Function decorator for raising exceptions on HTTP error responses.
+
+    :param method: Method being decorated. Must take one positional argument
+        after ``self`` that is the URL/path to the resource, and must return an
+        object of class `requests.Response`_.
+    """
+    def call(self, path, **kw):
+        r = method(self, path, **kw)
+        if r.ok:
+            return r
+        else:
+            raise PDClientError("%s %s: API responded with non-success status "
+                "(%d)"%(r.request.method.upper, path, r.status_code))
+    return call
+
+def resource_envelope(method):
+    """
+    Convenience and consistency decorator for HTTP verb functions.
+
+    This makes the request methods ``GET``, ``POST`` and ``PUT`` always return a
+    dictionary object representing the resource at the envelope property (i.e.
+    the ``{...}`` from ``{"escalation_policy":{...}}`` in a get/put request to
+    an escalation policy)  rather than a `requests.Response`_ object.
+
+    Methods using this decorator will raise a :class:`PDClientError` with its
+    ``response`` property being being the `requests.Response`_ object in the
+    case of any error, so that the implementer can access it by catching the
+    exception, and thus design their own custom logic around different types of
+    error responses.
+
+    It allows creation of methods that can provide more succinct ways of making
+    API calls. In particular, the methods using this decorator don't require
+    checking for a success status, JSON-decoding the response body and then
+    pulling the essential data out of the envelope (i.e. for ``GET
+    /escalation_policies/{id}`` one would have to access the
+    ``escalation_policy`` property of the object decoded from the response body,
+    assuming nothing went wrong in the whole process).
+
+    In :class:`APISession`, these methods are ``rget``, ``rpost`` and ``rput``.
+
+    :param method: Method being decorated. Must take one positional argument
+        after ``self`` that is the URL/path to the resource, and must return an
+        object of class `requests.Response`_, and be named after the HTTP method
+        but with "r" prepended.
+    :returns: A callable object; the reformed method
+    """
+    http_method = method.__name__.lstrip('r')
+    def call(self, path, **kw):
+        pass_kw = deepcopy(kw) # Make a copy for modification
+        if path.startswith(self.url):
+            url = path
+        else:
+            url = self.url+'/'+path.lstrip('/')
+        # The following should be, at the very least, four elements:
+        # ['http:', '', 'api.pagerduty.com', '{resource}']
+        nodes = url.split('?')[0].split('/')
+        if len(nodes) < 4: 
+            raise ValueError('Invalid resource URL.')
+        # The following will be ['{resource}'], or ['{resource}', '{id}'],
+        # or ['{resource}', '{id}', '{subresource}'], etc.
+        pathnodes = nodes[3:]
+        # If there's an even number of path nodes: it's an individual resource
+        # URL, and the resource name will be the second to last path node.
+        # Otherwise, it is a resource index, and the resource name will be the
+        # last pathnode. However, if the request was GET, and made to an index
+        # endpoint, the envelope property should simply be a resource name. 
+        #
+        # This is a ubiquitous pattern throughout the PagerDuty REST API: path
+        # nodes alternate between identifiers and resource names.
+        is_index = len(pathnodes)%2
+        resource = pathnodes[-(2-is_index)] # The last or second to last node
+        envelope_name_single = object_type(resource) # Usually the "type"
+        if is_index and http_method == 'get':
+            envelope_name = resource
+        else:
+            envelope_name = envelope_name_single
+        if http_method in ('post', 'put') and 'json' in pass_kw:
+            # Assumptions: if it's not already in an envelope, it should have a
+            # ``type`` property. Every object, even resource references, have a
+            # this property in the REST API. We have to be explicit with this
+            # and can't fill it in for the end user because the type property
+            # isn't always implicit from which API we're using. For example, one
+            # can find ``"type": "webhook"`` entries in the /extensions API.
+            if not ('type' in kw['json'] or envelope_name_single in kw['json']):
+                raise ValueError("Invalid payload for resource "+resource)
+            elif 'type' in kw['json']:
+                # Add the envelope automatically
+                pass_kw['json'] = {envelope_name_single: pass_kw['json']}
+            # Otherwise, nothing to do; content already in an envelope
+        r = raise_on_error(method)(self, path, **pass_kw)
+        # Now let's try to unpack...
+        try:
+            response_obj = r.json()
+        except ValueError as e:
+            raise PDClientError("API responded with invalid JSON: "+r.text,
+                response=r)
+        # Get the encapsulated object
+        if envelope_name not in response_obj:
+            raise PDClientError("Cannot extract object; expected top-level "
+                "property \"%s\", but could not find it in the response "
+                "schema. Response body=%s"%(envelope_name, r.text),
+                response=r)
+            return None
+        return response_obj[envelope_name]
+    return call
+
+def resource_name(obj_type):
+    """
+    Transforms an object type into a resource name
+
+    :param obj_type:
+        The object type, i.e. `user` or `user_reference`
+    :returns: The name of the resource, i.e. the last part of the URL for the
+        resource's index URL
+    :rtype: str
+    """
+    if obj_type.endswith('_reference'):
+        # Strip down to basic type if it's a reference
+        obj_type = obj_type[:obj_type.index('_reference')]
+    if obj_type == 'escalation_policy':
+        return 'escalation_policies'
+    else:
+        return obj_type+'s'
+
+###############
+### CLASSES ###
+###############
+
 class APISession(requests.Session):
     """
-    PagerDuty REST API session
+    Reusable PagerDuty REST API session objects for making API requests.
 
-    A ``requests.Session`` object, but with a few modifications:
+    These are essentially the same as `requests.Session`_ objects, but with a
+    few modifications:
 
-    - The client will reattempt the request if a network error is encountered
+    - The client will reattempt the request with configurable, auto-increasing
+      cooldown/retry intervals if encountering a network error or rate limit
     - When making requests, headers specified ad-hoc in calls to HTTP verb
       functions will not replace, but will be merged with, default headers.
-    - The reqeust URL, if it doesn't already start with the REST API base URL,
+    - The request URL, if it doesn't already start with the REST API base URL,
       will be prepended with the default REST API base URL.
     - It will only perform GET, POST, PUT and DELETE requests, and will raise
-      PDClientError for any other HTTP verbs.
+      :class:`PDClientError` for any other HTTP methods.
+    - Some convenience functions, i.e. ``rget``, ``find`` and ``iter_all`` 
 
     :param token: REST API access token to use for HTTP requests
     :param name: Optional name identifier for logging. If unspecified or
@@ -61,7 +217,13 @@ class APISession(requests.Session):
     log = None
     """A ``logging.Logger`` object for printing messages."""
 
-    max_attempts = 3
+    max_http_attempts = 10
+    """
+    The number of times that the client will retry after error statuses, for any
+    that are defined greater than zero in ``retry``.
+    """
+
+    max_network_attempts = 3
     """
     The number of times that connecting to the API will be attempted before
     treating the failure as non-transient; a :class:`PDClientError` exception
@@ -71,12 +233,39 @@ class APISession(requests.Session):
     parent = None
     """The ``super`` object (`requests.Session`_)"""
 
+    raise_if_http_error = False
+    """
+    If set to true, an exception will be raised in ``iter_all`` if a HTTP error
+    is encountered. The default behavior is to halt iteration. In future
+    versions, it will be to raise on errors by default, so it is advised to set
+    this to True in existing code to enable the future behavior.
+    """
+
+    retry = None
+    """A dict defining the retry behavior for each HTTP response status code.
+
+    Each key in this dictionary represents a HTTP response code. The behavior is
+    specified by the value at each key as follows:
+
+    * ``-1`` to retry infinitely
+    * ``0`` to return the `requests.Response`_ object and exit (which is the
+      default behavior) 
+    * ``n``, where ``n > 0``, to retry ``n`` times (or up
+      to ``max_http_attempts`` total for all statuses, whichever is encountered
+      first), and rase a :class:`PDClientError` after that many attempts.
+
+    The default behavior is to retry infinitely on a 429, and return the
+    response in any other case (assuming a HTTP response was received from the
+    server).
+    """
+
     sleep_timer = 1.5
     """
-    Default initial cooldown time factor for API rate limiting and transient
-    network errors. Each time that the request makes a followup request, there
-    will be a delay in seconds equal to this number times ``sleep_timer_base``
-    to the power of how many attempts have already been made so far.
+    Default initial cooldown time factor for rate limiting and network errors.
+
+    Each time that the request makes a followup request, there will be a delay
+    in seconds equal to this number times ``sleep_timer_base`` to the power of
+    how many attempts have already been made so far.
     """
 
     sleep_timer_base = 2
@@ -100,13 +289,17 @@ class APISession(requests.Session):
         if type(name) is str and name:
             my_name = name
         else:
-            my_name = "*"+token[-4:]
+            my_name = self.trunc_token
         self.log = logging.getLogger('pdpyras.APISession(%s)'%my_name)
         self.headers.update({
             'Accept': 'application/vnd.pagerduty+json;version=2',
         })
+        self.retry = {}
+        # Retry only twice for network errors (total of three attempts).
+        # This behavior can be altered by setting index zero.
+        self.retry[0] = 2
 
-    def find(self, resource_name, query, attribute='name', params=None):
+    def find(self, resource, query, attribute='name', params=None):
         """
         Finds an object of a given resource exactly matching a query.
 
@@ -117,7 +310,7 @@ class APISession(requests.Session):
         entry in the index endpoint schema's array of results. Otherwise, it
         will return `None` if no result is found or an error is encountered.
 
-        :param resource_name:
+        :param resource:
             The name of the resource endpoint to query, i.e.
             ``escalation_policies``
         :param query:
@@ -128,7 +321,7 @@ class APISession(requests.Session):
             searching for user by email (for example) it can be set to ``email``
         :param params:
             Optional additional parameters to use when querying.
-        :type resource_name: str
+        :type resource: str
         :type query: str
         :type attribute: str
         :type params: dict or None
@@ -142,16 +335,16 @@ class APISession(requests.Session):
         simplify = lambda s: s.lower()
         search_term = simplify(query) 
         equiv = lambda s: simplify(s[attribute]) == search_term
-        obj_iter = self.iter_all(resource_name, params=query_params)
+        obj_iter = self.iter_all(resource, params=query_params)
         return next(iter(filter(equiv, obj_iter)), None)
 
     def iter_all(self, path, params=None, paginate=True, item_hook=None,
             total=False):
         """
-        Iterator for the contents of an index endpoint
+        Iterator for the contents of an index endpoint or query.
 
         Automatically paginates and yields the results in each page, until all
-        matching results have been yielded.
+        matching results have been yielded or a HTTP error response is received.
 
         Each yielded value is a dict object representing a result returned from
         the index. For example, if requesting the ``/users`` endpoint, each
@@ -184,8 +377,16 @@ class APISession(requests.Session):
         :type params: dict or None
         :type paginate: bool
         :type total: bool
+        :yields: Results from the index endpoint.
         :rtype: dict
         """
+        if not self.raise_if_http_error:
+            warnings.warn("Property raise_if_http_error is set to False. In "
+                "future versions, it will be True by default. When True, "
+                "functions such as find and iter_all that do not return a "
+                "requests.Response object, but rather that derive a value "
+                "from the HTTP response, will raise PDClientError when "
+                "encountering a HTTP error status.", DeprecationWarning)
         # Resource name:
         r_name = path.split('?')[0].split('/')[-1]
         # Parameters to send:
@@ -201,18 +402,23 @@ class APISession(requests.Session):
         more = True
         offset = 0
         n = 0
+
         while more: # Paginate through all results
             if paginate:
                 data['offset'] = offset
             r = self.get(path, params=data.copy())
             if not r.ok:
-                self.log.warn("Stopping iteration on endpoint \"%s\"; API "
+                if self.raise_if_http_error:
+                    raise PDClientError("Encountered HTTP error status (%d) "
+                        "response while iterating through index endpoint %s."%(
+                            r.status_code, path), response=r)
+                self.log.debug("Stopping iteration on endpoint \"%s\"; API "
                     "responded with non-success status %d", path, r.status_code)
                 break
             try:
                 response = r.json()
             except ValueError: 
-                self.log.warn("Stopping iteration on endpoint %s; API "
+                self.log.debug("Stopping iteration on endpoint %s; API "
                     "responded with invalid JSON.", path)
                 break
             if 'limit' in response:
@@ -243,7 +449,7 @@ class APISession(requests.Session):
                     item_hook(result, n, total_count)
                 yield result
 
-    def profile(self, method, response, suffix=None):
+    def profile(self, response, suffix=None):
         """
         Records performance information about the API call.
 
@@ -260,7 +466,8 @@ class APISession(requests.Session):
         :type response: `requests.Response`_
         :type suffix: str or None
         """
-        key = self.profiler_key(method, response.url.split('?')[0], suffix)
+        key = self.profiler_key(response.request.method,
+            response.url.split('?')[0], suffix)
         self.api_call_counts.setdefault(key, 0)
         self.api_time.setdefault(key, 0.0)
         self.api_call_counts[key] += 1
@@ -274,13 +481,13 @@ class APISession(requests.Session):
         ``{id}``, and will begin with the method in lower case followed by a
         colon, i.e. ``get:escalation_policies/{id}``
 
-        :param path: str
+        :param path:
             The path/URI to classify
         :param method:
-            The reqeust method
+            The request method
         :param suffix:
             Optional suffix to append to the key
-        :type param: str
+        :type path: str
         :type method: str
         :type suffix: str
         :rtype: str
@@ -307,12 +514,45 @@ class APISession(requests.Session):
                 sub_resource, sub_node_type, my_suffix)
         return key
 
+    @raise_on_error
+    def rdelete(self, path, **kw):
+        self.delete(path, **kw)
+
+    @resource_envelope
+    def rget(self, path, **kw):
+        """
+        
+        """
+        return self.get(path, **kw)
+
+    @resource_envelope
+    def rpost(self, path, **kw):
+        """
+        Create a resource.
+        
+        Returns the dictionary object representation if creating it was
+        successful.
+
+        :param path: The path/URL to which to send the POST request.
+        :param \*\*kw: Keyword arguments to pass to ``requests.Session.post``
+        :returns: Dictionary representation of the created object
+        :rtype: 
+        """
+        return self.post(path, **kw)
+
+    @resource_envelope
+    def rput(self, path, **kw):
+        """
+        Update an individual resource, returning the encapsulated object.
+
+        :param path: The path/URL to which to send the PUT request.
+        :param \*\*kw: Keyword arguments to pass to ``requests.Session.put``
+        """
+        return self.put(path, **kw)
 
     def request(self, method, url, **kwargs):
         """
         Make a generic PagerDuty v2 REST API request. 
-        
-        Returns a `requests.Response`_ object.
 
         :param method:
             The request method to use. Case-insensitive. May be one of get, put,
@@ -325,14 +565,16 @@ class APISession(requests.Session):
             <http://docs.python-requests.org/en/master/api/#requests.Session.request>`_
         :type method: str
         :type url: str
+        :returns: the HTTP response object
         :rtype: `requests.Response`_
         """
         sleep_timer = self.sleep_timer
-        attempts = 0
+        network_attempts = 0
+        http_attempts = {}
         method = method.upper()
         if method not in ('GET', 'POST', 'PUT', 'DELETE'):
             raise PDClientError(
-                "Method %s not supported by PagerDuty REST API."%method
+                "Method %s is not supported by the PagerDuty REST API."%method
             )
         # Prepare headers
         req_kw = deepcopy(kwargs)
@@ -354,19 +596,38 @@ class APISession(requests.Session):
         while True:
             try:
                 response = self.parent.request(method, my_url, **req_kw)
-                self.profile(method.lower(), response)
+                self.profile(response)
             except (Urllib3Error, RequestsError) as e:
-                attempts += 1
-                if attempts > self.max_attempts:
+                network_attempts += 1
+                if network_attempts > self.max_network_attempts:
                     raise PDClientError("Non-transient network error; exceeded "
                         "maximum number of attempts (%d) to connect to the REST"
-                        " API."%self.max_attempts)
+                        " API."%self.max_network_attempts)
                 sleep_timer *= self.sleep_timer_base
                 self.log.debug("Connection error: %s; retrying in %g seconds.",
                     e, sleep_timer)
                 time.sleep(sleep_timer)
                 continue
-            if response.status_code == 429:
+            status = response.status_code
+            retry_logic = self.retry.get(status, 0)
+            if not response.ok and retry_logic != 0:
+                # Take special action as defined by the retry logic
+                if retry_logic != -1:
+                    # Retry a specific number of times (-1 implies infinite)
+                    if http_attempts[status]>retry_logic or \
+                            sum(http_attempts.values())>self.max_http_attempts:
+                        raise PDClientError("Non-transient HTTP error: "
+                            "exceeded maximum number of attempts to make a "
+                            "successful request. Currently encountering status "
+                            "%d."%status, response=response)
+                    http_attempts[status] = 1 + \
+                        http_attempts.setdefault(status, 0)
+                sleep_timer *= self.sleep_timer_base
+                self.log.debug("HTTP error (%d); retrying in %g seconds.",
+                    status, sleep_timer)
+                time.sleep(sleep_timer)
+                continue
+            elif response.status_code == 429:
                 sleep_timer *= self.sleep_timer_base
                 self.log.debug("Hit REST API rate limit (response status 429); "
                     "retrying in %g seconds", sleep_timer)
@@ -374,9 +635,11 @@ class APISession(requests.Session):
                 continue
             elif response.status_code == 401:
                 # Stop. Authentication failed. We shouldn't try doing any more,
-                # because we'll run into problems later attempting to use the token.
-                raise PDClientError("Received 401 Unauthorized response from "
-                    "the REST API. The access key might not be valid.")
+                # because we'll run into problems later anyway.
+                raise PDClientError(
+                    "Received 401 Unauthorized response from the REST API. The "
+                    "access key (%s) might not be valid."%self.trunc_token,
+                    response=response)
             else:
                 return response
 
@@ -388,20 +651,21 @@ class APISession(requests.Session):
         If the token's access level excludes viewing any users, or if an error
         occurs when retrieving, this will be False.
 
-        :type: str or bool
+        :type: str or None
         """
         if not hasattr(self, '_subdomain') or self._subdomain is None:
             try:
-                url = next(self.iter_all(
-                    'users', params={'limit':1}
-                ))['html_url']
+                url = self.rget('users', params={'limit':1})[0]['html_url']
                 self._subdomain = url.split('/')[2].split('.')[0]
-            except (StopIteration, IndexError):
-                self._subdomain = False
+            except PDClientError as e:
+                self.log.error("Failed to obtain subdomain; encountered error.")
+                self._subdomain = None
+                raise e
         return self._subdomain
 
     @property
     def token(self):
+        """The REST API token to use."""
         return self._token
 
     @token.setter
@@ -414,13 +678,32 @@ class APISession(requests.Session):
 
     @property
     def total_call_count(self):
+        """The total number of API calls made by this instance."""
         return sum(self.api_call_counts.values())
 
     @property
     def total_call_time(self):
+        """The total time spent making API calls."""
         return sum(self.api_time.values())
+
+    @property
+    def trunc_token(self):
+        """Truncated token for secure display/identification purposes."""
+        return "*"+self.token[-4:]
 
 class PDClientError(Exception): 
     """
-    General API client errors class.
+    General API errors base class.
     """
+
+    response = None
+    """
+    The HTTP response object, if a response was successfully received.
+
+    In the case of network errors, this property will be None.
+    """
+
+    def __init__(self, message, response=None):
+        self.msg = message
+        self.response = response
+        super(PDClientError, self).__init__(message)
