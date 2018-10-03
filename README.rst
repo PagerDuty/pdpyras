@@ -34,7 +34,7 @@ Features
 ********
 - Efficient API access through automatic HTTP connection pooling and
   persistence 
-- Tested in / support for Python 2.7 through 3.6
+- Tested in / support for Python 2.7 through 3.7
 - Automatic cooldown/reattempt for rate limiting and transient network problems
 - Inclusion of required `HTTP Request Headers`_ for PagerDuty REST API requests
 - Bulk data retrieval and iteration over `resource index`_ endpoints with

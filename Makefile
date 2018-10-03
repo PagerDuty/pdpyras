@@ -6,7 +6,7 @@ docs: pdpyras.py
 test:
 	cd tests && ./test_pdpyras.py
 
-dist: pdpyras.py
+dist: pdpyras.py setup.py
 	python setup.py sdist
 
 install: dist
