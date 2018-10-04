@@ -1,4 +1,6 @@
 *.pyc
 docs/build/*
+sphinx/build
 dist/
 pdpyras.egg-info/
+docs/.buildinfo
