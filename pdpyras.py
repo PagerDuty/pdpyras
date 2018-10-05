@@ -53,10 +53,10 @@ def raise_on_error(r):
     else:
         raise PDClientError("%s %s: API responded with non-success status "
             "(%d)"%(
-                r.request.method.upper,
+                r.request.method.upper(),
                 r.request.url.replace('https://api.pagerduty.com', ''),
                 r.status_code
-            )
+            ), response=r
         )
 
 def resource_envelope(method):
@@ -652,9 +652,6 @@ class APISession(requests.Session):
     def subdomain(self):
         """
         Subdomain of the PagerDuty account of the API access token.
-
-        If the token's access level excludes viewing any users, or if an error
-        occurs when retrieving, this will be False.
 
         :type: str or None
         """

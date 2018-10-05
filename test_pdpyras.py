@@ -156,6 +156,14 @@ class APISessionTest(unittest.TestCase):
         self.assertEqual(1, sess.api_call_counts['get:users/{id}'])
         self.assertEqual(1.5, sess.api_time['get:users/{id}'])
 
+    def test_raise_on_error(self):
+        self.assertRaises(pdpyras.PDClientError, pdpyras.raise_on_error,
+            Response(400, json.dumps({})))
+        try:
+            pdpyras.raise_on_error(Response(400, json.dumps({})))
+        except pdpyras.PDClientError as e:
+            self.assertTrue(e.response is not None)
+
     @patch.object(pdpyras.APISession, 'profile')
     def test_request(self, profile):
         sess = pdpyras.APISession('12345')
