@@ -1,7 +1,6 @@
 ===========================================
-pdpyras: PagerDuty Python REST API Sessions
+PDPYRAS: PagerDuty Python REST API Sessions
 ===========================================
-
 A minimal, practical Python client for the PagerDuty REST API.
 
 GitHub: `PagerDuty/pdpyras <https://github.com/PagerDuty/pdpyras>`_
@@ -178,12 +177,12 @@ have to JSON-decode and then access the ``user`` key in the resulting
 dictionary object, that object itself is directly returned. 
 
 The ``rget`` method can be called with as little as one argument: the URL (or
-URL path) to request, i.e. to print a given service's name:
+URL path) to request. Example:
 
 ::
 
     service = session.rget('/services/PZYX321')
-    print(service['name'])
+    print("Service PZYX321's name: "+service['name'])
 
 One can also use it on a `resource index`_, although if the goal is to get all
 results rather than a specific page, ``iter_all`` is recommended for this
@@ -197,7 +196,10 @@ to set a filter:
 
 ::
 
-    first_100_daves = session.rget('/users', params={'query':'Dave','limit':100})
+    first_100_daves = session.rget(
+        '/users',
+        params={'query':"Dave",'limit':100}
+    )
 
 Creating and Updating
 +++++++++++++++++++++
@@ -212,23 +214,32 @@ request method function.
 
 For instance, instead of having to set the keyword argument ``json = {"user":
 {...}}`` to ``put``, one can pass ``json = {...}`` to ``rput``, to update a
-user. The following anonymous function takes a PagerDuty user ID and gives the
-user the admin role, and moreover, its return value will be the user object.
+user. The following function takes a PagerDuty user ID and gives the
+user the admin role and prints a message when done:
 
 ::
 
-    promoted_to_admin = lambda uid: session.rput(
-        "/users/"+uid,
-        json={"role":"admin"}
-    )
+    def promote_to_admin(session, uid):
+        user = session.rput(
+            '/users/'+uid,
+            json={'role':'admin'}
+        )
+        print("%s now has admin superpowers"%user['name'])
 
 Deleting
 ++++++++
 
 The ``rdelete`` method has no return value, but otherwise behaves in exactly
 the same way as the other request methods with ``r`` prepended to their name.
-Like the other methods, it will raise ``PDClientError`` if the API responds
-with a non-success HTTP status
+Like the other ``r*`` methods, it will raise ``PDClientError`` if the API responds
+with a non-success HTTP status.
+
+Example:
+
+::
+
+    session.rdelete("/services/PI86NOW")
+    print("Service deleted.")
 
 Error Handling
 **************
