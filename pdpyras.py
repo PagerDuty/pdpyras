@@ -653,9 +653,6 @@ class APISession(requests.Session):
         """
         Subdomain of the PagerDuty account of the API access token.
 
-        If the token's access level excludes viewing any users, or if an error
-        occurs when retrieving, this will be False.
-
         :type: str or None
         """
         if not hasattr(self, '_subdomain') or self._subdomain is None:
