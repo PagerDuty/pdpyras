@@ -7,13 +7,13 @@ GitHub: `PagerDuty/pdpyras <https://github.com/PagerDuty/pdpyras>`_
 
 About
 -----
-This library supplies a class ``APISession`` extending `requests.Session`_ from
-the Requests_ HTTP library. It serves as a practical and
-simple-as-possible-but-no-simpler abstraction layer for accessing the PagerDuty
-REST API, differing minimally from the already well-known and well-documented
-underlying HTTP library. This makes it appropriate for use as the foundation of
-anything from a feature-rich REST API client library to a quick-and-dirty API
-script.
+This library supplies a class :class:`pdpyras.APISession` extending
+`requests.Session`_ from the Requests_ HTTP library. It serves as a practical
+and simple-as-possible-but-no-simpler abstraction layer for accessing the
+PagerDuty REST API, differing minimally from the already well-known and
+well-documented underlying HTTP library. This makes it appropriate for use as
+the foundation of anything from a feature-rich REST API client library to a
+quick-and-dirty API script.
 
 This module was borne of necessity for a basic, reusable API client to
 eliminate code duplication in some of PagerDuty Support's internal Python-based
@@ -158,9 +158,9 @@ and update their name to "Jane Doe":
 
 Data Access Abstraction
 ***********************
-Using the ``iter_all`` and ``find`` of :class:`pdpyras.APISession` as
-documented, it is easier to directly get to the underlying data representing a
-given PagerDuty object. Both of these methods yield/return dicts representing
+Using :attr:`pdpyras.APISession.iter_all` and :attr:`pdpyras.APISession.find`
+as documented, it is easier to directly get to the underlying data representing
+a given PagerDuty object. Both of these methods yield/return dicts representing
 the PagerDuty objects with their defined schemas (see: `REST API Reference`_).
 
 In version 2, it is even easier to do this, and in more ways, with four new
@@ -170,7 +170,7 @@ and ``rdelete``.
 
 Reading
 +++++++
-The method ``pdpyras.APISession.rget`` gets a resource, returning the object
+The method :attr:`pdpyras.APISession.rget` gets a resource, returning the object
 within the resource name envelope after JSON-decoding the response body. In
 other words, if retrieving an individual user (for instance), where one would
 have to JSON-decode and then access the ``user`` key in the resulting
@@ -185,10 +185,10 @@ URL path) to request. Example:
     print("Service PZYX321's name: "+service['name'])
 
 One can also use it on a `resource index`_, although if the goal is to get all
-results rather than a specific page, ``iter_all`` is recommended for this
-purpose, as it will automatically iterate through all pages of results, rather
-than just the first. When using ``rget`` in this way, the return value will be
-a list of dicts instead of a dict.
+results rather than a specific page, :class:`pdpyras.APISession.iter_all` is
+recommended for this purpose, as it will automatically iterate through all
+pages of results, rather than just the first. When using ``rget`` in this way,
+the return value will be a list of dicts instead of a dict.
 
 The method also accepts other keyword arguments, which it will pass along to
 ``reqeusts.Session.get``, i.e. if requesting an index, ``params`` can be used
@@ -203,14 +203,13 @@ to set a filter:
 
 Creating and Updating
 +++++++++++++++++++++
-
 Just as ``rget`` eliminates the need to JSON-decode and then pull the data out
-of the envelope in the response schema, ``rpost`` and ``rput`` return the data
-in the envelope property. Furthermore, they eliminate the need to enclose the
-dictionary object representing the data to be transmitted in an envelope, and
-just like ``rget``, they accept at an absolute minimum one positional argument
-(the URL), and all keyword arguments are passed through to the underlying
-request method function.
+of the envelope in the response schema, :attr:`pdpyras.APISession.rpost` and
+:attr:`pdpyras.APISession.rput` return the data in the envelope property.
+Furthermore, they eliminate the need to enclose the dictionary object
+representing the data to be transmitted in an envelope, and just like ``rget``,
+they accept at an absolute minimum one positional argument (the URL), and all
+keyword arguments are passed through to the underlying request method function.
 
 For instance, instead of having to set the keyword argument ``json = {"user":
 {...}}`` to ``put``, one can pass ``json = {...}`` to ``rput``, to update a
@@ -228,11 +227,10 @@ user the admin role and prints a message when done:
 
 Deleting
 ++++++++
-
 The ``rdelete`` method has no return value, but otherwise behaves in exactly
 the same way as the other request methods with ``r`` prepended to their name.
-Like the other ``r*`` methods, it will raise ``PDClientError`` if the API responds
-with a non-success HTTP status.
+Like the other ``r*`` methods, it will raise :class:`pdpyras.PDClientError` if
+the API responds with a non-success HTTP status.
 
 Example:
 
@@ -243,7 +241,6 @@ Example:
 
 Error Handling
 **************
-
 What happens when, for any of the ``r*`` methods, the API responds with a
 non-success HTTP status? Obviously in this case, they cannot return the
 JSON-decoded response, because the response would not be the sought-after data
@@ -251,7 +248,7 @@ but a different schema altogether (see: `Errors`_), and this would put the onus
 on the end user to distinguish between success and error based on the structure
 of the returned dictionary object (yuck).
 
-Instead, when this happens, an exception of class ``pdpyras.PDClientError`` is
+Instead, when this happens, a :class:`pdpyras.PDClientError` exception is
 raised. The advantage of this design lies in how the methods can always be
 expected to return the same sort of data, and if they can't, the program flow
 that depends on getting this specific structure of data is appropriately
@@ -280,14 +277,42 @@ the user exists, and does nothing otherwise:
         else:
             raise e
 
+HTTP Retry Logic
+****************
+By default, after receiving a response, :attr:`pdpyras.APISession.request` will
+return the `requests.Response`_ object unless its status is ``429`` (rate
+limiting), in which case it will retry until it gets a status other than ``429``.
+
+The property :attr:`pdpyras.APISession.retry` allows customization in this
+regard, so that the client can be made to retry on other statuses (i.e.
+502/400), up to a set number of times. The total number of HTTP error responses
+that the client will tolerate before returning the response object is defined
+in :attr:`pdpyras.APISession.max_http_attempts`, and this will supersede the
+maximum number of retries defined in
+:attr:`pdpyras.APISession.max_http_attempts`. 
+
+For example, the following will take about 30 seconds plus API request time
+(carrying out four attempts, with 2, 4, 8 and 16 second pauses between them),
+before finally returning with the status 404 `requests.Response`_ object:
+
+::
+
+    session.retry[404] = 5
+    session.max_http_attempts = 4
+    session.sleep_timer = 1
+    session.sleep_timer_base = 2
+    response = session.get('/users/PNOEXST') 
+
+
 Contributing
 ------------
 Bug reports and pull requests to fix issues are always welcome. 
 
 If adding features, or making changes, it is recommended to update or add tests
-and assertions to the class ``APISessionTest`` to ensure code coverage. If the
-change(s) fix a bug, please add assertions that reproduce the bug along with
-code changes themselves, and include the GitHub issue number in the commit
+and assertions to the class ``APISessionTest`` in ``test_pdpyras.py`` to ensure
+code coverage. If the change(s) fix a bug, please add assertions that reproduce
+the bug along with code changes themselves, and include the GitHub issue number
+in the commit
 message.
 
 .. References:

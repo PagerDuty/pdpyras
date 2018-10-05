@@ -17,7 +17,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '2.0.1'
+__version__ = '2.0.2'
 
 #########################
 ### UTILITY FUNCTIONS ###
@@ -82,7 +82,8 @@ def resource_envelope(method):
     ``escalation_policy`` property of the object decoded from the response body,
     assuming nothing went wrong in the whole process).
 
-    In :class:`APISession`, these methods are ``rget``, ``rpost`` and ``rput``.
+    These methods are :attr:`APISession.rget`, :attr:`APISession.rpost` and
+    :attr:`APISession.rput`.
 
     :param method: Method being decorated. Must take one positional argument
         after ``self`` that is the URL/path to the resource, and must return an
@@ -158,7 +159,7 @@ def resource_name(obj_type):
     Transforms an object type into a resource name
 
     :param obj_type:
-        The object type, i.e. `user` or `user_reference`
+        The object type, i.e. ``user`` or ``user_reference``
     :returns: The name of the resource, i.e. the last part of the URL for the
         resource's index URL
     :rtype: str
@@ -190,7 +191,8 @@ class APISession(requests.Session):
       will be prepended with the default REST API base URL.
     - It will only perform GET, POST, PUT and DELETE requests, and will raise
       :class:`PDClientError` for any other HTTP methods.
-    - Some convenience functions, i.e. ``rget``, ``find`` and ``iter_all`` 
+    - Some convenience functions, i.e. :attr:`rget`, :attr:`find` and
+      :attr:`iter_all`
 
     :param token: REST API access token to use for HTTP requests
     :param name: Optional name identifier for logging. If unspecified or
@@ -226,7 +228,7 @@ class APISession(requests.Session):
     max_http_attempts = 10
     """
     The number of times that the client will retry after error statuses, for any
-    that are defined greater than zero in ``retry``.
+    that are defined greater than zero in :attr:`retry`.
     """
 
     max_network_attempts = 3
@@ -241,8 +243,8 @@ class APISession(requests.Session):
 
     raise_if_http_error = False
     """
-    If set to true, an exception will be raised in ``iter_all`` if a HTTP error
-    is encountered. The default behavior is to halt iteration. In future
+    If set to true, an exception will be raised in :attr:`iter_all` if a HTTP
+    error is encountered. The default behavior is to halt iteration. In future
     versions, it will be to raise on errors by default, so it is advised to set
     this to True in existing code to enable the future behavior.
     """
@@ -257,12 +259,15 @@ class APISession(requests.Session):
     * ``0`` to return the `requests.Response`_ object and exit (which is the
       default behavior) 
     * ``n``, where ``n > 0``, to retry ``n`` times (or up
-      to ``max_http_attempts`` total for all statuses, whichever is encountered
-      first), and rase a :class:`PDClientError` after that many attempts.
+      to :attr:`max_http_attempts` total for all statuses, whichever is
+      encountered first), and rase a :class:`PDClientError` after that many
+      attempts. For each successive attempt, the wait time will increase by a
+      factor of :attr:`sleep_timer_base`.
 
     The default behavior is to retry infinitely on a 429, and return the
     response in any other case (assuming a HTTP response was received from the
     server).
+
     """
 
     sleep_timer = 1.5
@@ -270,8 +275,8 @@ class APISession(requests.Session):
     Default initial cooldown time factor for rate limiting and network errors.
 
     Each time that the request makes a followup request, there will be a delay
-    in seconds equal to this number times ``sleep_timer_base`` to the power of
-    how many attempts have already been made so far.
+    in seconds equal to this number times :attr:`sleep_timer_base` to the power
+    of how many attempts have already been made so far.
     """
 
     sleep_timer_base = 2
