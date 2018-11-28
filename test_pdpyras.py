@@ -68,6 +68,16 @@ class APISessionTest(unittest.TestCase):
         sess.log.addHandler(sh)
         sess.log.setLevel(logging.DEBUG)
 
+    def test_profiler_key(self):
+        sess = pdpyras.APISession('token')
+        self.assertEqual(
+            'post:users/{id}/contact_methods/{index}',
+            sess.profiler_key(
+                'POST',
+                'https://api.pagerduty.com/users/PCWKOPZ/contact_methods'
+            )
+        )
+
     @patch.object(pdpyras.APISession, 'iter_all')
     def test_find(self, iter_all):
         sess = pdpyras.APISession('token')
@@ -82,9 +92,8 @@ class APISessionTest(unittest.TestCase):
         )
         iter_all.assert_called_with('users', params={'query':'some1@me.me'})
 
-    @patch.object(pdpyras.warnings, 'warn')
     @patch.object(pdpyras.APISession, 'get')
-    def test_iter_all(self, get, warner):
+    def test_iter_all(self, get):
         sess = pdpyras.APISession('token')
         sess.log = MagicMock() # Or go with self.debug(sess) to see output
         sess.default_page_size = 10
@@ -128,7 +137,6 @@ class APISessionTest(unittest.TestCase):
         sess.raise_if_http_error = False
         new_items = list(sess.iter_all(weirdurl))
         self.assertEqual(items, new_items)
-        warner.assert_called_once() # The deprecation warning that should result
         get.reset_mock()
         # Now test raising an exception:
         get.side_effect = copy.deepcopy(error_encountered)
@@ -381,6 +389,21 @@ class APISessionTest(unittest.TestCase):
         do_http_things.assert_called_with(dummy_session, '/users',
             json={'user':user_payload})
 
+        reset_mocks()
+        # Test auto-envelope functionality for multi-update
+        # TODO: This test is loosely coupled but somewhat naive. Tighten if need
+        # be.
+        incidents = [{'id':'PABC123'}, {'id':'PDEF456'}]
+        do_http_things.__name__ = 'rput'
+        response.ok = True
+        updated_incidents = copy.deepcopy(incidents)
+        response.json.return_value = {'incidents': updated_incidents}
+        self.assertEqual(
+            updated_incidents,
+            pdpyras.resource_envelope(do_http_things)(dummy_session,
+                '/incidents', json=incidents)
+        )
+
     @patch.object(pdpyras.APISession, 'get')
     def test_rget(self, get):
         response200 = Response(200, '{"user":{"type":"user_reference",'
@@ -405,6 +428,26 @@ class APISessionTest(unittest.TestCase):
         self.assertEqual('something', sess.subdomain)
         self.assertEqual('something', sess.subdomain)
         rget.assert_called_once_with('users', params={'limit':1})
+
+    def test_tokenize_url_path(self):
+        cm_path = ('users', '{id}', 'contact_methods', '{index}')
+        cm_path_str = 'users/PABC123/contact_methods'
+        baseurl = 'https://rest.pd/'
+        self.assertEqual(cm_path, pdpyras.tokenize_url_path(cm_path_str))
+        self.assertEqual(cm_path, pdpyras.tokenize_url_path(baseurl+cm_path_str,
+            baseurl=baseurl))
+        self.assertRaises(ValueError, pdpyras.tokenize_url_path,
+            '/https://api.pagerduty.com/?')
+        self.assertRaises(ValueError, pdpyras.tokenize_url_path,
+            'https://api.pagerduty.com/')
+        self.assertRaises(ValueError, pdpyras.tokenize_url_path,
+            'https://api.pagerduty.com')
+        self.assertRaises(ValueError, pdpyras.tokenize_url_path,
+            '/')
+        self.assertRaises(ValueError, pdpyras.tokenize_url_path,
+            '/users/')
+        self.assertEqual(('users','{index}'),
+            pdpyras.tokenize_url_path('/users'))
 
 def main():
     ap=argparse.ArgumentParser()

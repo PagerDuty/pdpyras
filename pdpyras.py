@@ -17,7 +17,15 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '2.0.2'
+__version__ = '2.1.0'
+
+
+# These are API resource endpoints/methods for which multi-update is supported
+valid_multi_update_paths = [
+    ('incidents', '{index}'),
+    ('incidents', '{id}', 'alerts', '{index}'),
+    ('priorities', '{index}'),
+]
 
 #########################
 ### UTILITY FUNCTIONS ###
@@ -91,38 +99,29 @@ def resource_envelope(method):
         but with "r" prepended.
     :returns: A callable object; the reformed method
     """
+    global valid_multi_update_paths
     http_method = method.__name__.lstrip('r')
     def call(self, path, **kw):
         pass_kw = deepcopy(kw) # Make a copy for modification
-        if path.startswith(self.url):
-            url = path
-        else:
-            url = self.url+'/'+path.lstrip('/')
-        # The following should be, at the very least, four elements:
-        # ['http:', '', 'api.pagerduty.com', '{resource}']
-        nodes = url.split('?')[0].split('/')
-        if len(nodes) < 4: 
-            raise ValueError('Invalid resource URL.')
-        # The following will be ['{resource}'], or ['{resource}', '{id}'],
-        # or ['{resource}', '{id}', '{subresource}'], etc.
-        pathnodes = nodes[3:]
-        # If there's an even number of path nodes: it's an individual resource
-        # URL, and the resource name will be the second to last path node.
-        # Otherwise, it is a resource index, and the resource name will be the
-        # last pathnode. However, if the request was GET, and made to an index
-        # endpoint, the envelope property should simply be the resource name.
-        #
-        # This is a ubiquitous pattern throughout the PagerDuty REST API: path
-        # nodes alternate between identifiers and resource names.
-        is_index = len(pathnodes)%2
-        resource = pathnodes[-(2-is_index)] # The last or second to last node
+        nodes = tokenize_url_path(path, baseurl=self.url)
+        is_index = nodes[-1] == '{index}'
+        resource = nodes[-2]
+        multi_put = http_method == 'put' and nodes in valid_multi_update_paths
         envelope_name_single = object_type(resource) # Usually the "type"
-        if is_index and http_method == 'get':
+        if is_index and http_method=='get' or multi_put:
+            # Plural resource name, for index action (GET /<resource>), or for
+            # multi-update (PUT /<resource>). In both cases, the response
+            # (former) or request (latter) body is {<resource>:[<objects>]}
             envelope_name = resource
         else:
+            # Individual resource create/read/update
+            # Body = {<singular-resource-type>: {<object>}}
             envelope_name = envelope_name_single
-        if http_method in ('post', 'put') and 'json' in pass_kw:
-            # Assumptions: if the object is not already in an envelope property,
+        # Validate the abbreviated (or full) request payload, automatically
+        # filling the gap for the implementer, if some assumptions hold true:
+        if http_method in ('post', 'put') and 'json' in pass_kw and \
+                not multi_put:
+            # Assumption: if the object is not already in an envelope property,
             # it should have a ``type`` property. Every object, even resource
             # references, have this property. We have to be explicit with this
             # and can't fill it in on behalf of the end user, because the type
@@ -136,7 +135,11 @@ def resource_envelope(method):
             elif 'type' in kw['json']:
                 # Add the envelope automatically
                 pass_kw['json'] = {envelope_name_single: pass_kw['json']}
-            # Otherwise, nothing to do; content already in an envelope
+        elif multi_put and 'json' in pass_kw:
+            # Add envelope for multi-update
+            if not envelope_name in pass_kw['json']:
+                pass_kw['json'] = {envelope_name: pass_kw['json']}
+
         r = raise_on_error(method(self, path, **pass_kw))
         # Now let's try to unpack...
         try:
@@ -171,6 +174,69 @@ def resource_name(obj_type):
         return 'escalation_policies'
     else:
         return obj_type+'s'
+
+def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
+    """
+    Classifies a URL according to some global patterns in the API.
+
+    If the URL is to access a specific individual resource by ID, the node type
+    will be identified as ``{id}``, whereas if it is an index, it will be
+    identified as ``{index}``.
+
+    For instance, ``https://api.pagerduty.com/users`` would be classified as
+    ``("users", "{index}")``, and ``https://api.pagerduty.com/users/PABC123``
+    would be classified as ``("users", "{id}")``
+
+    :param url:
+        The URL (or path) to be classified; the function should accept either
+    :param baseurl:
+        API base URL
+    :type method: str
+    :type url: str
+    :type baseurl: str
+    :rtype: tuple 
+    """
+    urlnparams = url.split('#')[0].split('?') # Ignore all #'s / params
+    url_nodes = urlnparams[0].lstrip('/').split('/')
+    path_index = 0
+    invalid_url = ValueError('Invalid API resource URL: '+url[:99])
+    # Validate URL or path:
+    if url.startswith(baseurl):
+        # Full URL: path starts after the third forward slash
+        path_index = 3
+    elif url.startswith('http') and url_nodes[0].endswith(':'):
+        # Full URL but not within the REST API
+        raise invalid_url
+    if len(url_nodes) - path_index < 1:
+        # Incomplete URL (API web root is not a valid resource)
+        raise invalid_url
+    # Path nodes generally start after the hostname, at path_index
+    path_nodes = tuple(url_nodes[path_index:])
+    if '' in path_nodes:
+        # Empty node due to two consecutive unescaped forward slashes (or
+        # trailing slash in the case of it being just the base URL plus slash)
+        raise invalid_url
+    # Tokenize / classify the URL now:
+    tokenized_nodes = [path_nodes[0]]
+    if len(path_nodes) >= 3:
+        # It's an endpoint like one of the following 
+        # /{resource}/{id}/{sub-resource}
+        # We're interested in {resource} and {sub_resource}.
+        # More deeply-nested endpoints not known to exist.
+        tokenized_nodes.extend(('{id}', path_nodes[2]))
+    # If the number of path nodes is even: it's an individual resource URL, and
+    # the resource name will be the second to last path node. Otherwise, it is
+    # a resource index, and the resource name will be the last pathnode.
+    # However, if the request was GET, and made to an index endpoint, the
+    # envelope property should simply be the resource name.
+    #
+    # This is a ubiquitous pattern throughout the PagerDuty REST API: path
+    # nodes alternate between identifiers and resource names.
+    final_node_type = '{id}'
+    if len(path_nodes)%2 == 1:
+        final_node_type = '{index}'
+    tokenized_nodes.append(final_node_type)
+    return tuple(tokenized_nodes)
 
 ###############
 ### CLASSES ###
@@ -241,16 +307,18 @@ class APISession(requests.Session):
     parent = None
     """The ``super`` object (`requests.Session`_)"""
 
-    raise_if_http_error = False
+    raise_if_http_error = True
     """
+    Raise an exception upon receiving an error response from the server.
+
     If set to true, an exception will be raised in :attr:`iter_all` if a HTTP
-    error is encountered. The default behavior is to halt iteration. In future
-    versions, it will be to raise on errors by default, so it is advised to set
-    this to True in existing code to enable the future behavior.
+    error is encountered. This is the default behavior in versions >= 2.1.0.
+    If False, the behavior is to halt iteration upon receiving a HTTP error.
     """
 
     retry = None
-    """A dict defining the retry behavior for each HTTP response status code.
+    """
+    A dict defining the retry behavior for each HTTP response status code.
 
     Each key in this dictionary represents a HTTP response code. The behavior is
     specified by the value at each key as follows:
@@ -267,7 +335,6 @@ class APISession(requests.Session):
     The default behavior is to retry infinitely on a 429, and return the
     response in any other case (assuming a HTTP response was received from the
     server).
-
     """
 
     sleep_timer = 1.5
@@ -306,9 +373,6 @@ class APISession(requests.Session):
             'Accept': 'application/vnd.pagerduty+json;version=2',
         })
         self.retry = {}
-        # Retry only twice for network errors (total of three attempts).
-        # This behavior can be altered by setting index zero.
-        self.retry[0] = 2
 
     def find(self, resource, query, attribute='name', params=None):
         """
@@ -364,7 +428,7 @@ class APISession(requests.Session):
         <https://v2.developer.pagerduty.com/v2/page/api-reference#!/Users/get_users>`_
 
         :param path:
-            The index endpoint/URL to use. 
+            The index endpoint URL to use.
         :param params:
             Additional URL parameters to include.
         :param paginate:
@@ -391,29 +455,26 @@ class APISession(requests.Session):
         :yields: Results from the index endpoint.
         :rtype: dict
         """
-        if not self.raise_if_http_error:
-            warnings.warn("Property raise_if_http_error is set to False. In "
-                "future versions, it will be True by default. When True, "
-                "functions such as find and iter_all that do not return a "
-                "requests.Response object, but rather that derive a value "
-                "from the HTTP response, will raise PDClientError when "
-                "encountering a HTTP error status.", DeprecationWarning)
-        # Resource name:
-        r_name = path.split('?')[0].split('/')[-1]
+        # Validate that it's an index URL being requested:
+        path_nodes = tokenize_url_path(path, baseurl=self.url)
+        if not path_nodes[-1] == '{index}':
+            raise ValueError("Invalid index url/path: "+path[:99])
+        # Determine the resource name:
+        r_name = path_nodes[-2]
         # Parameters to send:
         data = {}
         if paginate:
-            # retrieve 100 at a time unless otherwise specified
+            # Retrieve 100 at a time unless otherwise specified:
             data['limit'] = self.default_page_size
         if total:
             data['total'] = 1
         if params is not None:
-            # Override defaults with values given
+            # Override defaults with values given:
             data.update(params)
+
         more = True
         offset = 0
         n = 0
-
         while more: # Paginate through all results
             if paginate:
                 data['offset'] = offset
@@ -477,8 +538,8 @@ class APISession(requests.Session):
         :type response: `requests.Response`_
         :type suffix: str or None
         """
-        key = self.profiler_key(response.request.method,
-            response.url.split('?')[0], suffix)
+        key = self.profiler_key(response.request.method, response.url,
+            suffix=suffix)
         self.api_call_counts.setdefault(key, 0)
         self.api_time.setdefault(key, 0.0)
         self.api_call_counts[key] += 1
@@ -486,44 +547,26 @@ class APISession(requests.Session):
 
     def profiler_key(self, method, path, suffix=None):
         """
-        Generates a fixed-format "key" to classify a request URL for profiling.
+        Generates a fixed-format key to classify a request, i.e. for profiling.
 
         Returns a string that will have all instances of IDs replaced with
         ``{id}``, and will begin with the method in lower case followed by a
         colon, i.e. ``get:escalation_policies/{id}``
 
-        :param path:
-            The path/URI to classify
         :param method:
             The request method
+        :param path:
+            The path/URI to classify
         :param suffix:
             Optional suffix to append to the key
-        :type path: str
         :type method: str
+        :type path: str
         :type suffix: str
         :rtype: str
         """
-        path_nodes = path.replace(self.url, '').lstrip('/').split('/')
         my_suffix = "" if suffix is None else "#"+suffix 
-        node_type = '{id}'
-        sub_node_type = '{index}'
-        if len(path_nodes) < 3:
-            # Basic / root level resource, i.e. list, create, view, update
-            if len(path_nodes) == 1:
-                node_type = '{index}'
-            resource = path_nodes[0].split('?')[0]
-            key = '%s:%s/%s%s'%(method.lower(), resource, node_type, my_suffix)
-        else:
-            # It's an endpoint like one of the following 
-            # /{resource}/{id}/{sub-resource}
-            # We're interested in {resource} and {sub_resource}.
-            # More deeply-nested endpoints are not yet known to exist.
-            sub_resource = path_nodes[2].split('?')[0]
-            if len(path_nodes) == 4:
-                sub_node_type = '{id}'
-            key = '%s:%s/%s/%s/%s%s'%(method.lower(), path_nodes[0], node_type,
-                sub_resource, sub_node_type, my_suffix)
-        return key
+        path_str = '/'.join(tokenize_url_path(path, baseurl=self.url))
+        return '%s:%s'%(method.lower(), path_str)+my_suffix
 
     def rdelete(self, path, **kw):
         raise_on_error(self.delete(path, **kw))
@@ -651,6 +694,7 @@ class APISession(requests.Session):
                     "access key (%s) might not be valid."%self.trunc_token,
                     response=response)
             else:
+                # All went according to plan.
                 return response
 
     @property
