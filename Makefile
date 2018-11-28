@@ -12,4 +12,7 @@ dist: pdpyras.py setup.py
 install: dist
 	python setup.py install 
 
+testpublish: dist
+	./publish-test.sh
+
 %: dist

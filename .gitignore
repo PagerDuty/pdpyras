@@ -4,3 +4,4 @@ sphinx/build
 dist/
 pdpyras.egg-info/
 docs/.buildinfo
+tmp/

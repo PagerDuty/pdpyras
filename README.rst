@@ -3,7 +3,8 @@ PDPYRAS: PagerDuty Python REST API Sessions
 ===========================================
 A minimal, practical Python client for the PagerDuty REST API.
 
-GitHub: `PagerDuty/pdpyras <https://github.com/PagerDuty/pdpyras>`_
+* `GitHub repository <https://github.com/PagerDuty/pdpyras>`_
+* `Documentation <https://pagerduty.github.io/pdpyras>`_
 
 About
 -----
