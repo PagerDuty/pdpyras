@@ -76,11 +76,8 @@ Warranty
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
     THE SOFTWARE.
 
-Usage Guide
------------
-
 Installation
-************
+------------
 If ``pip`` is available, it can be installed via:
 
 ::
@@ -91,8 +88,13 @@ Alternately, if requests_ has already been installed locally, and ``urllib3``
 is available, one can simply download `pdpyras.py`_ into the directory where it
 will be used.
 
+Usage Guide
+-----------
+
 Basic Usage
 ***********
+
+Some examples of usage:
 
 **Basic getting:** Obtain a user profile as a dict object:
 
@@ -155,6 +157,69 @@ and update their name to "Jane Doe":
             })
         except PDClientError:
             updated_user = None
+
+**Multiple update:** acknowledge all triggered incidents assigned to user with
+ID ``PHIJ789``. Note that to acknowledge, we need to set the ``From`` header.
+This example assumes that ``admin@example.com`` corresponds to a user in the
+PagerDuty account:
+
+::
+
+    from pdpyras import APISession
+    api_token = 'your-token-here'
+    sesion = APISession(api_token, default_from='admin@example.com')
+    # Query incidents
+    incidents = list(session.iter_all(
+        'incidents',
+        params={'user_ids[]':['PHIJ789'],'statuses[]':['triggered']}
+    ))
+    # Change their state
+    for i in incidents:
+        i['status'] = 'acknowledged'
+    # PUT the updated list back up to the API
+    updated_incidents = session.rput('incidents', json=incidents)
+
+General Concepts
+****************
+In all cases, when sending or receiving data through the REST API using
+``pdpyras``, note the following:
+
+URLs
+++++
+* **There is no need to include the API base URL.** Any path relative to the web
+  root, leading slash or no, is automatically appended to the base URL when 
+  constructing an API request, i.e. one can specify ``users/PABC123`` instead
+  of ``https://api.pagerduty.com/users/PABC123``.
+
+* One can also pass the full URL of an API endpoint and it will still work, i.e. 
+  the ``self`` property of any object can be used, and there is no need to strip
+  out the API base URL.
+
+Request and Response Bodies
++++++++++++++++++++++++++++
+* Data is represented as dictionary objects, and should have a structure that
+  mirrors that of the API schema
+
+* Everything is automatically JSON-encoded and decoded, using it as follows:
+
+  - To send a JSON request body, pass a ``dict`` object (or ``list``, where
+    applicable) in the ``json`` keyword argument.
+
+  - To get the response body as a ``dict`` (or ``list``, if applicable), call 
+    the `json
+    <http://docs.python-requests.org/en/master/api/#requests.Response.json>`_
+    method of the response object.
+
+  - If using the ``r{VERB}`` methods, i.e.  ``rget``, the return value will be
+    the ``dict``/``list`` and there is no need to call ``response.json()``
+
+Using Special Features of Requests
+++++++++++++++++++++++++++++++++++
+* Keyword arguments to the verb functions get passed through to the similarly-
+  named functions in `requests.Session`_, so for additional options, please
+  refer to the documentation provided by the Requests project.
+
+
 
 Data Access Abstraction
 ***********************
@@ -238,6 +303,40 @@ Example:
 
     session.rdelete("/services/PI86NOW")
     print("Service deleted.")
+
+Managing, a.k.a. Multi-Updating
++++++++++++++++++++++++++++++++
+Introduced in version 2.1 is support for automatic data envelope functionality
+in multi-update actions.
+
+As of this writing, multi-update is limited to the following actions:
+
+* `PUT /incidents <https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents>`_
+* `PUT /incidents/{id}/alerts <https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents_id_alerts>`_
+* PUT /priorities (not yet published, as of 2018-11-28)
+
+To use, simply pass in a list of objects or references (dictionaries having a
+structure according to the API schema reference for that object type) to the
+``json`` keyword argument of :attr:`pdpyras.APISession.rput`, and the final
+payload will be an object with one property named after the resource,
+containing that list.
+
+For instance, to resolve two incidents with IDs ``PABC123`` and ``PDEF456``:
+
+::
+
+    session.rput(
+        "incidents",
+        json=[{'id':'PABC123','type':'incident_reference', 'status':'resolved'},
+              {'id':'PDEF456','type':'incident_reference', 'status':'resolved'}]
+    )
+
+In this way, a single API request can more efficiently perform multiple update
+actions.
+
+It is important to note, however, that certain actions such as updating
+incidents require the ``From`` header, which should be the login email address
+of a valid PagerDuty user.
 
 Error Handling
 **************

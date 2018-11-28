@@ -6,14 +6,13 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 2.0.2 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 2.1.0 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
    
@@ -105,10 +104,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.</div></blockquote>
 </div>
 </div>
-<div class="section" id="usage-guide">
-<h2>Usage Guide<a class="headerlink" href="#usage-guide" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="installation">
-<h3>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h3>
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <p>If <code class="docutils literal notranslate"><span class="pre">pip</span></code> is available, it can be installed via:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">pdpyras</span>
 </pre></div>
@@ -117,8 +114,11 @@ THE SOFTWARE.</div></blockquote>
 is available, one can simply download <a class="reference external" href="https://raw.githubusercontent.com/PagerDuty/pdpyras/master/pdpyras.py">pdpyras.py</a> into the directory where it
 will be used.</p>
 </div>
+<div class="section" id="usage-guide">
+<h2>Usage Guide<a class="headerlink" href="#usage-guide" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="basic-usage">
 <h3>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h3>
+<p>Some examples of usage:</p>
 <p><strong>Basic getting:</strong> Obtain a user profile as a dict object:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pdpyras</span> <span class="k">import</span> <span class="n">APISession</span>
 <span class="n">api_token</span> <span class="o">=</span> <span class="s1">&#39;your-token-here&#39;</span>
@@ -172,6 +172,67 @@ and update their name to “Jane Doe”:</p>
     <span class="k">except</span> <span class="n">PDClientError</span><span class="p">:</span>
         <span class="n">updated_user</span> <span class="o">=</span> <span class="kc">None</span>
 </pre></div>
+</div>
+<p><strong>Multiple update:</strong> acknowledge all triggered incidents assigned to user with
+ID <code class="docutils literal notranslate"><span class="pre">PHIJ789</span></code>. Note that to acknowledge, we need to set the <code class="docutils literal notranslate"><span class="pre">From</span></code> header.
+This example assumes that <code class="docutils literal notranslate"><span class="pre">admin&#64;example.com</span></code> corresponds to a user in the
+PagerDuty account:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pdpyras</span> <span class="k">import</span> <span class="n">APISession</span>
+<span class="n">api_token</span> <span class="o">=</span> <span class="s1">&#39;your-token-here&#39;</span>
+<span class="n">sesion</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">,</span> <span class="n">default_from</span><span class="o">=</span><span class="s1">&#39;admin@example.com&#39;</span><span class="p">)</span>
+<span class="c1"># Query incidents</span>
+<span class="n">incidents</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">iter_all</span><span class="p">(</span>
+    <span class="s1">&#39;incidents&#39;</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;user_ids[]&#39;</span><span class="p">:[</span><span class="s1">&#39;PHIJ789&#39;</span><span class="p">],</span><span class="s1">&#39;statuses[]&#39;</span><span class="p">:[</span><span class="s1">&#39;triggered&#39;</span><span class="p">]}</span>
+<span class="p">))</span>
+<span class="c1"># Change their state</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">incidents</span><span class="p">:</span>
+    <span class="n">i</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;acknowledged&#39;</span>
+<span class="c1"># PUT the updated list back up to the API</span>
+<span class="n">updated_incidents</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rput</span><span class="p">(</span><span class="s1">&#39;incidents&#39;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">incidents</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="general-concepts">
+<h3>General Concepts<a class="headerlink" href="#general-concepts" title="Permalink to this headline">¶</a></h3>
+<p>In all cases, when sending or receiving data through the REST API using
+<code class="docutils literal notranslate"><span class="pre">pdpyras</span></code>, note the following:</p>
+<div class="section" id="urls">
+<h4>URLs<a class="headerlink" href="#urls" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><strong>There is no need to include the API base URL.</strong> Any path relative to the web
+root, leading slash or no, is automatically appended to the base URL when
+constructing an API request, i.e. one can specify <code class="docutils literal notranslate"><span class="pre">users/PABC123</span></code> instead
+of <code class="docutils literal notranslate"><span class="pre">https://api.pagerduty.com/users/PABC123</span></code>.</li>
+<li>One can also pass the full URL of an API endpoint and it will still work, i.e.
+the <code class="docutils literal notranslate"><span class="pre">self</span></code> property of any object can be used, and there is no need to strip
+out the API base URL.</li>
+</ul>
+</div>
+<div class="section" id="request-and-response-bodies">
+<h4>Request and Response Bodies<a class="headerlink" href="#request-and-response-bodies" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Data is represented as dictionary objects, and should have a structure that
+mirrors that of the API schema</li>
+<li>Everything is automatically JSON-encoded and decoded, using it as follows:<ul>
+<li>To send a JSON request body, pass a <code class="docutils literal notranslate"><span class="pre">dict</span></code> object (or <code class="docutils literal notranslate"><span class="pre">list</span></code>, where
+applicable) in the <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument.</li>
+<li>To get the response body as a <code class="docutils literal notranslate"><span class="pre">dict</span></code> (or <code class="docutils literal notranslate"><span class="pre">list</span></code>, if applicable), call
+the <a class="reference external" href="http://docs.python-requests.org/en/master/api/#requests.Response.json">json</a>
+method of the response object.</li>
+<li>If using the <code class="docutils literal notranslate"><span class="pre">r{VERB}</span></code> methods, i.e.  <code class="docutils literal notranslate"><span class="pre">rget</span></code>, the return value will be
+the <code class="docutils literal notranslate"><span class="pre">dict</span></code>/<code class="docutils literal notranslate"><span class="pre">list</span></code> and there is no need to call <code class="docutils literal notranslate"><span class="pre">response.json()</span></code></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="using-special-features-of-requests">
+<h4>Using Special Features of Requests<a class="headerlink" href="#using-special-features-of-requests" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Keyword arguments to the verb functions get passed through to the similarly-
+named functions in <a class="reference external" href="http://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>, so for additional options, please
+refer to the documentation provided by the Requests project.</li>
+</ul>
 </div>
 </div>
 <div class="section" id="data-access-abstraction">
@@ -245,6 +306,35 @@ the API responds with a non-success HTTP status.</p>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Service deleted.&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</div>
+<div class="section" id="managing-a-k-a-multi-updating">
+<h4>Managing, a.k.a. Multi-Updating<a class="headerlink" href="#managing-a-k-a-multi-updating" title="Permalink to this headline">¶</a></h4>
+<p>Introduced in version 2.1 is support for automatic data envelope functionality
+in multi-update actions.</p>
+<p>As of this writing, multi-update is limited to the following actions:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents">PUT /incidents</a></li>
+<li><a class="reference external" href="https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents_id_alerts">PUT /incidents/{id}/alerts</a></li>
+<li>PUT /priorities (not yet published, as of 2018-11-28)</li>
+</ul>
+<p>To use, simply pass in a list of objects or references (dictionaries having a
+structure according to the API schema reference for that object type) to the
+<code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument of <a class="reference internal" href="#pdpyras.APISession.rput" title="pdpyras.APISession.rput"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rput</span></code></a>, and the final
+payload will be an object with one property named after the resource,
+containing that list.</p>
+<p>For instance, to resolve two incidents with IDs <code class="docutils literal notranslate"><span class="pre">PABC123</span></code> and <code class="docutils literal notranslate"><span class="pre">PDEF456</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">session</span><span class="o">.</span><span class="n">rput</span><span class="p">(</span>
+    <span class="s2">&quot;incidents&quot;</span><span class="p">,</span>
+    <span class="n">json</span><span class="o">=</span><span class="p">[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span><span class="s1">&#39;PABC123&#39;</span><span class="p">,</span><span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;incident_reference&#39;</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">:</span><span class="s1">&#39;resolved&#39;</span><span class="p">},</span>
+          <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span><span class="s1">&#39;PDEF456&#39;</span><span class="p">,</span><span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;incident_reference&#39;</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">:</span><span class="s1">&#39;resolved&#39;</span><span class="p">}]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>In this way, a single API request can more efficiently perform multiple update
+actions.</p>
+<p>It is important to note, however, that certain actions such as updating
+incidents require the <code class="docutils literal notranslate"><span class="pre">From</span></code> header, which should be the login email address
+of a valid PagerDuty user.</p>
 </div>
 </div>
 <div class="section" id="error-handling">
@@ -448,7 +538,7 @@ response; see: <a class="reference external" href="https://v2.developer.pagerdut
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>path</strong> (<em>str</em>) – The index endpoint/URL to use.</li>
+<li><strong>path</strong> (<em>str</em>) – The index endpoint URL to use.</li>
 <li><strong>params</strong> (<em>dict</em><em> or </em><em>None</em>) – Additional URL parameters to include.</li>
 <li><strong>paginate</strong> (<em>bool</em>) – If True, use <a class="reference external" href="https://v2.developer.pagerduty.com/docs/pagination">pagination</a> to get through all available results. If
 False, ignore / don’t page through more than the first 100 results.
@@ -528,7 +618,7 @@ and can be extended in child classes.</p>
 <dl class="method">
 <dt id="pdpyras.APISession.profiler_key">
 <code class="descname">profiler_key</code><span class="sig-paren">(</span><em>method</em>, <em>path</em>, <em>suffix=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.profiler_key" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generates a fixed-format “key” to classify a request URL for profiling.</p>
+<dd><p>Generates a fixed-format key to classify a request, i.e. for profiling.</p>
 <p>Returns a string that will have all instances of IDs replaced with
 <code class="docutils literal notranslate"><span class="pre">{id}</span></code>, and will begin with the method in lower case followed by a
 colon, i.e. <code class="docutils literal notranslate"><span class="pre">get:escalation_policies/{id}</span></code></p>
@@ -537,8 +627,8 @@ colon, i.e. <code class="docutils literal notranslate"><span class="pre">get:esc
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>path</strong> (<em>str</em>) – The path/URI to classify</li>
 <li><strong>method</strong> (<em>str</em>) – The request method</li>
+<li><strong>path</strong> (<em>str</em>) – The path/URI to classify</li>
 <li><strong>suffix</strong> (<em>str</em>) – Optional suffix to append to the key</li>
 </ul>
 </td>
@@ -552,11 +642,11 @@ colon, i.e. <code class="docutils literal notranslate"><span class="pre">get:esc
 
 <dl class="attribute">
 <dt id="pdpyras.APISession.raise_if_http_error">
-<code class="descname">raise_if_http_error</code><em class="property"> = False</em><a class="headerlink" href="#pdpyras.APISession.raise_if_http_error" title="Permalink to this definition">¶</a></dt>
-<dd><p>If set to true, an exception will be raised in <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpyras.APISession.iter_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">iter_all</span></code></a> if a HTTP
-error is encountered. The default behavior is to halt iteration. In future
-versions, it will be to raise on errors by default, so it is advised to set
-this to True in existing code to enable the future behavior.</p>
+<code class="descname">raise_if_http_error</code><em class="property"> = True</em><a class="headerlink" href="#pdpyras.APISession.raise_if_http_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raise an exception upon receiving an error response from the server.</p>
+<p>If set to true, an exception will be raised in <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpyras.APISession.iter_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">iter_all</span></code></a> if a HTTP
+error is encountered. This is the default behavior in versions &gt;= 2.1.0.
+If False, the behavior is to halt iteration upon receiving a HTTP error.</p>
 </dd></dl>
 
 <dl class="method">
@@ -780,6 +870,33 @@ resource’s index URL</td>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="pdpyras.tokenize_url_path">
+<code class="descclassname">pdpyras.</code><code class="descname">tokenize_url_path</code><span class="sig-paren">(</span><em>url</em>, <em>baseurl='https://api.pagerduty.com'</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.tokenize_url_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Classifies a URL according to some global patterns in the API.</p>
+<p>If the URL is to access a specific individual resource by ID, the node type
+will be identified as <code class="docutils literal notranslate"><span class="pre">{id}</span></code>, whereas if it is an index, it will be
+identified as <code class="docutils literal notranslate"><span class="pre">{index}</span></code>.</p>
+<p>For instance, <code class="docutils literal notranslate"><span class="pre">https://api.pagerduty.com/users</span></code> would be classified as
+<code class="docutils literal notranslate"><span class="pre">(&quot;users&quot;,</span> <span class="pre">&quot;{index}&quot;)</span></code>, and <code class="docutils literal notranslate"><span class="pre">https://api.pagerduty.com/users/PABC123</span></code>
+would be classified as <code class="docutils literal notranslate"><span class="pre">(&quot;users&quot;,</span> <span class="pre">&quot;{id}&quot;)</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>url</strong> (<em>str</em>) – The URL (or path) to be classified; the function should accept either</li>
+<li><strong>baseurl</strong> (<em>str</em>) – API base URL</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">tuple</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 </div>
 </div>
@@ -800,13 +917,20 @@ resource’s index URL</td>
 <li><a class="reference internal" href="#warranty">Warranty</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#usage-guide">Usage Guide</a><ul>
 <li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#usage-guide">Usage Guide</a><ul>
 <li><a class="reference internal" href="#basic-usage">Basic Usage</a></li>
+<li><a class="reference internal" href="#general-concepts">General Concepts</a><ul>
+<li><a class="reference internal" href="#urls">URLs</a></li>
+<li><a class="reference internal" href="#request-and-response-bodies">Request and Response Bodies</a></li>
+<li><a class="reference internal" href="#using-special-features-of-requests">Using Special Features of Requests</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#data-access-abstraction">Data Access Abstraction</a><ul>
 <li><a class="reference internal" href="#reading">Reading</a></li>
 <li><a class="reference internal" href="#creating-and-updating">Creating and Updating</a></li>
 <li><a class="reference internal" href="#deleting">Deleting</a></li>
+<li><a class="reference internal" href="#managing-a-k-a-multi-updating">Managing, a.k.a. Multi-Updating</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#error-handling">Error Handling</a></li>
@@ -831,7 +955,7 @@ resource’s index URL</td>
       &copy;2018, PagerDuty Inc..
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
