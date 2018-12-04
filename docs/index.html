@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 2.1.0 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 2.2.0 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -34,7 +34,10 @@
   <div class="section" id="pdpyras-pagerduty-python-rest-api-sessions">
 <h1>PDPYRAS: PagerDuty Python REST API Sessions<a class="headerlink" href="#pdpyras-pagerduty-python-rest-api-sessions" title="Permalink to this headline">¶</a></h1>
 <p>A minimal, practical Python client for the PagerDuty REST API.</p>
-<p>GitHub: <a class="reference external" href="https://github.com/PagerDuty/pdpyras">PagerDuty/pdpyras</a></p>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/PagerDuty/pdpyras">GitHub repository</a></li>
+<li><a class="reference external" href="https://pagerduty.github.io/pdpyras">Documentation</a></li>
+</ul>
 <div class="section" id="about">
 <h2>About<a class="headerlink" href="#about" title="Permalink to this headline">¶</a></h2>
 <p>This library supplies a class <a class="reference internal" href="#pdpyras.APISession" title="pdpyras.APISession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.APISession</span></code></a> extending
@@ -493,6 +496,34 @@ iterating/querying an index (the <code class="docutils literal notranslate"><spa
 </dd></dl>
 
 <dl class="method">
+<dt id="pdpyras.APISession.dict_all">
+<code class="descname">dict_all</code><span class="sig-paren">(</span><em>path</em>, <em>by='id'</em>, <em>params=None</em>, <em>paginate=True</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.dict_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary of all objects from a given index endpoint.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> – The index endpoint URL to use.</li>
+<li><strong>by</strong> – The attribute of each object to use for the key values of the
+dictionary. This is <code class="docutils literal notranslate"><span class="pre">id</span></code> by default. Please note, there is no
+uniqueness validation, so if you use an attribute that is not
+distinct for the data set, this function will omit some data in the
+results.</li>
+<li><strong>params</strong> – Additional URL parameters to include.</li>
+<li><strong>paginate</strong> – If True, use <a class="reference external" href="https://v2.developer.pagerduty.com/docs/pagination">pagination</a> to get through all available results. If
+False, ignore / don’t page through more than the first 100 results.
+Useful for special index endpoints that don’t fully support
+pagination yet, i.e. “nested” endpoints like
+<code class="docutils literal notranslate"><span class="pre">/users/{id}/contact_methods</span></code> and <code class="docutils literal notranslate"><span class="pre">/services/{id}/integrations</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="pdpyras.APISession.find">
 <code class="descname">find</code><span class="sig-paren">(</span><em>resource</em>, <em>query</em>, <em>attribute='name'</em>, <em>params=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.find" title="Permalink to this definition">¶</a></dt>
 <dd><p>Finds an object of a given resource exactly matching a query.</p>
@@ -561,6 +592,29 @@ to compute the total count of results in the query.</li>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pdpyras.APISession.list_all">
+<code class="descname">list_all</code><span class="sig-paren">(</span><em>path</em>, <em>params=None</em>, <em>paginate=True</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.list_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of all objects from a given index endpoint.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> – The index endpoint URL to use.</li>
+<li><strong>params</strong> – Additional URL parameters to include.</li>
+<li><strong>paginate</strong> – If True, use <a class="reference external" href="https://v2.developer.pagerduty.com/docs/pagination">pagination</a> to get through all available results. If
+False, ignore / don’t page through more than the first 100 results.
+Useful for special index endpoints that don’t fully support
+pagination yet, i.e. “nested” endpoints like
+<code class="docutils literal notranslate"><span class="pre">/users/{id}/contact_methods</span></code> and <code class="docutils literal notranslate"><span class="pre">/services/{id}/integrations</span></code></li>
+</ul>
 </td>
 </tr>
 </tbody>

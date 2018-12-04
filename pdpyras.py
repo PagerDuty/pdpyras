@@ -17,7 +17,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '2.1.0'
+__version__ = '2.2.0'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -374,6 +374,31 @@ class APISession(requests.Session):
         })
         self.retry = {}
 
+    def dict_all(self, path, by='id', params=None, paginate=True):
+        """
+        Returns a dictionary of all objects from a given index endpoint.
+
+        :param path:
+            The index endpoint URL to use.
+        :param by:
+            The attribute of each object to use for the key values of the
+            dictionary. This is ``id`` by default. Please note, there is no
+            uniqueness validation, so if you use an attribute that is not
+            distinct for the data set, this function will omit some data in the
+            results.
+        :param params:
+            Additional URL parameters to include.
+        :param paginate:
+            If True, use `pagination`_ to get through all available results. If
+            False, ignore / don't page through more than the first 100 results.
+            Useful for special index endpoints that don't fully support
+            pagination yet, i.e. "nested" endpoints like
+            ``/users/{id}/contact_methods`` and ``/services/{id}/integrations``
+        """
+        iterator = self.iter_all(path, params=params, paginate=paginate)
+        return {obj[by]:obj for obj in iterator}
+
+
     def find(self, resource, query, attribute='name', params=None):
         """
         Finds an object of a given resource exactly matching a query.
@@ -520,6 +545,23 @@ class APISession(requests.Session):
                 if hasattr(item_hook, '__call__'):
                     item_hook(result, n, total_count)
                 yield result
+
+    def list_all(self, path, params=None, paginate=True):
+        """
+        Returns a list of all objects from a given index endpoint.
+
+        :param path:
+            The index endpoint URL to use.
+        :param params:
+            Additional URL parameters to include.
+        :param paginate:
+            If True, use `pagination`_ to get through all available results. If
+            False, ignore / don't page through more than the first 100 results.
+            Useful for special index endpoints that don't fully support
+            pagination yet, i.e. "nested" endpoints like
+            ``/users/{id}/contact_methods`` and ``/services/{id}/integrations``
+        """
+        return list(self.iter_all(path, params=params, paginate=paginate))
 
     def profile(self, response, suffix=None):
         """

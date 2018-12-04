@@ -1,3 +1,10 @@
+2018-12-04
+==========
+
+**New in version 2.2:**
+
+* Methods ``list_all`` and ``dict_all`` turn all results from an index into a list/dict to save a bit of effort
+
 2018-11-28
 ==========
 
