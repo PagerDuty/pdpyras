@@ -316,6 +316,9 @@ As of this writing, multi-update is limited to the following actions:
 * `PUT /incidents/{id}/alerts <https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents_id_alerts>`_
 * PUT /priorities (not yet published, as of 2018-11-28)
 
+**Please note:** as of yet, merginging incidents and any other endpoints (i.e.
+if it is non-documented).
+
 To use, simply pass in a list of objects or references (dictionaries having a
 structure according to the API schema reference for that object type) to the
 ``json`` keyword argument of :attr:`pdpyras.APISession.rput`, and the final
