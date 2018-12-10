@@ -374,6 +374,21 @@ the user exists, and does nothing otherwise:</p>
         <span class="k">raise</span> <span class="n">e</span>
 </pre></div>
 </div>
+<p>Just make sure to import <cite>PDClientError</cite> or reference it throught he namespace, i.e.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pdpyras</span> <span class="k">import</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">PDClientError</span>
+
+<span class="k">except</span> <span class="n">PDClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>Or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pdpyras</span>
+
+<span class="o">...</span>
+
+<span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<span class="o">...</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="http-retry-logic">
 <h3>HTTP Retry Logic<a class="headerlink" href="#http-retry-logic" title="Permalink to this headline">¶</a></h3>

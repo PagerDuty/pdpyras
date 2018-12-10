@@ -6,7 +6,6 @@ A minimal, practical Python client for the PagerDuty REST API.
 * `GitHub repository <https://github.com/PagerDuty/pdpyras>`_
 * `Documentation <https://pagerduty.github.io/pdpyras>`_
 
-
 About
 -----
 This library supplies a class :class:`pdpyras.APISession` extending
@@ -377,6 +376,26 @@ the user exists, and does nothing otherwise:
                 raise e
         else:
             raise e
+
+Just make sure to import `PDClientError` or reference it throught he namespace, i.e.
+
+::
+
+    from pdpyras import APISession, PDClientError
+
+    except PDClientError as e:
+
+Or:
+
+::
+
+    import pdpyras
+
+    ...
+
+    except pdpyras.PDClientError as e:
+    ...
+
 
 HTTP Retry Logic
 ****************
