@@ -412,7 +412,7 @@ regard, so that the client can be made to retry on other statuses (i.e.
 that the client will tolerate before returning the response object is defined
 in :attr:`pdpyras.APISession.max_http_attempts`, and this will supersede the
 maximum number of retries defined in
-:attr:`pdpyras.APISession.max_http_attempts`. 
+:attr:`pdpyras.APISession.retry`. 
 
 For example, the following will take about 30 seconds plus API request time
 (carrying out four attempts, with 2, 4, 8 and 16 second pauses between them),

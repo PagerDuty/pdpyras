@@ -31,6 +31,15 @@ valid_multi_update_paths = [
 ### UTILITY FUNCTIONS ###
 #########################
 
+def auto_json(method):
+    """
+    Function decorator that makes methods return the full response JSON
+    """
+    def call(self, path, **kw):
+        response = raise_on_error(method(self, path, **pass_kw))
+        return try_decoding(response)
+    return call
+
 def object_type(r_name):
     """
     Derives an object type (i.e. ``user``) from a resource name (i.e. ``users``)
@@ -142,11 +151,7 @@ def resource_envelope(method):
 
         r = raise_on_error(method(self, path, **pass_kw))
         # Now let's try to unpack...
-        try:
-            response_obj = r.json()
-        except ValueError as e:
-            raise PDClientError("API responded with invalid JSON: "+r.text[:99],
-                response=r)
+        response_obj = try_decoding(r)
         # Get the encapsulated object
         if envelope_name not in response_obj:
             raise PDClientError("Cannot extract object; expected top-level "
@@ -238,11 +243,30 @@ def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
     tokenized_nodes.append(final_node_type)
     return tuple(tokenized_nodes)
 
+def try_decoding(r):
+    """
+    JSON-decode the body of a response 
+
+    :param r:
+        `requests.Response`_ object
+    """
+    try:
+        return r.json()
+    except ValueError as e:
+        raise PDClientError("API responded with invalid JSON: "+r.text[:99],
+            response=r)
+
 ###############
 ### CLASSES ###
 ###############
 
-class APISession(requests.Session):
+class Session(requests.Session):
+    pass
+
+class EventsAPISession(Session):
+    pass
+
+class APISession(Session):
     """
     Reusable PagerDuty REST API session objects for making API requests.
 
@@ -374,9 +398,13 @@ class APISession(requests.Session):
         })
         self.retry = {}
 
-    def dict_all(self, path, by='id', params=None, paginate=True):
+    def dict_all(self, path, **kw):
         """
         Returns a dictionary of all objects from a given index endpoint.
+
+        With the exception of ``by``, all keyword arguments passed to this
+        method are also passed to :attr:`iter_all`_; see the documentation on
+        that method for further details.
 
         :param path:
             The index endpoint URL to use.
@@ -386,16 +414,9 @@ class APISession(requests.Session):
             uniqueness validation, so if you use an attribute that is not
             distinct for the data set, this function will omit some data in the
             results.
-        :param params:
-            Additional URL parameters to include.
-        :param paginate:
-            If True, use `pagination`_ to get through all available results. If
-            False, ignore / don't page through more than the first 100 results.
-            Useful for special index endpoints that don't fully support
-            pagination yet, i.e. "nested" endpoints like
-            ``/users/{id}/contact_methods`` and ``/services/{id}/integrations``
         """
-        iterator = self.iter_all(path, params=params, paginate=paginate)
+        by = kw.pop('by', 'id')
+        iterator = self.iter_all(path, **kw)
         return {obj[by]:obj for obj in iterator}
 
 
@@ -546,22 +567,44 @@ class APISession(requests.Session):
                     item_hook(result, n, total_count)
                 yield result
 
-    def list_all(self, path, params=None, paginate=True):
+    @auto_json
+    def jget(self, path, **kw):
+        """
+        Performs a GET request, returning the JSON-decoded body as a dictionary
+
+        :raises PDClientError: In the event of HTTP error 
+        """
+        return self.get(path, **kw)
+
+    @auto_json
+    def jpost(self, path, **kw):
+        """
+        Performs a POST request, returning the JSON-decoded body as a dictionary
+
+        :raises PDClientError: In the event of HTTP error 
+        """
+        return self.post(path, **kw)
+
+    @auto_json
+    def jput(self, path, **kw):
+        """
+        Performs a PUT request, returning the JSON-decoded body as a dictionary
+
+        :rauses PDClientError: In the event of HTTP errror
+        """
+        return self.put(path, **kw)
+
+    def list_all(self, path, **kw):
         """
         Returns a list of all objects from a given index endpoint.
 
+        All keyword arguments passed to this function are also passed directly
+        to :attr:`iter_all`_; see the documentation on that method for details.
+
         :param path:
             The index endpoint URL to use.
-        :param params:
-            Additional URL parameters to include.
-        :param paginate:
-            If True, use `pagination`_ to get through all available results. If
-            False, ignore / don't page through more than the first 100 results.
-            Useful for special index endpoints that don't fully support
-            pagination yet, i.e. "nested" endpoints like
-            ``/users/{id}/contact_methods`` and ``/services/{id}/integrations``
         """
-        return list(self.iter_all(path, params=params, paginate=paginate))
+        return list(self.iter_all(path, **kw))
 
     def profile(self, response, suffix=None):
         """
