@@ -27,6 +27,53 @@ valid_multi_update_paths = [
     ('priorities', '{index}'),
 ]
 
+# Whitelist of REST API endpoints for which automatic payload unpacking is
+# supported (where the envelope name can be straightforwardly derived from the
+# resource name in the URL)
+auto_envelope_supported = [
+    ('abilities', '{index}'),
+    ('addons', '{id}'),
+    ('addons', '{index}'),
+    ('escalation_policies', '{id}'),
+    ('escalation_policies', '{index}'),
+    ('extension_schemas', '{id}'),
+    ('extension_schemas', '{index}'),
+    ('extensions', '{id}'),
+    ('extensions', '{index}'),
+    ('incidents', '{id}'),
+    ('incidents', '{id}', 'alerts', '{id}'),
+    ('incidents', '{id}', 'alerts', '{index}'),
+    ('incidents', '{id}', 'log_entries', '{id}'),
+    ('incidents', '{id}', 'log_entries', '{index}'),
+    ('incidents', '{id}', 'notes', '{index}'),
+    ('incidents', '{index}'),
+    ('priorities', '{index}'),
+    ('log_entries', '{id}'),
+    ('log_entries', '{index}'),
+    ('maintenance_windows', '{id}'),
+    ('maintenance_windows', '{index}'),
+    ('notifications', '{index}'),
+    ('oncalls', '{index}'),
+    ('schedules', '{id}'),
+    ('schedules', '{id}', 'overrides', '{id}'),
+    ('schedules', '{id}', 'overrides', '{index}'),
+    ('schedules', '{id}', 'users', '{index}'),
+    ('schedules', '{index}'),
+    ('services', '{id}'),
+    ('services', '{id}', 'integrations', '{id}'),
+    ('services', '{id}', 'integrations', '{index}'),
+    ('services', '{index}'),
+    ('teams', '{id}'),
+    ('teams', '{index}'),
+    ('users', '{id}'),
+    ('users', '{id}', 'contact_methods', '{id}'),
+    ('users', '{id}', 'contact_methods', '{index}'),
+    ('users', '{id}', 'notification_rules', '{id}'),
+    ('users', '{id}', 'notification_rules', '{index}'),
+    ('users', '{index}'),
+    ('vendors', '{index}'),
+]
+
 #########################
 ### UTILITY FUNCTIONS ###
 #########################
@@ -113,6 +160,12 @@ def resource_envelope(method):
     def call(self, path, **kw):
         pass_kw = deepcopy(kw) # Make a copy for modification
         nodes = tokenize_url_path(path, baseurl=self.url)
+        if nodes not in auto_envelope_supported:
+            raise ValueError("Automatic unpacking of the payload from the "
+                "resource envelope is not supported for this endpoint "
+                "(%(path)s). Please use %(method)s or j%(method)s instead."%{
+                    'path': path, 'method': http_method
+                })
         is_index = nodes[-1] == '{index}'
         resource = nodes[-2]
         multi_put = http_method == 'put' and nodes in valid_multi_update_paths
