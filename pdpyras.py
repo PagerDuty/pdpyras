@@ -245,7 +245,7 @@ def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
 
 def try_decoding(r):
     """
-    JSON-decode the body of a response 
+    JSON-decode the body of a response and raise PDClientError if it fails.
 
     :param r:
         `requests.Response`_ object
@@ -263,6 +263,19 @@ def try_decoding(r):
 class PDSession(requests.Session):
     """
     Base class for making HTTP requests to PagerDuty APIs.
+
+    Instances of this class are essentially the same as `requests.Session`_
+    objects, but with a few modifications:
+
+    - The client will reattempt the request with configurable, auto-increasing
+      cooldown/retry intervals if encountering a network error or rate limit
+    - When making requests, headers specified ad-hoc in calls to HTTP verb
+      functions will not replace, but will be merged with, default headers.
+    - The request URL, if it doesn't already start with the REST API base URL,
+      will be prepended with the default REST API base URL.
+    - It will only perform requests with methods as given in the
+      :attr:`permitted_methods` list, and will raise :class:`PDClientError` for
+      any other HTTP methods.
     """
 
     log = None
@@ -341,13 +354,16 @@ class PDSession(requests.Session):
         else:
             my_name = self.trunc_key
         self.log = logging.getLogger('pdpyras.%s(%s)'%(
-            self.__class__.__name__,
-            my_name
-        ))
+            self.__class__.__name__, my_name))
         self.retry = {}
 
     @property
     def api_key(self):
+        """
+        API Key property getter.
+
+        Returns the _api_key attribute's value.
+        """
         return self._api_key
 
     @api_key.setter
@@ -384,11 +400,11 @@ class PDSession(requests.Session):
         sleep_timer = self.sleep_timer
         network_attempts = 0
         http_attempts = {}
-        method = method.upper()
+        method = method.strip().upper()
         if method not in self.permitted_methods:
             raise PDClientError(
-                "Method %s is not supported by this API."%method
-            )
+                "Method %s not supported by this API. Permitted methods: %s"%(
+                    method, ', '.join(self.permitted_methods)))
         req_kw = deepcopy(kwargs)
         my_headers = self.prepare_headers(method)
         # Merge, but do not replace, any headers specified in keyword arguments:
@@ -462,7 +478,7 @@ class PDSession(requests.Session):
         The getter will return the value of self._api_key, so any setters should
         set this property.
         """
-        pass
+        self._api_key =  api_key
 
     @property
     def trunc_key(self):
@@ -471,7 +487,15 @@ class PDSession(requests.Session):
 
 class EventsAPISession(PDSession):
 
-    permitted_methods = ('POST')
+    """
+    Session class for submitting events to the PagerDuty v2 Events API.
+
+    Provides methods for submitting events to the Events API.
+
+    Inherits from :class:`PDSession`.
+    """
+
+    permitted_methods = ('POST',)
 
     url = "https://events.pagerduty.com"
 
@@ -532,6 +556,8 @@ class EventsAPISession(PDSession):
         :type severity: str
         :type payload: dict
         :type custom_details: dict
+        :type images: list
+        :type links: list
         :rtype: str
         :returns:
             The deduplication key of the incident, if any.
@@ -571,11 +597,34 @@ class EventsAPISession(PDSession):
 
     def trigger(self, summary, source, dedup_key=None, severity='critical',
             payload=None, custom_details=None, images=None, links=None):
+        """
+        Trigger an incident
+
+        :param summary:
+            Summary / brief description of the incident
+
+        :type summary: str
+        :type source: str
+        :type dedup_key: str
+        :type severity: str
+        :type payload: dict
+        :type custom_details: dict
+        :type images: list
+        :type links: list
+
+        """
         return self.send_event('trigger', source=source, summary=summary,
             dedup_key=dedup_key, severity=severity, payload=payload,
             custom_details=custom_details, images=images, links=links)
 
     def set_api_key(self, api_key):
+        """
+        Sets the routing key in the ``X-Routing-Key`` header.
+
+        :param api_key:
+            The routing key to use for this session.
+        :type api_key: str
+        """
         self._api_key = api_key
         self.headers.update({
             'X-Routing-Key': api_key,
@@ -586,26 +635,20 @@ class APISession(PDSession):
     """
     Reusable PagerDuty REST API session objects for making API requests.
 
-    Inherits from :class:`PDSession`. Instances of this class are essentially
-    the same as `requests.Session`_ objects, but with a few modifications:
+    Includes some convenience functions as well, i.e. :attr:`rget`, :attr:`find`
+    and :attr:`iter_all`, to eliminate some repetitive tasks associated with
+    making API calls.
 
-    - The client will reattempt the request with configurable, auto-increasing
-      cooldown/retry intervals if encountering a network error or rate limit
-    - When making requests, headers specified ad-hoc in calls to HTTP verb
-      functions will not replace, but will be merged with, default headers.
-    - The request URL, if it doesn't already start with the REST API base URL,
-      will be prepended with the default REST API base URL.
-    - It will only perform GET, POST, PUT and DELETE requests, and will raise
-      :class:`PDClientError` for any other HTTP methods.
-    - Some convenience functions, i.e. :attr:`rget`, :attr:`find` and
-      :attr:`iter_all`
+    Inherits from :class:`PDSession`.
 
-    :param api_key: REST API access token to use for HTTP requests
-    :param name: Optional name identifier for logging. If unspecified or
-        ``None``, it will be the last four characters of the REST API token.
-    :param default_from: Email address of a valid PagerDuty user to use in
-        API requests by default as the ``From`` header (see: `HTTP Request
-        Headers`_)
+    :param api_key:
+        REST API access token to use for HTTP requests
+    :param name:
+        Optional name identifier for logging. If unspecified or ``None``, it
+        will be the last four characters of the REST API token.
+    :param default_from:
+        Email address of a valid PagerDuty user to use in API requests by
+        default as the ``From`` header (see: `HTTP Request Headers`_)
     :type token: str
     :type name: str or None
     :type default_from: str or None
@@ -649,7 +692,6 @@ class APISession(PDSession):
         self.api_time = {}
         super(APISession, self).__init__(api_key, name)
         self.default_from = default_from
-        
         self.headers.update({
             'Accept': 'application/vnd.pagerduty+json;version=2',
         })
@@ -659,8 +701,8 @@ class APISession(PDSession):
         Returns a dictionary of all objects from a given index endpoint.
 
         With the exception of ``by``, all keyword arguments passed to this
-        method are also passed to :attr:`iter_all`; see the
-        documentation on that method for further details.
+        method are also passed to :attr:`iter_all`; see the documentation on
+        that method for further details.
 
         :param path:
             The index endpoint URL to use.

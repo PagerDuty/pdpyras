@@ -183,7 +183,7 @@ PagerDuty account:
 General Concepts
 ****************
 In all cases, when sending or receiving data through the REST API using
-``pdpyras``, note the following:
+``pdpyras.APISession``, note the following:
 
 URLs
 ++++
@@ -219,8 +219,6 @@ Using Special Features of Requests
 * Keyword arguments to the verb functions get passed through to the similarly-
   named functions in `requests.Session`_, so for additional options, please
   refer to the documentation provided by the Requests project.
-
-
 
 Data Access Abstraction
 ***********************
@@ -402,17 +400,17 @@ Or:
 
 HTTP Retry Logic
 ****************
-By default, after receiving a response, :attr:`pdpyras.APISession.request` will
+By default, after receiving a response, :attr:`pdpyras.PDSession.request` will
 return the `requests.Response`_ object unless its status is ``429`` (rate
 limiting), in which case it will retry until it gets a status other than ``429``.
 
-The property :attr:`pdpyras.APISession.retry` allows customization in this
+The property :attr:`pdpyras.PDSession.retry` allows customization in this
 regard, so that the client can be made to retry on other statuses (i.e.
 502/400), up to a set number of times. The total number of HTTP error responses
 that the client will tolerate before returning the response object is defined
-in :attr:`pdpyras.APISession.max_http_attempts`, and this will supersede the
+in :attr:`pdpyras.PDSession.max_http_attempts`, and this will supersede the
 maximum number of retries defined in
-:attr:`pdpyras.APISession.retry`. 
+:attr:`pdpyras.PDSession.retry`. 
 
 For example, the following will take about 30 seconds plus API request time
 (carrying out four attempts, with 2, 4, 8 and 16 second pauses between them),
@@ -424,7 +422,53 @@ before finally returning with the status 404 `requests.Response`_ object:
     session.max_http_attempts = 4
     session.sleep_timer = 1
     session.sleep_timer_base = 2
+    # isinstance(session, pdpyras.APISession)
     response = session.get('/users/PNOEXST') 
+
+
+Events API
+**********
+
+As an added bonus, ``pdpyras`` provides a basic Session class, , for submitting
+alert data to the Events API and triggering incidents asynchronously:
+:class:`pdpyras.EventsAPISession`. It has most of the same features as
+:class:`pdpyras.APISession`:
+
+* Connection persistence
+* Automatic cooldown and retry in the event of rate limiting or a transient network error
+* Setting all required headers
+
+To transmit alerts and perform actions through the events API, one would use:
+
+* :attr:`pdpyras.EventsAPISession.trigger`
+* :attr:`pdpyras.EventsAPISession.acknowledge`
+* :attr:`pdpyras.EventsAPISession.resolve`
+
+To instantiate a session object, pass the constructor the routing key:
+
+::
+
+    import pdpyras
+    routing_key = '0123456789abcdef0123456789abcdef'
+    session = EventsAPISession(routing_key)
+
+
+**Example 1:** Trigger an event and use the PagerDuty-supplied deduplication key to resolve it later:
+
+::
+
+    dedup_key = session.trigger("Server is on fire", 'dusty.old.server.net')
+    # ...
+    session.resolve(dedup_key)
+
+**Example 2:** Trigger an event, specifying a dedup key, and use it to later acknowledge the incident
+
+::
+
+    session.trigger("Server is on fire", 'dusty.old.server.net', 
+        dedup_key='abc123')
+    # ...
+    session.acknowledge('abc123')
 
 
 Contributing
@@ -435,8 +479,7 @@ If adding features, or making changes, it is recommended to update or add tests
 and assertions to the class ``APISessionTest`` in ``test_pdpyras.py`` to ensure
 code coverage. If the change(s) fix a bug, please add assertions that reproduce
 the bug along with code changes themselves, and include the GitHub issue number
-in the commit
-message.
+in the commit message.
 
 .. References:
 .. -----------
