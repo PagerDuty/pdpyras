@@ -42,17 +42,65 @@ class Response(object):
     Look for existing use of this class for examples on how to use.
     """
 
-    def __init__(self, code, text, method='GET'):
+    def __init__(self, code, text, method='GET', url=None):
         super(Response, self).__init__()
         self.status_code = code
         self.text = text
         self.ok = code < 400
-        self.url = 'https://api.pagerduty.com/resource/id'
+        if url:
+            self.url = url
+        else:
+            self.url = 'https://api.pagerduty.com/resource/id'
         self.elapsed = datetime.timedelta(0,1.5)
         self.request = MagicMock()
         self.request.method = method
         self.json = MagicMock()
         self.json.return_value = json.loads(text)
+
+class EventsSessionTest(unittest.TestCase):
+
+    def test_send_event(self):
+        sess = pdpyras.EventsAPISession('routingkey')
+        parent = MagicMock()
+        parent.request = MagicMock()
+        parent.request.side_effect = [
+            Response(202, '{"dedup_key":"abc123"}'),
+            Response(202, '{"dedup_key":"abc123"}'),
+            Response(202, '{"dedup_key":"abc123"}')
+        ]
+        with patch.object(sess, 'parent', new=parent):
+            ddk = sess.trigger('testing 123', 'triggered.from.pdpyras',
+                custom_details={"this":"that"}, severity='warning',
+                images=[{'url':'https://http.cat/502.jpg'}])
+            self.assertEqual('abc123', ddk)
+            parent.request.assert_called_once()
+            self.assertEqual(
+                'POST',
+                parent.request.call_args[0][0])
+            self.assertEqual(
+                'https://events.pagerduty.com/v2/enqueue',
+                parent.request.call_args[0][1])
+            self.assertEqual(
+                {
+                    'event_action':'trigger',
+                    'payload':{
+                        'summary': 'testing 123',
+                        'source': 'triggered.from.pdpyras',
+                        'severity': 'warning',
+                        'custom_details': {'this':'that'},
+                    },
+                    'images': [{'url':'https://http.cat/502.jpg'}]
+                },
+                parent.request.call_args[1]['json'])
+            ddk = sess.resolve('abc123')
+            self.assertEqual(
+                {'event_action':'resolve', 'dedup_key':'abc123'},
+                parent.request.call_args[1]['json'])
+
+            ddk = sess.acknowledge('abc123')
+            self.assertEqual(
+                {'event_action':'acknowledge', 'dedup_key':'abc123'},
+                parent.request.call_args[1]['json'])
 
 class APISessionTest(unittest.TestCase):
 
@@ -143,11 +191,11 @@ class APISessionTest(unittest.TestCase):
         sess.raise_if_http_error = True
         self.assertRaises(pdpyras.PDClientError, list, sess.iter_all(weirdurl))
 
-    def test_profile(self):
+    def test_postprocess(self):
         response = Response(201, json.dumps({'key':'value'}), method='POST')
         response.url = 'https://api.pagerduty.com/users/PCWKOPZ/contact_methods'
         sess = pdpyras.APISession('apikey')
-        sess.profile(response)
+        sess.postprocess(response)
         # Nested index endpoint
         self.assertEqual(
             1,
@@ -159,7 +207,7 @@ class APISessionTest(unittest.TestCase):
         )
         response.url = 'https://api.pagerduty.com/users/PCWKOPZ'
         response.request.method = 'GET'
-        sess.profile(response)
+        sess.postprocess(response)
         # Individual resource access endpoint
         self.assertEqual(1, sess.api_call_counts['get:users/{id}'])
         self.assertEqual(1.5, sess.api_time['get:users/{id}'])
@@ -172,8 +220,8 @@ class APISessionTest(unittest.TestCase):
         except pdpyras.PDClientError as e:
             self.assertTrue(e.response is not None)
 
-    @patch.object(pdpyras.APISession, 'profile')
-    def test_request(self, profile):
+    @patch.object(pdpyras.APISession, 'postprocess')
+    def test_request(self, postprocess):
         sess = pdpyras.APISession('12345')
         parent = Session()
         request = MagicMock()
@@ -211,7 +259,7 @@ class APISessionTest(unittest.TestCase):
             # Test basic GET & profiling
             request.return_value = Response(200, json.dumps(users))
             r = sess.request('get', '/users')
-            profile.assert_called_with(request.return_value)
+            postprocess.assert_called_with(request.return_value)
             headers = headers_get.copy()
             request.assert_called_once_with('GET',
                 'https://api.pagerduty.com/users', headers=headers_get,

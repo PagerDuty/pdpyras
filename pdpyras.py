@@ -260,56 +260,9 @@ def try_decoding(r):
 ### CLASSES ###
 ###############
 
-class Session(requests.Session):
-    pass
-
-class EventsAPISession(Session):
-    pass
-
-class APISession(Session):
+class PDSession(requests.Session):
     """
-    Reusable PagerDuty REST API session objects for making API requests.
-
-    These are essentially the same as `requests.Session`_ objects, but with a
-    few modifications:
-
-    - The client will reattempt the request with configurable, auto-increasing
-      cooldown/retry intervals if encountering a network error or rate limit
-    - When making requests, headers specified ad-hoc in calls to HTTP verb
-      functions will not replace, but will be merged with, default headers.
-    - The request URL, if it doesn't already start with the REST API base URL,
-      will be prepended with the default REST API base URL.
-    - It will only perform GET, POST, PUT and DELETE requests, and will raise
-      :class:`PDClientError` for any other HTTP methods.
-    - Some convenience functions, i.e. :attr:`rget`, :attr:`find` and
-      :attr:`iter_all`
-
-    :param token: REST API access token to use for HTTP requests
-    :param name: Optional name identifier for logging. If unspecified or
-        ``None``, it will be the last four characters of the REST API token.
-    :param default_from: Email address of a valid PagerDuty user to use in
-        API requests by default as the ``From`` header (see: `HTTP Request
-        Headers`_)
-    :type token: str
-    :type name: str or None
-    :type default_from: str or None
-
-    :members:
-    """
-
-    api_call_counts = None 
-    """A dict object recording the number of API calls per endpoint"""
-
-    api_time = None
-    """A dict object recording the total time of API calls to each endpoint"""
-
-    default_from = None
-    """The default value to use as the ``From`` request header"""
-
-    default_page_size = 100
-    """
-    This will be the default number of results requested in each page when
-    iterating/querying an index (the ``limit`` parameter). See: `pagination`_.
+    Base class for making HTTP requests to PagerDuty APIs.
     """
 
     log = None
@@ -331,14 +284,7 @@ class APISession(Session):
     parent = None
     """The ``super`` object (`requests.Session`_)"""
 
-    raise_if_http_error = True
-    """
-    Raise an exception upon receiving an error response from the server.
-
-    If set to true, an exception will be raised in :attr:`iter_all` if a HTTP
-    error is encountered. This is the default behavior in versions >= 2.1.0.
-    If False, the behavior is to halt iteration upon receiving a HTTP error.
-    """
+    permitted_methods = ()
 
     retry = None
     """
@@ -376,35 +322,345 @@ class APISession(Session):
     and request will increase by a factor of this amount.
     """
 
-    url = 'https://api.pagerduty.com'
-    """Base URL of the REST API"""
+    url = ""
 
-    def __init__(self, token, name=None, default_from=None):
-        if not (isinstance(token, string_types) and token):
-            raise ValueError("API token must be a non-empty string.")
-        self.api_call_counts = {}
-        self.api_time = {}
-        self.parent = super(APISession, self)
+    def __init__(self, api_key, name=None):
+        """
+        Basic constructor for API sessions.
+
+        :param api_key:
+            The API credential to use.
+        :param name:
+            Identifying label for the session to use in log messages
+        """
+        self.parent = super(PDSession, self)
         self.parent.__init__()
-        self.token = token
-        self.default_from = default_from
+        self.api_key = api_key
         if type(name) is str and name:
             my_name = name
         else:
-            my_name = self.trunc_token
-        self.log = logging.getLogger('pdpyras.APISession(%s)'%my_name)
+            my_name = self.trunc_key
+        self.log = logging.getLogger('pdpyras.%s(%s)'%(
+            self.__class__.__name__,
+            my_name
+        ))
+        self.retry = {}
+
+    @property
+    def api_key(self):
+        return self._api_key
+
+    @api_key.setter
+    def api_key(self, api_key):
+        self.set_api_key(api_key)
+
+    def postprocess(self, response):
+        """
+        Perform supplemental actions immediately after receiving a response.
+        """
+        pass
+
+    def prepare_headers(self, method):
+        return self.headers
+
+    def request(self, method, url, **kwargs):
+        """
+        Make a generic PagerDuty API request.
+
+        :param method:
+            The request method to use. Case-insensitive. May be one of get, put,
+            post or delete.
+        :param url:
+            The path/URL to request. If it does not start with the base URL, the
+            base URL will be prepended.
+        :param \*\*kwargs:
+            Additional keyword arguments to pass to `requests.Session.request
+            <http://docs.python-requests.org/en/master/api/#requests.Session.request>`_
+        :type method: str
+        :type url: str
+        :returns: the HTTP response object
+        :rtype: `requests.Response`_
+        """
+        sleep_timer = self.sleep_timer
+        network_attempts = 0
+        http_attempts = {}
+        method = method.upper()
+        if method not in self.permitted_methods:
+            raise PDClientError(
+                "Method %s is not supported by this API."%method
+            )
+        req_kw = deepcopy(kwargs)
+        my_headers = self.prepare_headers(method)
+        # Merge, but do not replace, any headers specified in keyword arguments:
+        if 'headers' in kwargs:
+            my_headers.update(kwargs['headers'])
+        req_kw.update({'headers': my_headers, 'stream': False})
+        # Compose/normalize URL whether or not path is already a complete URL
+        if url.startswith(self.url) or not self.url:
+            my_url = url
+        else:
+            my_url = self.url + "/" + url.lstrip('/')
+        # Make the request (and repeat w/cooldown if the rate limit is reached):
+        while True:
+            try:
+                response = self.parent.request(method, my_url, **req_kw)
+                self.postprocess(response)
+            except (Urllib3Error, RequestsError) as e:
+                network_attempts += 1
+                if network_attempts > self.max_network_attempts:
+                    raise PDClientError("Non-transient network error; exceeded "
+                        "maximum number of attempts (%d) to connect to the "
+                        "API"%self.max_network_attempts)
+                sleep_timer *= self.sleep_timer_base
+                self.log.debug("Connection error: %s; retrying in %g seconds.",
+                    e, sleep_timer)
+                time.sleep(sleep_timer)
+                continue
+            status = response.status_code
+            retry_logic = self.retry.get(status, 0)
+            if not response.ok and retry_logic != 0:
+                # Take special action as defined by the retry logic
+                if retry_logic != -1:
+                    # Retry a specific number of times (-1 implies infinite)
+                    if http_attempts[status]>retry_logic or \
+                            sum(http_attempts.values())>self.max_http_attempts:
+                        raise PDClientError("Non-transient HTTP error: "
+                            "exceeded maximum number of attempts to make a "
+                            "successful request. Currently encountering status "
+                            "%d."%status, response=response)
+                    http_attempts[status] = 1 + \
+                        http_attempts.setdefault(status, 0)
+                sleep_timer *= self.sleep_timer_base
+                self.log.debug("HTTP error (%d); retrying in %g seconds.",
+                    status, sleep_timer)
+                time.sleep(sleep_timer)
+                continue
+            elif response.status_code == 429:
+                sleep_timer *= self.sleep_timer_base
+                self.log.debug("Hit API rate limit (response status 429); "
+                    "retrying in %g seconds", sleep_timer)
+                time.sleep(sleep_timer)
+                continue
+            elif response.status_code == 401:
+                # Stop. Authentication failed. We shouldn't try doing any more,
+                # because we'll run into problems later anyway.
+                raise PDClientError(
+                    "Received 401 Unauthorized response from the API. The "
+                    "access key (%s) might not be valid."%self.trunc_key,
+                    response=response)
+            else:
+                # All went according to plan.
+                return response
+
+    def set_api_key(self, api_key):
+        """
+        Set the API key/token.
+
+        Child classes should implement this method to do special things like
+        setting default headers.
+
+        The getter will return the value of self._api_key, so any setters should
+        set this property.
+        """
+        pass
+
+    @property
+    def trunc_key(self):
+        """Truncated key for secure display/identification purposes."""
+        return '*'+self.api_key[-4:]
+
+class EventsAPISession(PDSession):
+
+    permitted_methods = ('POST')
+
+    url = "https://events.pagerduty.com"
+
+    def acknowledge(self, dedup_key):
+        """
+        Acknowledge an alert
+
+        :param dedup_key:
+            The deduplication key of the alert to set to the acknowledged state.
+        """
+        return self.send_event('acknowledge', dedup_key=dedup_key)
+
+    def resolve(self, dedup_key):
+        """
+        Resolve an alert.
+
+        :param dedup_key:
+            The deduplication key of the alert to resolve.
+        """
+        return self.send_event('resolve', dedup_key=dedup_key)
+
+    def send_event(self, action, summary=None, dedup_key=None, source=None,
+            severity='critical', payload=None, custom_details=None, images=None,
+            links=None):
+        """
+        Sends an event to the v2 Events API.
+
+        See: https://v2.developer.pagerduty.com/docs/send-an-event-events-api-v2
+
+        :param action:
+            The action to perform through the Events API: trigger, acknowledge
+            or resolve.
+        :param summary:
+            A description of what is wrong. This is required if ``action`` is
+            ``trigger``.
+        :param dedup_key:
+            The deduplication key; used for determining event uniqueness and
+            associating actions with existing incidents.
+        :param source:
+            A human-readable name identifying the system that is affected.
+        :param severity:
+            Alert severity. Sets the ``payload.severity`` property.
+        :param payload:
+            Set the payload directly. Can be used in conjunction with other
+            parameters that also set payload properties; these properties will
+            be merged into the default payload, and any properties in this
+            parameter will take precedence.
+        :param custom_details:
+            The ``payload.custom_details`` property of the payload. Will
+            override the property set in the ``payload`` parameter if given.
+        :param images:
+            Set the ``images`` property of the event.
+        :param links:
+            Set the ``links`` property of the event.
+        :type action: str
+        :type summary: str
+        :type dedup_key: str
+        :type severity: str
+        :type payload: dict
+        :type custom_details: dict
+        :rtype: str
+        :returns:
+            The deduplication key of the incident, if any.
+        """
+        actions = ('trigger', 'acknowledge', 'resolve')
+        if action not in actions:
+            raise ValueError("Event action must be one of: "+', '.join(actions))
+        event = {'event_action':action}
+        if action == 'trigger':
+            if not summary:
+                raise ValueError("The summary property is required for "
+                    "event_action=trigger events.")
+            event['payload'] = {'summary':summary, 'source':source, 
+                'severity':severity}
+            if payload:
+                event['payload'].update(payload)
+            if custom_details:
+                details = event['payload'].get('custom_details', {})
+                details.update(custom_details)
+                event['payload']['custom_details'] = custom_details
+            if images:
+                event['images'] = images
+            if links:
+                event['links'] = links 
+        if dedup_key:
+            event['dedup_key'] = dedup_key
+        elif not action == 'trigger':
+            raise ValueError("The dedup_key property is required for"
+                "event_action=%s events."%action)
+        response = self.post('/v2/enqueue', json=event)
+        raise_on_error(response)
+        response_body = try_decoding(response)
+        if not 'dedup_key' in response_body:
+            raise PDClientError("Malformed response body; does not contain "
+                "deduplication key.", response=response)
+        return response_body['dedup_key']
+
+    def trigger(self, summary, source, dedup_key=None, severity='critical',
+            payload=None, custom_details=None, images=None, links=None):
+        return self.send_event('trigger', source=source, summary=summary,
+            dedup_key=dedup_key, severity=severity, payload=payload,
+            custom_details=custom_details, images=images, links=links)
+
+    def set_api_key(self, api_key):
+        self._api_key = api_key
+        self.headers.update({
+            'X-Routing-Key': api_key,
+            'Content-Type': 'application/json',
+        })
+
+class APISession(PDSession):
+    """
+    Reusable PagerDuty REST API session objects for making API requests.
+
+    Inherits from :class:`PDSession`. Instances of this class are essentially
+    the same as `requests.Session`_ objects, but with a few modifications:
+
+    - The client will reattempt the request with configurable, auto-increasing
+      cooldown/retry intervals if encountering a network error or rate limit
+    - When making requests, headers specified ad-hoc in calls to HTTP verb
+      functions will not replace, but will be merged with, default headers.
+    - The request URL, if it doesn't already start with the REST API base URL,
+      will be prepended with the default REST API base URL.
+    - It will only perform GET, POST, PUT and DELETE requests, and will raise
+      :class:`PDClientError` for any other HTTP methods.
+    - Some convenience functions, i.e. :attr:`rget`, :attr:`find` and
+      :attr:`iter_all`
+
+    :param api_key: REST API access token to use for HTTP requests
+    :param name: Optional name identifier for logging. If unspecified or
+        ``None``, it will be the last four characters of the REST API token.
+    :param default_from: Email address of a valid PagerDuty user to use in
+        API requests by default as the ``From`` header (see: `HTTP Request
+        Headers`_)
+    :type token: str
+    :type name: str or None
+    :type default_from: str or None
+
+    :members:
+    """
+
+    api_call_counts = None 
+    """A dict object recording the number of API calls per endpoint"""
+
+    api_time = None
+    """A dict object recording the total time of API calls to each endpoint"""
+
+    default_from = None
+    """The default value to use as the ``From`` request header"""
+
+    default_page_size = 100
+    """
+    This will be the default number of results requested in each page when
+    iterating/querying an index (the ``limit`` parameter). See: `pagination`_.
+    """
+
+    permitted_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    raise_if_http_error = True
+    """
+    Raise an exception upon receiving an error response from the server.
+
+    If set to true, an exception will be raised in :attr:`iter_all` if a HTTP
+    error is encountered. This is the default behavior in versions >= 2.1.0.
+    If False, the behavior is to halt iteration upon receiving a HTTP error.
+    """
+
+    url = 'https://api.pagerduty.com'
+    """Base URL of the REST API"""
+
+    def __init__(self, api_key, name=None, default_from=None):
+        if not (isinstance(api_key, string_types) and api_key):
+            raise ValueError("API token must be a non-empty string.")
+        self.api_call_counts = {}
+        self.api_time = {}
+        super(APISession, self).__init__(api_key, name)
+        self.default_from = default_from
+        
         self.headers.update({
             'Accept': 'application/vnd.pagerduty+json;version=2',
         })
-        self.retry = {}
 
     def dict_all(self, path, **kw):
         """
         Returns a dictionary of all objects from a given index endpoint.
 
         With the exception of ``by``, all keyword arguments passed to this
-        method are also passed to :attr:`iter_all`_; see the documentation on
-        that method for further details.
+        method are also passed to :attr:`iter_all`; see the
+        documentation on that method for further details.
 
         :param path:
             The index endpoint URL to use.
@@ -599,14 +855,14 @@ class APISession(Session):
         Returns a list of all objects from a given index endpoint.
 
         All keyword arguments passed to this function are also passed directly
-        to :attr:`iter_all`_; see the documentation on that method for details.
+        to :attr:`iter_all`; see the documentation on that method for details.
 
         :param path:
             The index endpoint URL to use.
         """
         return list(self.iter_all(path, **kw))
 
-    def profile(self, response, suffix=None):
+    def postprocess(self, response, suffix=None):
         """
         Records performance information about the API call.
 
@@ -629,6 +885,15 @@ class APISession(Session):
         self.api_time.setdefault(key, 0.0)
         self.api_call_counts[key] += 1
         self.api_time[key] += response.elapsed.total_seconds()
+
+    def prepare_headers(self, method):
+        my_headers = {}
+        my_headers.update(self.headers)
+        if self.default_from is not None:
+            my_headers['From'] = self.default_from
+        if method in ('POST', 'PUT'):
+            my_headers['Content-Type'] = 'application/json'
+        return my_headers
 
     def profiler_key(self, method, path, suffix=None):
         """
@@ -688,99 +953,12 @@ class APISession(Session):
         """
         return self.put(path, **kw)
 
-    def request(self, method, url, **kwargs):
-        """
-        Make a generic PagerDuty v2 REST API request. 
-
-        :param method:
-            The request method to use. Case-insensitive. May be one of get, put,
-            post or delete.
-        :param url:
-            The path/URL to request. If it does not start with the PagerDuty
-            REST API's base URL, the base URL will be prepended.
-        :param \*\*kwargs:
-            Additional keyword arguments to pass to `requests.Session.request
-            <http://docs.python-requests.org/en/master/api/#requests.Session.request>`_
-        :type method: str
-        :type url: str
-        :returns: the HTTP response object
-        :rtype: `requests.Response`_
-        """
-        sleep_timer = self.sleep_timer
-        network_attempts = 0
-        http_attempts = {}
-        method = method.upper()
-        if method not in ('GET', 'POST', 'PUT', 'DELETE'):
-            raise PDClientError(
-                "Method %s is not supported by the PagerDuty REST API."%method
-            )
-        # Prepare headers
-        req_kw = deepcopy(kwargs)
-        my_headers = self.headers.copy()
-        if self.default_from is not None:
-            my_headers['From'] = self.default_from
-        if method in ('POST', 'PUT'):
-            my_headers['Content-Type'] = 'application/json'
-        # Merge, but do not replace, any headers specified in keyword arguments:
-        if 'headers' in kwargs:
-            my_headers.update(kwargs['headers'])
-        req_kw.update({'headers': my_headers, 'stream': False})
-        # Compose/normalize URL whether or not path is already a complete URL
-        if url.startswith('https://api.pagerduty.com'):
-            my_url = url
-        else:
-            my_url = self.url + "/" + url.lstrip('/')
-        # Make the request (and repeat w/cooldown if the rate limit is reached):
-        while True:
-            try:
-                response = self.parent.request(method, my_url, **req_kw)
-                self.profile(response)
-            except (Urllib3Error, RequestsError) as e:
-                network_attempts += 1
-                if network_attempts > self.max_network_attempts:
-                    raise PDClientError("Non-transient network error; exceeded "
-                        "maximum number of attempts (%d) to connect to the REST"
-                        " API."%self.max_network_attempts)
-                sleep_timer *= self.sleep_timer_base
-                self.log.debug("Connection error: %s; retrying in %g seconds.",
-                    e, sleep_timer)
-                time.sleep(sleep_timer)
-                continue
-            status = response.status_code
-            retry_logic = self.retry.get(status, 0)
-            if not response.ok and retry_logic != 0:
-                # Take special action as defined by the retry logic
-                if retry_logic != -1:
-                    # Retry a specific number of times (-1 implies infinite)
-                    if http_attempts[status]>retry_logic or \
-                            sum(http_attempts.values())>self.max_http_attempts:
-                        raise PDClientError("Non-transient HTTP error: "
-                            "exceeded maximum number of attempts to make a "
-                            "successful request. Currently encountering status "
-                            "%d."%status, response=response)
-                    http_attempts[status] = 1 + \
-                        http_attempts.setdefault(status, 0)
-                sleep_timer *= self.sleep_timer_base
-                self.log.debug("HTTP error (%d); retrying in %g seconds.",
-                    status, sleep_timer)
-                time.sleep(sleep_timer)
-                continue
-            elif response.status_code == 429:
-                sleep_timer *= self.sleep_timer_base
-                self.log.debug("Hit REST API rate limit (response status 429); "
-                    "retrying in %g seconds", sleep_timer)
-                time.sleep(sleep_timer)
-                continue
-            elif response.status_code == 401:
-                # Stop. Authentication failed. We shouldn't try doing any more,
-                # because we'll run into problems later anyway.
-                raise PDClientError(
-                    "Received 401 Unauthorized response from the REST API. The "
-                    "access key (%s) might not be valid."%self.trunc_token,
-                    response=response)
-            else:
-                # All went according to plan.
-                return response
+    def set_api_key(self, api_key):
+        self._api_key = api_key
+        self._subdomain = None
+        self.headers.update({
+            'Authorization': 'Token token='+api_key,
+        })
 
     @property
     def subdomain(self):
@@ -800,19 +978,6 @@ class APISession(Session):
         return self._subdomain
 
     @property
-    def token(self):
-        """The REST API token to use."""
-        return self._token
-
-    @token.setter
-    def token(self, token):
-        self._token = token
-        self._subdomain = None
-        self.headers.update({
-            'Authorization': 'Token token='+token,
-        })
-
-    @property
     def total_call_count(self):
         """The total number of API calls made by this instance."""
         return sum(self.api_call_counts.values())
@@ -822,10 +987,6 @@ class APISession(Session):
         """The total time spent making API calls."""
         return sum(self.api_time.values())
 
-    @property
-    def trunc_token(self):
-        """Truncated token for secure display/identification purposes."""
-        return "*"+self.token[-4:]
 
 class PDClientError(Exception): 
     """
