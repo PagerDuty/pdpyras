@@ -537,6 +537,8 @@ class APISession(requests.Session):
         path_nodes = tokenize_url_path(path, baseurl=self.url)
         if not path_nodes[-1] == '{index}':
             raise ValueError("Invalid index url/path: "+path[:99])
+        if path_nodes not in auto_envelope_supported:
+            raise ValueError("iter_all does not support this API endpoint.")
         # Determine the resource name:
         r_name = path_nodes[-2]
         # Parameters to send:
