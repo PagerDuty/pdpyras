@@ -313,14 +313,26 @@ class APISessionTest(unittest.TestCase):
             do_http_things.return_value = response
             dummy_session.reset_mock()
 
-        # OK response, good JSON: JSON-decode and unpack response
+        # Test whitelisting and validation
         response.ok = True
         response.json.return_value = {'something': {'property': 'value'}}
         do_http_things.__name__ = 'rput' # just for instance
+        self.assertRaises(
+            ValueError,
+            pdpyras.resource_envelope(do_http_things),
+            my_self,
+            '/somethings/PTHINGY'
+        )
+        reset_mocks()
+
+        # OK response, good JSON: JSON-decode and unpack response
+        response.ok = True
+        response.json.return_value = {'service': {'name': 'value'}}
+        do_http_things.__name__ = 'rput' # just for instance
         self.assertEqual(
             pdpyras.resource_envelope(do_http_things)(my_self,
-                '/somethings/PTHINGY'),
-            {'property': 'value'}
+                '/services/PTHINGY'),
+            {'name': 'value'}
         )
         reset_mocks()
 
@@ -329,7 +341,7 @@ class APISessionTest(unittest.TestCase):
         do_http_things.__name__ = 'rput' # just for instance
         response.json.side_effect = [ValueError('Bad JSON!')]
         self.assertRaises(pdpyras.PDClientError,
-            pdpyras.resource_envelope(do_http_things), my_self, '/somethings')
+            pdpyras.resource_envelope(do_http_things), my_self, '/services')
         reset_mocks()
 
         # OK response, but ruh-roh we hit an anti-pattern (probably won't exist
@@ -343,7 +355,7 @@ class APISessionTest(unittest.TestCase):
         do_http_things.__name__ = 'rput' # just for instance
         response.json.return_value = {'nope': 'nopenope'}
         self.assertRaises(pdpyras.PDClientError,
-            pdpyras.resource_envelope(do_http_things), my_self, '/somethings')
+            pdpyras.resource_envelope(do_http_things), my_self, '/services')
         reset_mocks()
 
         # Not OK response, raise (daisy-chained w/raise_on_error decorator)
@@ -351,7 +363,7 @@ class APISessionTest(unittest.TestCase):
         response.ok = False
         do_http_things.__name__ = 'rput' # just for instance
         self.assertRaises(pdpyras.PDClientError,
-            pdpyras.resource_envelope(do_http_things), my_self, '/somethings')
+            pdpyras.resource_envelope(do_http_things), my_self, '/services')
         reset_mocks()
 
         # GET /<index>: use a different envelope name
@@ -413,13 +425,13 @@ class APISessionTest(unittest.TestCase):
         self.assertEqual(
             {"type":"user_reference","email":"user@example.com",
                 "summary":"User McUserson"},
-            s.rget('/user/P123ABC'))
+            s.rget('/users/P123ABC'))
         # This is (forcefully) valid JSON but no matter; it should raise
         # PDClientErorr nonetheless
         response404 = Response(404, '{"user": {"email": "user@example.com"}}')
         get.reset_mock()
         get.return_value = response404
-        self.assertRaises(pdpyras.PDClientError, s.rget, '/user/P123ABC')
+        self.assertRaises(pdpyras.PDClientError, s.rget, '/users/P123ABC')
 
     @patch.object(pdpyras.APISession, 'rget')
     def test_subdomain(self, rget):
