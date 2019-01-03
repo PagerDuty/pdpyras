@@ -17,7 +17,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '2.2.0'
+__version__ = '2.3.0'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -35,6 +35,8 @@ auto_envelope_supported = [
     ('addons', '{id}'),
     ('addons', '{index}'),
     ('escalation_policies', '{id}'),
+    ('escalation_policies', '{id}', 'escalation_rules', '{id}'),
+    ('escalation_policies', '{id}', 'escalation_rules', '{index}'),
     ('escalation_policies', '{index}'),
     ('extension_schemas', '{id}'),
     ('extension_schemas', '{index}'),
@@ -162,10 +164,8 @@ def resource_envelope(method):
         nodes = tokenize_url_path(path, baseurl=self.url)
         if nodes not in auto_envelope_supported:
             raise ValueError("Automatic unpacking of the payload from the "
-                "resource envelope is not supported for this endpoint "
-                "(%(path)s). Please use %(method)s or j%(method)s instead."%{
-                    'path': path, 'method': http_method
-                })
+                "resource envelope (via r%(method)s) is not supported for this "
+                "endpoint (%(path)s)."%{'path': path, 'method': http_method})
         is_index = nodes[-1] == '{index}'
         resource = nodes[-2]
         multi_put = http_method == 'put' and nodes in valid_multi_update_paths
@@ -179,28 +179,11 @@ def resource_envelope(method):
             # Individual resource create/read/update
             # Body = {<singular-resource-type>: {<object>}}
             envelope_name = envelope_name_single
-        # Validate the abbreviated (or full) request payload, automatically
-        # filling the gap for the implementer, if some assumptions hold true:
+        # Validate the abbreviated (or full) request payload, and automatically
+        # fill the gap for the implementer if some assumptions hold true:
         if http_method in ('post', 'put') and 'json' in pass_kw and \
-                not multi_put:
-            # Assumption: if the object is not already in an envelope property,
-            # it should have a ``type`` property. Every object, even resource
-            # references, have this property. We have to be explicit with this
-            # and can't fill it in on behalf of the end user, because the type
-            # property isn't always implicit from which API we're using. For
-            # example, one can find ``"type": "webhook"`` entries in the
-            # /extensions API, and moreover, the contact_methods resource (a
-            # sub-resource of users) can have type=email_contact_method entries
-            # in it.
-            if not ('type' in kw['json'] or envelope_name_single in kw['json']):
-                raise ValueError("Invalid payload for resource "+resource)
-            elif 'type' in kw['json']:
-                # Add the envelope automatically
-                pass_kw['json'] = {envelope_name_single: pass_kw['json']}
-        elif multi_put and 'json' in pass_kw:
-            # Add envelope for multi-update
-            if not envelope_name in pass_kw['json']:
-                pass_kw['json'] = {envelope_name: pass_kw['json']}
+                envelope_name not in pass_kw['json']:
+            pass_kw['json'] = {envelope_name: pass_kw['json']}
 
         r = raise_on_error(method(self, path, **pass_kw))
         # Now let's try to unpack...
@@ -765,6 +748,14 @@ class APISession(PDSession):
             uniqueness validation, so if you use an attribute that is not
             distinct for the data set, this function will omit some data in the
             results.
+        :param params:
+            Additional URL parameters to include.
+        :param paginate:
+            If True, use `pagination`_ to get through all available results. If
+            False, ignore / don't page through more than the first 100 results.
+            Useful for special index endpoints that don't fully support
+            pagination yet, i.e. "nested" endpoints like
+            ``/users/{id}/contact_methods`` and ``/services/{id}/integrations``
         """
         by = kw.pop('by', 'id')
         iterator = self.iter_all(path, **kw)
@@ -856,6 +847,9 @@ class APISession(PDSession):
         path_nodes = tokenize_url_path(path, baseurl=self.url)
         if not path_nodes[-1] == '{index}':
             raise ValueError("Invalid index url/path: "+path[:99])
+        if path_nodes not in auto_envelope_supported:
+            raise ValueError("Method iter_all does not support this API "
+                "endpoint (%s)"%path)
         # Determine the resource name:
         r_name = path_nodes[-2]
         # Parameters to send:

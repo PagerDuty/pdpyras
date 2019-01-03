@@ -427,11 +427,14 @@ class APISessionTest(unittest.TestCase):
         reset_mocks()
 
         # Test request body JSON envelope stuff in post/put
+        # Response body validation
         do_http_things.__name__ = 'rpost'
         user_payload = {'email':'user@example.com', 'name':'User McUserson'}
-        # No type property; raise.
-        self.assertRaises(ValueError, pdpyras.resource_envelope(do_http_things),
-            dummy_session, '/users', json=user_payload)
+        self.assertRaises(
+            pdpyras.PDClientError,
+            pdpyras.resource_envelope(do_http_things),
+            dummy_session, '/users', json=user_payload
+        )
         reset_mocks()
         # Add type property; should work now and automatically pack the user
         # object into a JSON object inside the envelope.
@@ -462,6 +465,16 @@ class APISessionTest(unittest.TestCase):
             updated_incidents,
             pdpyras.resource_envelope(do_http_things)(dummy_session,
                 '/incidents', json=incidents)
+        )
+        # Test auto-unpack error if using unsupported endpoint
+        thing = {'id':'PABC123'}
+        do_http_things.__name__ = 'rget'
+        response.ok = True
+        response.json.return_value = {'thing': thing}
+        self.assertRaises(
+            ValueError,
+            pdpyras.resource_envelope(do_http_things),
+            dummy_session, '/things/PABC123', json=incidents
         )
 
     @patch.object(pdpyras.APISession, 'get')

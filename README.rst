@@ -222,15 +222,43 @@ Using Special Features of Requests
 
 Data Access Abstraction
 ***********************
-Using :attr:`pdpyras.APISession.iter_all` and :attr:`pdpyras.APISession.find`
-as documented, it is easier to directly get to the underlying data representing
-a given PagerDuty object. Both of these methods yield/return dicts representing
-the PagerDuty objects with their defined schemas (see: `REST API Reference`_).
+The ``APISession`` class, in addition to providing a more convenient way of
+making the HTTP requests to the API, provides methods that yield/return dicts
+representing the PagerDuty objects with their defined schemas (see: `REST API
+Reference`_) without needing to go through enclosing them in a data envelope.
 
-In version 2, it is even easier to do this, and in more ways, with four new
-methods of :class:`pdpyras.APISession`, named exactly after the original HTTP
-verb functions but with ``r`` prepended to them: ``rget``, ``rpost``, ``rput``
-and ``rdelete``.
+In other words, in the process of getting from an API call to the object
+representing the desired result, all of the following are taken care of:
+
+1. Validate that the response HTTP status is not an error.
+2. Predict the name of the envelope property which will contain the object.
+3. Validate that the result contains the predicted envelope property.
+4. Access the property within the response.
+
+Iteration
++++++++++
+
+The method :attr:`pdpyras.APISession.iter_all` returns an iterator that yields
+all results from a resource index, automatically incrementing the ``offset``
+parameter to advance through each page of data.
+
+As of version 2.2, there are also the methods
+:attr:`pdpyras.APISession.list_all` and :attr:`pdpyras.APISession.dict_all`
+which return a list or dictionary of all results, respsectively. 
+
+Note, however, that because HTTP requests are made synchronously and not in
+parallel threads, the data will be retrieved one page at a time and the
+functions ``list_all`` and ``dict_all`` will not return until after the HTTP
+response from the final API call is recived. Simply put, the functions will take
+longer to return if the total number of resuls is higher.
+
+**Example:** Get a dictionary of all users, keyed by email, and use it to find
+the ID of the user whose email is ``bob@example.com``
+
+::
+
+    users = session.dict_all('users', by='email')
+    print(users['bob@example.com']['id'])
 
 Reading
 +++++++
@@ -314,8 +342,9 @@ As of this writing, multi-update is limited to the following actions:
 * `PUT /incidents/{id}/alerts <https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents_id_alerts>`_
 * PUT /priorities (not yet published, as of 2018-11-28)
 
-**Please note:** as of yet, merginging incidents and any other endpoints (i.e.
-if it is non-documented).
+**Please note:** as of yet, merginging incidents is not supported by ``rput``.
+For this and other unsupported endpoints, you will need to call ``put`` directly,
+or ``jput`` to get the response body as a dictionary.
 
 To use, simply pass in a list of objects or references (dictionaries having a
 structure according to the API schema reference for that object type) to the
@@ -338,7 +367,8 @@ actions.
 
 It is important to note, however, that certain actions such as updating
 incidents require the ``From`` header, which should be the login email address
-of a valid PagerDuty user.
+of a valid PagerDuty user. To set this, pass it through using the ``headers``
+keyword argument, or set the :attr:`pdpyras.APISession.default_from` property.
 
 Error Handling
 **************
