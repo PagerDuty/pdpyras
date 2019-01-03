@@ -220,8 +220,6 @@ Using Special Features of Requests
   named functions in `requests.Session`_, so for additional options, please
   refer to the documentation provided by the Requests project.
 
-
-
 Data Access Abstraction
 ***********************
 Using :attr:`pdpyras.APISession.iter_all` and :attr:`pdpyras.APISession.find`
@@ -233,6 +231,31 @@ In version 2, it is even easier to do this, and in more ways, with four new
 methods of :class:`pdpyras.APISession`, named exactly after the original HTTP
 verb functions but with ``r`` prepended to them: ``rget``, ``rpost``, ``rput``
 and ``rdelete``.
+
+Iteration
++++++++++
+
+The method :attr:`pdpyras.APISession.iter_all` returns an iterator that yields
+all results from a resource index, automatically incrementing the ``offset``
+parameter to advance through each page of data.
+
+As of version 2.2, there are also the methods
+:attr:`pdpyras.APISession.list_all` and :attr:`pdpyras.APISession.dict_all`
+which return a list or dictionary of all results, respsectively. 
+
+Note, however, that because HTTP requests are made synchronously and not in
+parallel threads, the data will be retrieved one page at a time and the
+functions ``list_all`` and ``dict_all`` will not return until after the HTTP
+response from the final API call is recived. Simply put, the functions will take
+longer to return if the total number of resuls is higher.
+
+**Example:** Get a dictionary of all users, keyed by email, and use it to find
+the ID of the user whose email is ``bob@example.com``
+
+::
+
+    users = session.dict_all('users', by='email')
+    print(users['bob@example.com']['id'])
 
 Reading
 +++++++
