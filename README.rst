@@ -232,8 +232,8 @@ representing the desired result, all of the following are taken care of:
 
 1. Validate that the response HTTP status is not an error.
 2. Predict the name of the envelope property which will contain the object.
-2. Validate that the result contains the predicted envelope property.
-3. Access the property within the response.
+3. Validate that the result contains the predicted envelope property.
+4. Access the property within the response.
 
 Iteration
 +++++++++

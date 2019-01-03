@@ -17,7 +17,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '2.2.0'
+__version__ = '2.3.0'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
