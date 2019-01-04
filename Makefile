@@ -1,6 +1,4 @@
-.PHONY: docs
-
-docs: pdpyras.py
+docs: pdpyras.py README.rst CHANGELOG.rst sphinx/source/index.rst
 	rm -fr ./docs && cd sphinx && make html && cd .. && mv sphinx/build/html ./docs && touch ./docs/.nojekyll
 
 test:
