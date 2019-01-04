@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 2.3.0 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 2.3.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -997,6 +997,24 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 
 </div>
 </div>
+<div class="section" id="changelog">
+<h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<p><strong>2019-01-03: version 2.3:</strong></p>
+<ul class="simple">
+<li>More helpful error messaging when using <code class="docutils literal notranslate"><span class="pre">r*</span></code> / <code class="docutils literal notranslate"><span class="pre">*_iter</span></code> methods on endpoints they don’t support</li>
+<li>Resource envelope auto-unpacking no longer validates for the presence of a <code class="docutils literal notranslate"><span class="pre">type</span></code> property in order to support posting to business impact metrics</li>
+</ul>
+<p><strong>2018-12-04: version 2.2:</strong></p>
+<ul class="simple">
+<li>Methods <code class="docutils literal notranslate"><span class="pre">list_all</span></code> and <code class="docutils literal notranslate"><span class="pre">dict_all</span></code> turn all results from an index into a list/dict to save a bit of effort</li>
+</ul>
+<p><strong>2018-11-28: version 2.1:</strong></p>
+<ul class="simple">
+<li>Support for performing multi-update actions (i.e. <em>Manage Incidents</em>) via the <code class="docutils literal notranslate"><span class="pre">rput</span></code> method.</li>
+<li>The default behavior of <code class="docutils literal notranslate"><span class="pre">iter_all</span></code> is now to raise an exception if an error response is received from the API during iteration.</li>
+</ul>
+<p><strong>Changelog Started 2018-11-28</strong></p>
+</div>
 </div>
 
 
@@ -1042,6 +1060,7 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 <li><a class="reference internal" href="#module-pdpyras">Functions</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#changelog">Changelog</a></li>
 </ul>
 </li>
 </ul>
