@@ -124,7 +124,7 @@ Some examples of usage:
     for user in session.iter_all('users'):
         print(user['id'], user['email'], user['name'])
 
-**Iteration (2):** Compile a list of all servies with "SN" in their name:
+**Iteration (2):** Compile a list of all services with "SN" in their name:
 
 ::
 
