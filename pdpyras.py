@@ -17,7 +17,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '2.3.1'
+__version__ = '2.3.2'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -71,8 +71,12 @@ auto_envelope_supported = [
     ('users', '{id}'),
     ('users', '{id}', 'contact_methods', '{id}'),
     ('users', '{id}', 'contact_methods', '{index}'),
+    ('users', '{id}', 'info_notification_rules', '{id}'),
+    ('users', '{id}', 'info_notification_rules', '{index}'),
     ('users', '{id}', 'notification_rules', '{id}'),
     ('users', '{id}', 'notification_rules', '{index}'),
+    ('users', '{id}', 'oncall_handoff_notification_rules', '{id}'),
+    ('users', '{id}', 'oncall_handoff_notification_rules', '{index}'),
     ('users', '{index}'),
     ('vendors', '{index}'),
 ]
