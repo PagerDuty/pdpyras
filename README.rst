@@ -235,6 +235,12 @@ representing the desired result, all of the following are taken care of:
 3. Validate that the result contains the predicted envelope property.
 4. Access the property within the response.
 
+**Please note,** not all API endpoints are supported. The general rule is that
+the envelope name must follow from the innermost resource name for the API path
+in question, i.e. for ``/escalation_policies/{id}`` the envelope name must be
+``escalation_policy``, and or for ``/users/{id}/notification_rules`` it must be
+``notification_rule``.
+
 Iteration
 +++++++++
 
@@ -342,7 +348,7 @@ As of this writing, multi-update is limited to the following actions:
 * `PUT /incidents/{id}/alerts <https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents_id_alerts>`_
 * PUT /priorities (not yet published, as of 2018-11-28)
 
-**Please note:** as of yet, merginging incidents is not supported by ``rput``.
+**Please note:** as of yet, merging incidents is not supported by ``rput``.
 For this and other unsupported endpoints, you will need to call ``put`` directly,
 or ``jput`` to get the response body as a dictionary.
 

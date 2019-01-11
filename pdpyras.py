@@ -17,7 +17,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '2.3.2'
+__version__ = '2.4'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -25,60 +25,6 @@ valid_multi_update_paths = [
     ('incidents', '{index}'),
     ('incidents', '{id}', 'alerts', '{index}'),
     ('priorities', '{index}'),
-]
-
-# Whitelist of REST API endpoints for which automatic payload unpacking is
-# supported (where the envelope name can be straightforwardly derived from the
-# resource name in the URL)
-auto_envelope_supported = [
-    ('abilities', '{index}'),
-    ('addons', '{id}'),
-    ('addons', '{index}'),
-    ('business_impact_metrics', '{id}', 'observations', '{index}'),
-    ('escalation_policies', '{id}'),
-    ('escalation_policies', '{id}', 'escalation_rules', '{id}'),
-    ('escalation_policies', '{id}', 'escalation_rules', '{index}'),
-    ('escalation_policies', '{index}'),
-    ('extension_schemas', '{id}'),
-    ('extension_schemas', '{index}'),
-    ('extensions', '{id}'),
-    ('extensions', '{index}'),
-    ('incidents', '{id}'),
-    ('incidents', '{id}', 'alerts', '{id}'),
-    ('incidents', '{id}', 'alerts', '{index}'),
-    ('incidents', '{id}', 'log_entries', '{id}'),
-    ('incidents', '{id}', 'log_entries', '{index}'),
-    ('incidents', '{id}', 'notes', '{index}'),
-    ('incidents', '{index}'),
-    ('log_entries', '{id}'),
-    ('log_entries', '{index}'),
-    ('maintenance_windows', '{id}'),
-    ('maintenance_windows', '{index}'),
-    ('notifications', '{index}'),
-    ('oncalls', '{index}'),
-    ('priorities', '{index}'),
-    ('schedules', '{id}'),
-    ('schedules', '{id}', 'overrides', '{id}'),
-    ('schedules', '{id}', 'overrides', '{index}'),
-    ('schedules', '{id}', 'users', '{index}'),
-    ('schedules', '{index}'),
-    ('services', '{id}'),
-    ('services', '{id}', 'integrations', '{id}'),
-    ('services', '{id}', 'integrations', '{index}'),
-    ('services', '{index}'),
-    ('teams', '{id}'),
-    ('teams', '{index}'),
-    ('users', '{id}'),
-    ('users', '{id}', 'contact_methods', '{id}'),
-    ('users', '{id}', 'contact_methods', '{index}'),
-    ('users', '{id}', 'info_notification_rules', '{id}'),
-    ('users', '{id}', 'info_notification_rules', '{index}'),
-    ('users', '{id}', 'notification_rules', '{id}'),
-    ('users', '{id}', 'notification_rules', '{index}'),
-    ('users', '{id}', 'oncall_handoff_notification_rules', '{id}'),
-    ('users', '{id}', 'oncall_handoff_notification_rules', '{index}'),
-    ('users', '{index}'),
-    ('vendors', '{index}'),
 ]
 
 #########################
@@ -158,10 +104,6 @@ def resource_envelope(method):
     def call(self, path, **kw):
         pass_kw = deepcopy(kw) # Make a copy for modification
         nodes = tokenize_url_path(path, baseurl=self.url)
-        if nodes not in auto_envelope_supported:
-            raise ValueError("Automatic unpacking of the payload from the "
-                "resource envelope (via r%(method)s) is not supported for this "
-                "endpoint (%(path)s)."%{'path': path, 'method': http_method})
         is_index = nodes[-1] == '{index}'
         resource = nodes[-2]
         multi_put = http_method == 'put' and nodes in valid_multi_update_paths
@@ -527,9 +469,6 @@ class APISession(requests.Session):
         path_nodes = tokenize_url_path(path, baseurl=self.url)
         if not path_nodes[-1] == '{index}':
             raise ValueError("Invalid index url/path: "+path[:99])
-        if path_nodes not in auto_envelope_supported:
-            raise ValueError("Method iter_all does not support this API "
-                "endpoint (%s)"%path)
         # Determine the resource name:
         r_name = path_nodes[-2]
         # Parameters to send:

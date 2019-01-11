@@ -1,9 +1,13 @@
 Changelog
 ---------
 
+**2019-01-10: version 2.4:**
+
+* Whitelisting of endpoints supported by the ``r*`` / ``*_all`` methods has been rescinded, and documentation has been updated with how to identify endpoints that these methods can be used with.
+
 **2019-01-03: version 2.3:**
 
-* More helpful error messaging when using ``r*`` / ``*_iter`` methods on endpoints they don't support
+* More helpful error messaging when using ``r*`` / ``*_all`` methods on endpoints they don't support
 * Resource envelope auto-unpacking no longer validates for the presence of a ``type`` property in order to support posting to business impact metrics
 
 **2018-12-04: version 2.2:**
