@@ -21,3 +21,6 @@ Functions
 .. automodule:: pdpyras
     :members:
     :exclude-members: APISession, PDClientError
+
+.. Changelog:
+.. include:: ../../CHANGELOG.rst

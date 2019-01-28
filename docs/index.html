@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 2.3.0 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 2.4.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -252,6 +252,11 @@ representing the desired result, all of the following are taken care of:</p>
 <li>Validate that the result contains the predicted envelope property.</li>
 <li>Access the property within the response.</li>
 </ol>
+<p><strong>Please note,</strong> not all API endpoints are supported. The general rule is that
+the envelope name must follow from the innermost resource name for the API path
+in question, i.e. for <code class="docutils literal notranslate"><span class="pre">/escalation_policies/{id}</span></code> the envelope name must be
+<code class="docutils literal notranslate"><span class="pre">escalation_policy</span></code>, and or for <code class="docutils literal notranslate"><span class="pre">/users/{id}/notification_rules</span></code> it must be
+<code class="docutils literal notranslate"><span class="pre">notification_rule</span></code>.</p>
 <div class="section" id="iteration">
 <h4>Iteration<a class="headerlink" href="#iteration" title="Permalink to this headline">¶</a></h4>
 <p>The method <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpyras.APISession.iter_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.iter_all</span></code></a> returns an iterator that yields
@@ -344,7 +349,7 @@ in multi-update actions.</p>
 <li><a class="reference external" href="https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents_id_alerts">PUT /incidents/{id}/alerts</a></li>
 <li>PUT /priorities (not yet published, as of 2018-11-28)</li>
 </ul>
-<p><strong>Please note:</strong> as of yet, merginging incidents is not supported by <code class="docutils literal notranslate"><span class="pre">rput</span></code>.
+<p><strong>Please note:</strong> as of yet, merging incidents is not supported by <code class="docutils literal notranslate"><span class="pre">rput</span></code>.
 For this and other unsupported endpoints, you will need to call <code class="docutils literal notranslate"><span class="pre">put</span></code> directly,
 or <code class="docutils literal notranslate"><span class="pre">jput</span></code> to get the response body as a dictionary.</p>
 <p>To use, simply pass in a list of objects or references (dictionaries having a
@@ -997,6 +1002,32 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 
 </div>
 </div>
+<div class="section" id="changelog">
+<h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<p><strong>2019-01-28: version 2.4.1:</strong></p>
+<ul class="simple">
+<li>Fixed bug: unpacking wrapped entities does not work with <code class="docutils literal notranslate"><span class="pre">/log_entries</span></code></li>
+</ul>
+<p><strong>2019-01-10: version 2.4:</strong></p>
+<ul class="simple">
+<li>Whitelisting of endpoints supported by the <code class="docutils literal notranslate"><span class="pre">r*</span></code> / <code class="docutils literal notranslate"><span class="pre">*_all</span></code> methods has been rescinded, and documentation has been updated with how to identify endpoints that these methods can be used with.</li>
+</ul>
+<p><strong>2019-01-03: version 2.3:</strong></p>
+<ul class="simple">
+<li>More helpful error messaging when using <code class="docutils literal notranslate"><span class="pre">r*</span></code> / <code class="docutils literal notranslate"><span class="pre">*_all</span></code> methods on endpoints they don’t support</li>
+<li>Resource envelope auto-unpacking no longer validates for the presence of a <code class="docutils literal notranslate"><span class="pre">type</span></code> property in order to support posting to business impact metrics</li>
+</ul>
+<p><strong>2018-12-04: version 2.2:</strong></p>
+<ul class="simple">
+<li>Methods <code class="docutils literal notranslate"><span class="pre">list_all</span></code> and <code class="docutils literal notranslate"><span class="pre">dict_all</span></code> turn all results from an index into a list/dict to save a bit of effort</li>
+</ul>
+<p><strong>2018-11-28: version 2.1:</strong></p>
+<ul class="simple">
+<li>Support for performing multi-update actions (i.e. <em>Manage Incidents</em>) via the <code class="docutils literal notranslate"><span class="pre">rput</span></code> method.</li>
+<li>The default behavior of <code class="docutils literal notranslate"><span class="pre">iter_all</span></code> is now to raise an exception if an error response is received from the API during iteration.</li>
+</ul>
+<p><strong>Changelog Started 2018-11-28</strong></p>
+</div>
 </div>
 
 
@@ -1042,6 +1073,7 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 <li><a class="reference internal" href="#module-pdpyras">Functions</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#changelog">Changelog</a></li>
 </ul>
 </li>
 </ul>
