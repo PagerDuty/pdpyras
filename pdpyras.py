@@ -17,7 +17,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '2.4'
+__version__ = '2.4.1'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -42,8 +42,9 @@ def object_type(r_name):
         of the given resource.
     :rtype: str
     """
-    if r_name == 'escalation_policies':
-        return 'escalation_policy'
+    if r_name.endswith('ies'):
+        # Because English
+        return r_name[:-3]+'y'
     else:
         return r_name.rstrip('s')
 
@@ -153,8 +154,9 @@ def resource_name(obj_type):
     if obj_type.endswith('_reference'):
         # Strip down to basic type if it's a reference
         obj_type = obj_type[:obj_type.index('_reference')]
-    if obj_type == 'escalation_policy':
-        return 'escalation_policies'
+    if obj_type.endswith('y'):
+        # Because English
+        return obj_type[:-1]+'ies'
     else:
         return obj_type+'s'
 

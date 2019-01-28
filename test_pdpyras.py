@@ -432,6 +432,8 @@ class APISessionTest(unittest.TestCase):
         self.assertEqual('something', sess.subdomain)
         rget.assert_called_once_with('users', params={'limit':1})
 
+class APIUtilsTest(unittest.TestCase):
+
     def test_tokenize_url_path(self):
         cm_path = ('users', '{id}', 'contact_methods', '{index}')
         cm_path_str = 'users/PABC123/contact_methods'
@@ -451,6 +453,20 @@ class APISessionTest(unittest.TestCase):
             '/users/')
         self.assertEqual(('users','{index}'),
             pdpyras.tokenize_url_path('/users'))
+
+    def test_plural_deplural(self):
+        # forward
+        for r_name in ('escalation_policies', 'services', 'log_entries'):
+            self.assertEqual(
+                r_name,
+                pdpyras.resource_name(pdpyras.object_type(r_name))
+            )
+        # reverse
+        for o_name in ('escalation_policy', 'service', 'log_entry'):
+            self.assertEqual(
+                o_name,
+                pdpyras.object_type(pdpyras.resource_name(o_name))
+            )
 
 def main():
     ap=argparse.ArgumentParser()
