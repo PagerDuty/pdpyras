@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+**2019-01-28: version 2.4.1:**
+
+* Fixed bug: unpacking wrapped entities does not work with ``/log_entries``
+
 **2019-01-10: version 2.4:**
 
 * Whitelisting of endpoints supported by the ``r*`` / ``*_all`` methods has been rescinded, and documentation has been updated with how to identify endpoints that these methods can be used with.
