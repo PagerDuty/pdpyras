@@ -156,7 +156,7 @@ will be used.</p>
 and update their name to “Jane Doe”:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pdpyras</span> <span class="k">import</span> <span class="n">APISession</span>
 <span class="n">api_token</span> <span class="o">=</span> <span class="s1">&#39;your-token-here&#39;</span>
-<span class="n">sesion</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">)</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">)</span>
 <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="s1">&#39;jane@example35.com&#39;</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s1">&#39;email&#39;</span><span class="p">)</span>
 <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="c1"># Update using put directly:</span>
@@ -182,7 +182,7 @@ This example assumes that <code class="docutils literal notranslate"><span class
 PagerDuty account:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pdpyras</span> <span class="k">import</span> <span class="n">APISession</span>
 <span class="n">api_token</span> <span class="o">=</span> <span class="s1">&#39;your-token-here&#39;</span>
-<span class="n">sesion</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">,</span> <span class="n">default_from</span><span class="o">=</span><span class="s1">&#39;admin@example.com&#39;</span><span class="p">)</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">,</span> <span class="n">default_from</span><span class="o">=</span><span class="s1">&#39;admin@example.com&#39;</span><span class="p">)</span>
 <span class="c1"># Query incidents</span>
 <span class="n">incidents</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">iter_all</span><span class="p">(</span>
     <span class="s1">&#39;incidents&#39;</span><span class="p">,</span>
