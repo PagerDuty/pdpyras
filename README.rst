@@ -10,25 +10,12 @@ About
 -----
 This library supplies a class :class:`pdpyras.APISession` extending
 `requests.Session`_ from the Requests_ HTTP library. It serves as a practical
-and simple-as-possible-but-no-simpler abstraction layer for accessing the
-PagerDuty REST API, differing minimally from the already well-known and
-well-documented underlying HTTP library. This makes it appropriate for use as
-the foundation of anything from a feature-rich REST API client library to a
-quick-and-dirty API script.
+and simple-as-possible-but-no-simpler HTTP client for accessing the PagerDuty
+REST API. 
 
-This module was borne of necessity for a basic, reusable API client to
-eliminate code duplication in some of PagerDuty Support's internal Python-based
-API tools, and to get the job done without reinventing the wheel or getting in
-the way. We also frequently found ourselves performing REST API requests using
-beta or non-documented API endpoints for one reason or another, so we also
-needed a client that provided easy access to features of the underlying HTTP
-library, but that eliminated tedious tasks like querying, `pagination`_ and
-header-setting. Finally, we discovered that the way we were using `requests`_
-wasn't making use of connection re-use, and wanted a way to easily enforce this
-as a standard practice.
-
-Ultimately, we deemed most other libraries to be both overkill for this task
-and also not very conducive to use for experimental API calls.
+It enables you to simply make requests to the PagerDuty REST API, while taking
+care of all of the most common prerequisites and necessities associated with
+accessing the API.
 
 Features
 ********
@@ -42,6 +29,24 @@ Features
 - Individual object retrieval by name
 - API request profiling
 
+History
+*******
+This module was borne of necessity for a basic, reusable API client to
+eliminate code duplication in some of PagerDuty Support's internal Python-based
+API tools. We needed something that could get the job done without reinventing
+the wheel or getting in the way. 
+
+We also frequently found ourselves performing REST API requests using beta or
+non-documented API endpoints for one reason or another, so we also needed a
+client that provided easy access to features of the underlying HTTP library
+(i.e. to obtain the response headers, or set special request headers). We
+needed something that eliminated tedious tasks like querying, `pagination`_ and
+header-setting commonly associated with REST API usage. Finally, we discovered
+that the way we were using `requests`_ wasn't making use of connection re-use,
+and wanted a way to easily enforce this as a standard practice.
+
+Ultimately, we deemed most other libraries to be both overkill for this task
+and also not very conducive to use for experimental API calls.
 
 Copyright
 *********
