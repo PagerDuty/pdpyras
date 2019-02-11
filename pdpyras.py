@@ -17,7 +17,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '2.4.1'
+__version__ = '2.4.2'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -30,6 +30,10 @@ valid_multi_update_paths = [
 #########################
 ### UTILITY FUNCTIONS ###
 #########################
+
+def last_4(secret):
+    """Returns an abbreviation of the input"""
+    return '*'+str(secret)[-4:]
 
 def object_type(r_name):
     """
@@ -769,7 +773,7 @@ class APISession(requests.Session):
     @property
     def trunc_token(self):
         """Truncated token for secure display/identification purposes."""
-        return "*"+self.token[-4:]
+        return last_4(self.token)
 
 class PDClientError(Exception): 
     """
