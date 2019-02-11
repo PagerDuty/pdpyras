@@ -40,6 +40,10 @@ def auto_json(method):
         return try_decoding(response)
     return call
 
+def last_4(secret):
+    """Returns an abbreviation of the input"""
+    return '*'+str(secret)[-4:]
+
 def object_type(r_name):
     """
     Derives an object type (i.e. ``user``) from a resource name (i.e. ``users``)
@@ -468,7 +472,7 @@ class PDSession(requests.Session):
     @property
     def trunc_key(self):
         """Truncated key for secure display/identification purposes."""
-        return '*'+self.api_key[-4:]
+        return last_4(self.api_key)
 
 class EventsAPISession(PDSession):
 
