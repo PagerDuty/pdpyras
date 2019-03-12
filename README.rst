@@ -13,9 +13,9 @@ This library supplies a class :class:`pdpyras.APISession` extending
 and simple-as-possible-but-no-simpler HTTP client for accessing the PagerDuty
 REST API. 
 
-It enables you to simply make requests to the PagerDuty REST API, while taking
-care of all of the most common prerequisites and necessities associated with
-accessing the API.
+It enables you to simply make requests to the PagerDuty REST API and focus on
+the schema of information, while taking care of all of the most common
+prerequisites and necessities associated with accessing the API.
 
 Features
 ********
@@ -28,6 +28,7 @@ Features
   automatic pagination
 - Individual object retrieval by name
 - API request profiling
+- Events API client
 
 History
 *******
@@ -175,10 +176,10 @@ PagerDuty account:
     api_token = 'your-token-here'
     sesion = APISession(api_token, default_from='admin@example.com')
     # Query incidents
-    incidents = list(session.iter_all(
+    incidents = session.list_all(
         'incidents',
         params={'user_ids[]':['PHIJ789'],'statuses[]':['triggered']}
-    ))
+    )
     # Change their state
     for i in incidents:
         i['status'] = 'acknowledged'
@@ -238,7 +239,7 @@ representing the desired result, all of the following are taken care of:
 1. Validate that the response HTTP status is not an error.
 2. Predict the name of the envelope property which will contain the object.
 3. Validate that the result contains the predicted envelope property.
-4. Access the property within the response.
+4. Access the property that is encapsulated within the response.
 
 **Please note,** not all API endpoints are supported. The general rule is that
 the envelope name must follow from the innermost resource name for the API path
@@ -478,6 +479,7 @@ alert data to the Events API and triggering incidents asynchronously:
 * Connection persistence
 * Automatic cooldown and retry in the event of rate limiting or a transient network error
 * Setting all required headers
+* Configurable HTTP retry logic
 
 To transmit alerts and perform actions through the events API, one would use:
 

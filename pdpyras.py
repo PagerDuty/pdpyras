@@ -17,7 +17,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '2.4.2'
+__version__ = '3.0'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -776,7 +776,7 @@ class APISession(PDSession):
             If True, use `pagination`_ to get through all available results. If
             False, ignore / don't page through more than the first 100 results.
             Useful for special index endpoints that don't fully support
-            pagination yet, i.e. "nested" endpoints like
+            pagination yet, i.e. "nested" endpoints like (as of this writing):
             ``/users/{id}/contact_methods`` and ``/services/{id}/integrations``
         :param item_hook:
             Callable object that will be invoked for each iteration, i.e. for
@@ -963,7 +963,7 @@ class APISession(PDSession):
     @resource_envelope
     def rget(self, path, **kw):
         """
-        
+        Retrieve a resource and return the encapsulated object in the response
         """
         return self.get(path, **kw)
 
@@ -971,7 +971,7 @@ class APISession(PDSession):
     def rpost(self, path, **kw):
         """
         Create a resource.
-        
+
         Returns the dictionary object representation if creating it was
         successful.
 
