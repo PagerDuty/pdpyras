@@ -17,7 +17,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '2.4.1'
+__version__ = '2.4.2'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -1026,6 +1026,10 @@ class APISession(PDSession):
         """The total time spent making API calls."""
         return sum(self.api_time.values())
 
+    @property
+    def trunc_token(self):
+        """Truncated token for secure display/identification purposes."""
+        return last_4(self.token)
 
 class PDClientError(Exception): 
     """
