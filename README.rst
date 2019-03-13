@@ -146,7 +146,7 @@ and update their name to "Jane Doe":
 
     from pdpyras import APISession
     api_token = 'your-token-here'
-    sesion = APISession(api_token)
+    session = APISession(api_token)
     user = session.find('users', 'jane@example35.com', attribute='email')
     if user is not None:
         # Update using put directly:
@@ -174,7 +174,7 @@ PagerDuty account:
 
     from pdpyras import APISession
     api_token = 'your-token-here'
-    sesion = APISession(api_token, default_from='admin@example.com')
+    session = APISession(api_token, default_from='admin@example.com')
     # Query incidents
     incidents = session.list_all(
         'incidents',
@@ -249,7 +249,6 @@ in question, i.e. for ``/escalation_policies/{id}`` the envelope name must be
 
 Iteration
 +++++++++
-
 The method :attr:`pdpyras.APISession.iter_all` returns an iterator that yields
 all results from a resource index, automatically incrementing the ``offset``
 parameter to advance through each page of data.
@@ -258,12 +257,6 @@ As of version 2.2, there are also the methods
 :attr:`pdpyras.APISession.list_all` and :attr:`pdpyras.APISession.dict_all`
 which return a list or dictionary of all results, respsectively. 
 
-Note, however, that because HTTP requests are made synchronously and not in
-parallel threads, the data will be retrieved one page at a time and the
-functions ``list_all`` and ``dict_all`` will not return until after the HTTP
-response from the final API call is recived. Simply put, the functions will take
-longer to return if the total number of resuls is higher.
-
 **Example:** Get a dictionary of all users, keyed by email, and use it to find
 the ID of the user whose email is ``bob@example.com``
 
@@ -271,6 +264,38 @@ the ID of the user whose email is ``bob@example.com``
 
     users = session.dict_all('users', by='email')
     print(users['bob@example.com']['id'])
+
+**Regarding Performance of Iteration:**
+
+Because HTTP requests are made synchronously and not in parallel threads, the
+data will be retrieved one page at a time and the functions ``list_all`` and
+``dict_all`` will not return until after the HTTP response from the final API
+call is received. Simply put, the functions will take longer to return if the
+total number of resuls is higher.
+
+**Updating and Deleting Records En Masse:**
+
+If performing page-wise operations, i.e. making changes immediately after
+fetching each page of results, rather than pre-fetching all objects and then
+operating on them, one must be cautious not to perform any changes to the
+results that would affect the set being iterated over. That is because, should
+any objects be removed from the set (i.e. the objects included in the iteration
+query), then the offset when accessing the next page of resultswill still be
+incremented, whereas the position of the first object in the next page will
+shift to a lower rank in the overall list of objects.
+
+In other words: let's say that one is reading and then tearing pages from a
+notebook. If the algorithm is "go through 100 pages, do things with the pages,
+then repeat starting with the 101st page, then with the 201st, etc" but one
+tears out pages immediately after going through them, then what was originally
+the 101st page before starting will shift to become the first page after going
+through the first hundred pages. Thus, when going to the 101st page after
+finishing tearing out the first hundred pages, the second hundred pages will be
+skipped over, and similarly for pages 401-500, 601-700 and so on.
+
+As of version 3, this issue is still applicable. To avoid it, do not use
+``iter_all``, but use ``list_all`` or ``dict_all`` to pre-fetch the set of
+records to be operated on, and then iterate over the results.
 
 Reading
 +++++++
@@ -454,7 +479,9 @@ in :attr:`pdpyras.PDSession.max_http_attempts`, and this will supersede the
 maximum number of retries defined in
 :attr:`pdpyras.PDSession.retry`. 
 
-For example, the following will take about 30 seconds plus API request time
+**Example:**
+
+The following will take about 30 seconds plus API request time
 (carrying out four attempts, with 2, 4, 8 and 16 second pauses between them),
 before finally returning with the status 404 `requests.Response`_ object:
 
@@ -467,11 +494,22 @@ before finally returning with the status 404 `requests.Response`_ object:
     # isinstance(session, pdpyras.APISession)
     response = session.get('/users/PNOEXST') 
 
+**Default Rate Limit Behavior:**
 
-Events API
-**********
+Note that without specifying any retry behavior for status 429 (rate limiting),
+it will retry indefinitely. This is a sane approach; if it is ever responding
+with 429, this means that the REST API is receiving (for the given REST API
+key) too many requests, and the issue should by nature be transient. Similarly,
+the hard-coded default behavior for status 401 (unauthorized) is to immediately 
+return and print an error message to the log.
 
-As an added bonus, ``pdpyras`` provides a basic Session class, , for submitting
+It is, however, possible to override this behavior using
+:attr:`pdpyras.PDSession.retry`.
+
+Events API Usage
+****************
+
+As an added bonus, ``pdpyras`` provides an additional Session class for submitting
 alert data to the Events API and triggering incidents asynchronously:
 :class:`pdpyras.EventsAPISession`. It has most of the same features as
 :class:`pdpyras.APISession`:
@@ -493,7 +531,7 @@ To instantiate a session object, pass the constructor the routing key:
 
     import pdpyras
     routing_key = '0123456789abcdef0123456789abcdef'
-    session = EventsAPISession(routing_key)
+    session = pdpyras.EventsAPISession(routing_key)
 
 
 **Example 1:** Trigger an event and use the PagerDuty-supplied deduplication key to resolve it later:
@@ -519,7 +557,7 @@ Contributing
 Bug reports and pull requests to fix issues are always welcome. 
 
 If adding features, or making changes, it is recommended to update or add tests
-and assertions to the class ``APISessionTest`` in ``test_pdpyras.py`` to ensure
+and assertions to the appropriate test case class in ``test_pdpyras.py`` to ensure
 code coverage. If the change(s) fix a bug, please add assertions that reproduce
 the bug along with code changes themselves, and include the GitHub issue number
 in the commit message.

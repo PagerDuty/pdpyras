@@ -151,7 +151,7 @@ will be used.</p>
     <span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">],</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
-<p><strong>Iteration (2):</strong> Compile a list of all servies with “SN” in their name:</p>
+<p><strong>Iteration (2):</strong> Compile a list of all services with “SN” in their name:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pdpyras</span> <span class="k">import</span> <span class="n">APISession</span>
 <span class="n">api_token</span> <span class="o">=</span> <span class="s1">&#39;your-token-here&#39;</span>
 <span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">)</span>
@@ -162,7 +162,7 @@ will be used.</p>
 and update their name to “Jane Doe”:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pdpyras</span> <span class="k">import</span> <span class="n">APISession</span>
 <span class="n">api_token</span> <span class="o">=</span> <span class="s1">&#39;your-token-here&#39;</span>
-<span class="n">sesion</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">)</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">)</span>
 <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="s1">&#39;jane@example35.com&#39;</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s1">&#39;email&#39;</span><span class="p">)</span>
 <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="c1"># Update using put directly:</span>
@@ -188,7 +188,7 @@ This example assumes that <code class="docutils literal notranslate"><span class
 PagerDuty account:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pdpyras</span> <span class="k">import</span> <span class="n">APISession</span>
 <span class="n">api_token</span> <span class="o">=</span> <span class="s1">&#39;your-token-here&#39;</span>
-<span class="n">sesion</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">,</span> <span class="n">default_from</span><span class="o">=</span><span class="s1">&#39;admin@example.com&#39;</span><span class="p">)</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">,</span> <span class="n">default_from</span><span class="o">=</span><span class="s1">&#39;admin@example.com&#39;</span><span class="p">)</span>
 <span class="c1"># Query incidents</span>
 <span class="n">incidents</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">list_all</span><span class="p">(</span>
     <span class="s1">&#39;incidents&#39;</span><span class="p">,</span>
@@ -271,17 +271,38 @@ parameter to advance through each page of data.</p>
 <p>As of version 2.2, there are also the methods
 <a class="reference internal" href="#pdpyras.APISession.list_all" title="pdpyras.APISession.list_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.list_all</span></code></a> and <a class="reference internal" href="#pdpyras.APISession.dict_all" title="pdpyras.APISession.dict_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.dict_all</span></code></a>
 which return a list or dictionary of all results, respsectively.</p>
-<p>Note, however, that because HTTP requests are made synchronously and not in
-parallel threads, the data will be retrieved one page at a time and the
-functions <code class="docutils literal notranslate"><span class="pre">list_all</span></code> and <code class="docutils literal notranslate"><span class="pre">dict_all</span></code> will not return until after the HTTP
-response from the final API call is recived. Simply put, the functions will take
-longer to return if the total number of resuls is higher.</p>
 <p><strong>Example:</strong> Get a dictionary of all users, keyed by email, and use it to find
 the ID of the user whose email is <code class="docutils literal notranslate"><span class="pre">bob&#64;example.com</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">users</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">dict_all</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="s1">&#39;email&#39;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">users</span><span class="p">[</span><span class="s1">&#39;bob@example.com&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
+<p><strong>Regarding Performance of Iteration:</strong></p>
+<p>Because HTTP requests are made synchronously and not in parallel threads, the
+data will be retrieved one page at a time and the functions <code class="docutils literal notranslate"><span class="pre">list_all</span></code> and
+<code class="docutils literal notranslate"><span class="pre">dict_all</span></code> will not return until after the HTTP response from the final API
+call is received. Simply put, the functions will take longer to return if the
+total number of resuls is higher.</p>
+<p><strong>Updating and Deleting Records En Masse:</strong></p>
+<p>If performing page-wise operations, i.e. making changes immediately after
+fetching each page of results, rather than pre-fetching all objects and then
+operating on them, one must be cautious not to perform any changes to the
+results that would affect the set being iterated over. That is because, should
+any objects be removed from the set (i.e. the objects included in the iteration
+query), then the offset when accessing the next page of resultswill still be
+incremented, whereas the position of the first object in the next page will
+shift to a lower rank in the overall list of objects.</p>
+<p>In other words: let’s say that one is reading and then tearing pages from a
+notebook. If the algorithm is “go through 100 pages, do things with the pages,
+then repeat starting with the 101st page, then with the 201st, etc” but one
+tears out pages immediately after going through them, then what was originally
+the 101st page before starting will shift to become the first page after going
+through the first hundred pages. Thus, when going to the 101st page after
+finishing tearing out the first hundred pages, the second hundred pages will be
+skipped over, and similarly for pages 401-500, 601-700 and so on.</p>
+<p>As of version 3, this issue is still applicable. To avoid it, do not use
+<code class="docutils literal notranslate"><span class="pre">iter_all</span></code>, but use <code class="docutils literal notranslate"><span class="pre">list_all</span></code> or <code class="docutils literal notranslate"><span class="pre">dict_all</span></code> to pre-fetch the set of
+records to be operated on, and then iterate over the results.</p>
 </div>
 <div class="section" id="reading">
 <h4>Reading<a class="headerlink" href="#reading" title="Permalink to this headline">¶</a></h4>
@@ -441,7 +462,8 @@ that the client will tolerate before returning the response object is defined
 in <a class="reference internal" href="#pdpyras.PDSession.max_http_attempts" title="pdpyras.PDSession.max_http_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.max_http_attempts</span></code></a>, and this will supersede the
 maximum number of retries defined in
 <a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.retry</span></code></a>.</p>
-<p>For example, the following will take about 30 seconds plus API request time
+<p><strong>Example:</strong></p>
+<p>The following will take about 30 seconds plus API request time
 (carrying out four attempts, with 2, 4, 8 and 16 second pauses between them),
 before finally returning with the status 404 <a class="reference external" href="http://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">session</span><span class="o">.</span><span class="n">retry</span><span class="p">[</span><span class="mi">404</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
@@ -452,10 +474,19 @@ before finally returning with the status 404 <a class="reference external" href=
 <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;/users/PNOEXST&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
+<p><strong>Default Rate Limit Behavior:</strong></p>
+<p>Note that without specifying any retry behavior for status 429 (rate limiting),
+it will retry indefinitely. This is a sane approach; if it is ever responding
+with 429, this means that the REST API is receiving (for the given REST API
+key) too many requests, and the issue should by nature be transient. Similarly,
+the hard-coded default behavior for status 401 (unauthorized) is to immediately
+return and print an error message to the log.</p>
+<p>It is, however, possible to override this behavior using
+<a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.retry</span></code></a>.</p>
 </div>
-<div class="section" id="events-api">
-<h3>Events API<a class="headerlink" href="#events-api" title="Permalink to this headline">¶</a></h3>
-<p>As an added bonus, <code class="docutils literal notranslate"><span class="pre">pdpyras</span></code> provides a basic Session class, , for submitting
+<div class="section" id="events-api-usage">
+<h3>Events API Usage<a class="headerlink" href="#events-api-usage" title="Permalink to this headline">¶</a></h3>
+<p>As an added bonus, <code class="docutils literal notranslate"><span class="pre">pdpyras</span></code> provides an additional Session class for submitting
 alert data to the Events API and triggering incidents asynchronously:
 <a class="reference internal" href="#pdpyras.EventsAPISession" title="pdpyras.EventsAPISession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.EventsAPISession</span></code></a>. It has most of the same features as
 <a class="reference internal" href="#pdpyras.APISession" title="pdpyras.APISession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.APISession</span></code></a>:</p>
@@ -474,7 +505,7 @@ alert data to the Events API and triggering incidents asynchronously:
 <p>To instantiate a session object, pass the constructor the routing key:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pdpyras</span>
 <span class="n">routing_key</span> <span class="o">=</span> <span class="s1">&#39;0123456789abcdef0123456789abcdef&#39;</span>
-<span class="n">session</span> <span class="o">=</span> <span class="n">EventsAPISession</span><span class="p">(</span><span class="n">routing_key</span><span class="p">)</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">EventsAPISession</span><span class="p">(</span><span class="n">routing_key</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><strong>Example 1:</strong> Trigger an event and use the PagerDuty-supplied deduplication key to resolve it later:</p>
@@ -496,7 +527,7 @@ alert data to the Events API and triggering incidents asynchronously:
 <h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h2>
 <p>Bug reports and pull requests to fix issues are always welcome.</p>
 <p>If adding features, or making changes, it is recommended to update or add tests
-and assertions to the class <code class="docutils literal notranslate"><span class="pre">APISessionTest</span></code> in <code class="docutils literal notranslate"><span class="pre">test_pdpyras.py</span></code> to ensure
+and assertions to the appropriate test case class in <code class="docutils literal notranslate"><span class="pre">test_pdpyras.py</span></code> to ensure
 code coverage. If the change(s) fix a bug, please add assertions that reproduce
 the bug along with code changes themselves, and include the GitHub issue number
 in the commit message.</p>
@@ -504,8 +535,155 @@ in the commit message.</p>
 </div>
 <div class="section" id="developer-interface">
 <h2>Developer Interface<a class="headerlink" href="#developer-interface" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="classes">
-<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="generic-api-client">
+<h3>Generic API Client<a class="headerlink" href="#generic-api-client" title="Permalink to this headline">¶</a></h3>
+<p>This base class implements features common to both <a class="reference internal" href="#pdpyras.APISession" title="pdpyras.APISession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.APISession</span></code></a>
+and <a class="reference internal" href="#pdpyras.EventsAPISession" title="pdpyras.EventsAPISession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.EventsAPISession</span></code></a>.</p>
+<dl class="class">
+<dt id="pdpyras.PDSession">
+<em class="property">class </em><code class="descclassname">pdpyras.</code><code class="descname">PDSession</code><span class="sig-paren">(</span><em>api_key</em>, <em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for making HTTP requests to PagerDuty APIs.</p>
+<p>Instances of this class are essentially the same as <a class="reference external" href="http://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>
+objects, but with a few modifications:</p>
+<ul class="simple">
+<li>The client will reattempt the request with configurable, auto-increasing
+cooldown/retry intervals if encountering a network error or rate limit</li>
+<li>When making requests, headers specified ad-hoc in calls to HTTP verb
+functions will not replace, but will be merged with, default headers.</li>
+<li>The request URL, if it doesn’t already start with the REST API base URL,
+will be prepended with the default REST API base URL.</li>
+<li>It will only perform requests with methods as given in the
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">permitted_methods</span></code> list, and will raise <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> for
+any other HTTP methods.</li>
+</ul>
+<dl class="attribute">
+<dt id="pdpyras.PDSession.api_key">
+<code class="descname">api_key</code><a class="headerlink" href="#pdpyras.PDSession.api_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>API Key property getter.</p>
+<p>Returns the _api_key attribute’s value.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pdpyras.PDSession.log">
+<code class="descname">log</code><em class="property"> = None</em><a class="headerlink" href="#pdpyras.PDSession.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">logging.Logger</span></code> object for printing messages.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pdpyras.PDSession.max_http_attempts">
+<code class="descname">max_http_attempts</code><em class="property"> = 10</em><a class="headerlink" href="#pdpyras.PDSession.max_http_attempts" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of times that the client will retry after error statuses, for any
+that are defined greater than zero in <a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">retry</span></code></a>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pdpyras.PDSession.max_network_attempts">
+<code class="descname">max_network_attempts</code><em class="property"> = 3</em><a class="headerlink" href="#pdpyras.PDSession.max_network_attempts" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of times that connecting to the API will be attempted before
+treating the failure as non-transient; a <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> exception
+will be raised if this happens.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pdpyras.PDSession.parent">
+<code class="descname">parent</code><em class="property"> = None</em><a class="headerlink" href="#pdpyras.PDSession.parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">super</span></code> object (<a class="reference external" href="http://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pdpyras.PDSession.postprocess">
+<code class="descname">postprocess</code><span class="sig-paren">(</span><em>response</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform supplemental actions immediately after receiving a response.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pdpyras.PDSession.request">
+<code class="descname">request</code><span class="sig-paren">(</span><em>method</em>, <em>url</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.request" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a generic PagerDuty API request.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>method</strong> (<em>str</em>) – The request method to use. Case-insensitive. May be one of get, put,
+post or delete.</li>
+<li><strong>url</strong> (<em>str</em>) – The path/URL to request. If it does not start with the base URL, the
+base URL will be prepended.</li>
+<li><strong>**kwargs</strong> – <p>Additional keyword arguments to pass to <a class="reference external" href="http://docs.python-requests.org/en/master/api/#requests.Session.request">requests.Session.request</a></p>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the HTTP response object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="http://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pdpyras.PDSession.retry">
+<code class="descname">retry</code><em class="property"> = None</em><a class="headerlink" href="#pdpyras.PDSession.retry" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dict defining the retry behavior for each HTTP response status code.</p>
+<p>Each key in this dictionary represents a HTTP response code. The behavior is
+specified by the value at each key as follows:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">-1</span></code> to retry infinitely</li>
+<li><code class="docutils literal notranslate"><span class="pre">0</span></code> to return the <a class="reference external" href="http://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object and exit (which is the
+default behavior)</li>
+<li><code class="docutils literal notranslate"><span class="pre">n</span></code>, where <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>, to retry <code class="docutils literal notranslate"><span class="pre">n</span></code> times (or up
+to <a class="reference internal" href="#pdpyras.PDSession.max_http_attempts" title="pdpyras.PDSession.max_http_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_http_attempts</span></code></a> total for all statuses, whichever is
+encountered first), and rase a <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> after that many
+attempts. For each successive attempt, the wait time will increase by a
+factor of <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a>.</li>
+</ul>
+<p>The default behavior is to retry infinitely on a 429, and return the
+response in any other case (assuming a HTTP response was received from the
+server).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pdpyras.PDSession.set_api_key">
+<code class="descname">set_api_key</code><span class="sig-paren">(</span><em>api_key</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.set_api_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the API key/token.</p>
+<p>Child classes should implement this method to do special things like
+setting default headers.</p>
+<p>The getter will return the value of self._api_key, so any setters should
+set this property.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pdpyras.PDSession.sleep_timer">
+<code class="descname">sleep_timer</code><em class="property"> = 1.5</em><a class="headerlink" href="#pdpyras.PDSession.sleep_timer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default initial cooldown time factor for rate limiting and network errors.</p>
+<p>Each time that the request makes a followup request, there will be a delay
+in seconds equal to this number times <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a> to the power
+of how many attempts have already been made so far.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pdpyras.PDSession.sleep_timer_base">
+<code class="descname">sleep_timer_base</code><em class="property"> = 2</em><a class="headerlink" href="#pdpyras.PDSession.sleep_timer_base" title="Permalink to this definition">¶</a></dt>
+<dd><p>After each retry, the time to sleep before reattempting the API connection
+and request will increase by a factor of this amount.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pdpyras.PDSession.trunc_key">
+<code class="descname">trunc_key</code><a class="headerlink" href="#pdpyras.PDSession.trunc_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Truncated key for secure display/identification purposes.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="rest-api-client">
+<h3>REST API Client<a class="headerlink" href="#rest-api-client" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">APISession</span></code> class inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDSession</span></code></a> and
+implements features specific to usage of the REST API.</p>
 <dl class="class">
 <dt id="pdpyras.APISession">
 <em class="property">class </em><code class="descclassname">pdpyras.</code><code class="descname">APISession</code><span class="sig-paren">(</span><em>api_key</em>, <em>name=None</em>, <em>default_from=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession" title="Permalink to this definition">¶</a></dt>
@@ -803,22 +981,11 @@ set this property.</p>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="pdpyras.PDClientError">
-<em class="property">class </em><code class="descclassname">pdpyras.</code><code class="descname">PDClientError</code><span class="sig-paren">(</span><em>message</em>, <em>response=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDClientError" title="Permalink to this definition">¶</a></dt>
-<dd><p>General API errors base class.</p>
-<dl class="attribute">
-<dt id="pdpyras.PDClientError.response">
-<code class="descname">response</code><em class="property"> = None</em><a class="headerlink" href="#pdpyras.PDClientError.response" title="Permalink to this definition">¶</a></dt>
-<dd><p>The HTTP response object, if a response was successfully received.</p>
-<p>In the case of network errors, this property will be None.</p>
-</dd></dl>
-
-</dd></dl>
-
 </div>
-<div class="section" id="module-pdpyras">
-<span id="functions"></span><h3>Functions<a class="headerlink" href="#module-pdpyras" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="events-api-client">
+<h3>Events API Client<a class="headerlink" href="#events-api-client" title="Permalink to this headline">¶</a></h3>
+<p>Class <code class="docutils literal notranslate"><span class="pre">EventsAPISession</span></code> implements methods for submitting events to
+PagerDuty through the Events API and inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDSession</span></code></a>.</p>
 <dl class="class">
 <dt id="pdpyras.EventsAPISession">
 <em class="property">class </em><code class="descclassname">pdpyras.</code><code class="descname">EventsAPISession</code><span class="sig-paren">(</span><em>api_key</em>, <em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession" title="Permalink to this definition">¶</a></dt>
@@ -922,146 +1089,25 @@ override the property set in the <code class="docutils literal notranslate"><spa
 
 </dd></dl>
 
+</div>
+<div class="section" id="id2">
+<h3>Errors<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
-<dt id="pdpyras.PDSession">
-<em class="property">class </em><code class="descclassname">pdpyras.</code><code class="descname">PDSession</code><span class="sig-paren">(</span><em>api_key</em>, <em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession" title="Permalink to this definition">¶</a></dt>
-<dd><p>Base class for making HTTP requests to PagerDuty APIs.</p>
-<p>Instances of this class are essentially the same as <a class="reference external" href="http://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>
-objects, but with a few modifications:</p>
-<ul class="simple">
-<li>The client will reattempt the request with configurable, auto-increasing
-cooldown/retry intervals if encountering a network error or rate limit</li>
-<li>When making requests, headers specified ad-hoc in calls to HTTP verb
-functions will not replace, but will be merged with, default headers.</li>
-<li>The request URL, if it doesn’t already start with the REST API base URL,
-will be prepended with the default REST API base URL.</li>
-<li>It will only perform requests with methods as given in the
-<code class="xref py py-attr docutils literal notranslate"><span class="pre">permitted_methods</span></code> list, and will raise <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> for
-any other HTTP methods.</li>
-</ul>
+<dt id="pdpyras.PDClientError">
+<em class="property">class </em><code class="descclassname">pdpyras.</code><code class="descname">PDClientError</code><span class="sig-paren">(</span><em>message</em>, <em>response=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDClientError" title="Permalink to this definition">¶</a></dt>
+<dd><p>General API errors base class.</p>
 <dl class="attribute">
-<dt id="pdpyras.PDSession.api_key">
-<code class="descname">api_key</code><a class="headerlink" href="#pdpyras.PDSession.api_key" title="Permalink to this definition">¶</a></dt>
-<dd><p>API Key property getter.</p>
-<p>Returns the _api_key attribute’s value.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pdpyras.PDSession.log">
-<code class="descname">log</code><em class="property"> = None</em><a class="headerlink" href="#pdpyras.PDSession.log" title="Permalink to this definition">¶</a></dt>
-<dd><p>A <code class="docutils literal notranslate"><span class="pre">logging.Logger</span></code> object for printing messages.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pdpyras.PDSession.max_http_attempts">
-<code class="descname">max_http_attempts</code><em class="property"> = 10</em><a class="headerlink" href="#pdpyras.PDSession.max_http_attempts" title="Permalink to this definition">¶</a></dt>
-<dd><p>The number of times that the client will retry after error statuses, for any
-that are defined greater than zero in <a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">retry</span></code></a>.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pdpyras.PDSession.max_network_attempts">
-<code class="descname">max_network_attempts</code><em class="property"> = 3</em><a class="headerlink" href="#pdpyras.PDSession.max_network_attempts" title="Permalink to this definition">¶</a></dt>
-<dd><p>The number of times that connecting to the API will be attempted before
-treating the failure as non-transient; a <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> exception
-will be raised if this happens.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pdpyras.PDSession.parent">
-<code class="descname">parent</code><em class="property"> = None</em><a class="headerlink" href="#pdpyras.PDSession.parent" title="Permalink to this definition">¶</a></dt>
-<dd><p>The <code class="docutils literal notranslate"><span class="pre">super</span></code> object (<a class="reference external" href="http://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>)</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pdpyras.PDSession.postprocess">
-<code class="descname">postprocess</code><span class="sig-paren">(</span><em>response</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.postprocess" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform supplemental actions immediately after receiving a response.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pdpyras.PDSession.request">
-<code class="descname">request</code><span class="sig-paren">(</span><em>method</em>, <em>url</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.request" title="Permalink to this definition">¶</a></dt>
-<dd><p>Make a generic PagerDuty API request.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>method</strong> (<em>str</em>) – The request method to use. Case-insensitive. May be one of get, put,
-post or delete.</li>
-<li><strong>url</strong> (<em>str</em>) – The path/URL to request. If it does not start with the base URL, the
-base URL will be prepended.</li>
-<li><strong>**kwargs</strong> – <p>Additional keyword arguments to pass to <a class="reference external" href="http://docs.python-requests.org/en/master/api/#requests.Session.request">requests.Session.request</a></p>
-</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the HTTP response object</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="http://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a></p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pdpyras.PDSession.retry">
-<code class="descname">retry</code><em class="property"> = None</em><a class="headerlink" href="#pdpyras.PDSession.retry" title="Permalink to this definition">¶</a></dt>
-<dd><p>A dict defining the retry behavior for each HTTP response status code.</p>
-<p>Each key in this dictionary represents a HTTP response code. The behavior is
-specified by the value at each key as follows:</p>
-<ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">-1</span></code> to retry infinitely</li>
-<li><code class="docutils literal notranslate"><span class="pre">0</span></code> to return the <a class="reference external" href="http://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object and exit (which is the
-default behavior)</li>
-<li><code class="docutils literal notranslate"><span class="pre">n</span></code>, where <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>, to retry <code class="docutils literal notranslate"><span class="pre">n</span></code> times (or up
-to <a class="reference internal" href="#pdpyras.PDSession.max_http_attempts" title="pdpyras.PDSession.max_http_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_http_attempts</span></code></a> total for all statuses, whichever is
-encountered first), and rase a <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> after that many
-attempts. For each successive attempt, the wait time will increase by a
-factor of <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a>.</li>
-</ul>
-<p>The default behavior is to retry infinitely on a 429, and return the
-response in any other case (assuming a HTTP response was received from the
-server).</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pdpyras.PDSession.set_api_key">
-<code class="descname">set_api_key</code><span class="sig-paren">(</span><em>api_key</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.set_api_key" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set the API key/token.</p>
-<p>Child classes should implement this method to do special things like
-setting default headers.</p>
-<p>The getter will return the value of self._api_key, so any setters should
-set this property.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pdpyras.PDSession.sleep_timer">
-<code class="descname">sleep_timer</code><em class="property"> = 1.5</em><a class="headerlink" href="#pdpyras.PDSession.sleep_timer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Default initial cooldown time factor for rate limiting and network errors.</p>
-<p>Each time that the request makes a followup request, there will be a delay
-in seconds equal to this number times <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a> to the power
-of how many attempts have already been made so far.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pdpyras.PDSession.sleep_timer_base">
-<code class="descname">sleep_timer_base</code><em class="property"> = 2</em><a class="headerlink" href="#pdpyras.PDSession.sleep_timer_base" title="Permalink to this definition">¶</a></dt>
-<dd><p>After each retry, the time to sleep before reattempting the API connection
-and request will increase by a factor of this amount.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pdpyras.PDSession.trunc_key">
-<code class="descname">trunc_key</code><a class="headerlink" href="#pdpyras.PDSession.trunc_key" title="Permalink to this definition">¶</a></dt>
-<dd><p>Truncated key for secure display/identification purposes.</p>
+<dt id="pdpyras.PDClientError.response">
+<code class="descname">response</code><em class="property"> = None</em><a class="headerlink" href="#pdpyras.PDClientError.response" title="Permalink to this definition">¶</a></dt>
+<dd><p>The HTTP response object, if a response was successfully received.</p>
+<p>In the case of network errors, this property will be None.</p>
 </dd></dl>
 
 </dd></dl>
 
+</div>
+<div class="section" id="module-pdpyras">
+<span id="functions"></span><h3>Functions<a class="headerlink" href="#module-pdpyras" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="pdpyras.auto_json">
 <code class="descclassname">pdpyras.</code><code class="descname">auto_json</code><span class="sig-paren">(</span><em>method</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.auto_json" title="Permalink to this definition">¶</a></dt>
@@ -1213,6 +1259,10 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </div>
 <div class="section" id="changelog">
 <h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<p><strong>2019-03-12: version 3.0:</strong></p>
+<ul class="simple">
+<li>Added new Events API session class that still has most of the same functional features as the REST API session class.</li>
+</ul>
 <p><strong>2019-01-28: version 2.4.1:</strong></p>
 <ul class="simple">
 <li>Fixed bug: unpacking wrapped entities does not work with <code class="docutils literal notranslate"><span class="pre">/log_entries</span></code></li>
@@ -1275,12 +1325,15 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </li>
 <li><a class="reference internal" href="#error-handling">Error Handling</a></li>
 <li><a class="reference internal" href="#http-retry-logic">HTTP Retry Logic</a></li>
-<li><a class="reference internal" href="#events-api">Events API</a></li>
+<li><a class="reference internal" href="#events-api-usage">Events API Usage</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#contributing">Contributing</a></li>
 <li><a class="reference internal" href="#developer-interface">Developer Interface</a><ul>
-<li><a class="reference internal" href="#classes">Classes</a></li>
+<li><a class="reference internal" href="#generic-api-client">Generic API Client</a></li>
+<li><a class="reference internal" href="#rest-api-client">REST API Client</a></li>
+<li><a class="reference internal" href="#events-api-client">Events API Client</a></li>
+<li><a class="reference internal" href="#id2">Errors</a></li>
 <li><a class="reference internal" href="#module-pdpyras">Functions</a></li>
 </ul>
 </li>

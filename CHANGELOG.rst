@@ -1,5 +1,6 @@
-Changelog
----------
+**2019-03-12: version 3.0:**
+
+* Added new Events API session class that still has most of the same functional features as the REST API session class.
 
 **2019-01-28: version 2.4.1:**
 
