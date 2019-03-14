@@ -338,7 +338,7 @@ class PDSession(requests.Session):
         self.parent = super(PDSession, self)
         self.parent.__init__()
         self.api_key = api_key
-        if type(name) is str and name:
+        if isinstance(name, string_types) and name:
             my_name = name
         else:
             my_name = self.trunc_key
@@ -506,9 +506,7 @@ class EventsAPISession(PDSession):
         """
         return self.send_event('resolve', dedup_key=dedup_key)
 
-    def send_event(self, action, summary=None, dedup_key=None, source=None,
-            severity='critical', payload=None, custom_details=None, images=None,
-            links=None):
+    def send_event(self, action, dedup_key=None, **properties):
         """
         Sends an event to the v2 Events API.
 
@@ -517,14 +515,47 @@ class EventsAPISession(PDSession):
         :param action:
             The action to perform through the Events API: trigger, acknowledge
             or resolve.
-        :param summary:
-            A description of what is wrong. This is required if ``action`` is
-            ``trigger``.
         :param dedup_key:
             The deduplication key; used for determining event uniqueness and
             associating actions with existing incidents.
+        :param \*\*properties:
+            Additional properties to set, i.e. if ``action`` is ``trigger``
+            this would include ``payload``
+        :type action: str
+        :type dedup_key: str
+        :returns:
+            The deduplication key of the incident, if any.
+        """
+        actions = ('trigger', 'acknowledge', 'resolve')
+        if action not in actions:
+            raise ValueError("Event action must be one of: "+', '.join(actions))
+        event = {'event_action':action}
+        event.update(properties)
+        if isinstance(dedup_key, string_types):
+            event['dedup_key'] = dedup_key
+        elif not action == 'trigger':
+            raise ValueError("The dedup_key property is required for"
+                "event_action=%s events, and it must be a string."%action)
+        response = self.post('/v2/enqueue', json=event)
+        raise_on_error(response)
+        response_body = try_decoding(response)
+        if not 'dedup_key' in response_body:
+            raise PDClientError("Malformed response body; does not contain "
+                "deduplication key.", response=response)
+        return response_body['dedup_key']
+
+    def trigger(self, summary, source, dedup_key=None, severity='critical',
+            payload=None, custom_details=None, images=None, links=None):
+        """
+        Trigger an incident
+
+        :param summary:
+            Summary / brief description of what is wrong.
         :param source:
             A human-readable name identifying the system that is affected.
+        :param dedup_key:
+            The deduplication key; used for determining event uniqueness and
+            associating actions with existing incidents.
         :param severity:
             Alert severity. Sets the ``payload.severity`` property.
         :param payload:
@@ -548,50 +579,6 @@ class EventsAPISession(PDSession):
         :type images: list
         :type links: list
         :rtype: str
-        :returns:
-            The deduplication key of the incident, if any.
-        """
-        actions = ('trigger', 'acknowledge', 'resolve')
-        if action not in actions:
-            raise ValueError("Event action must be one of: "+', '.join(actions))
-        event = {'event_action':action}
-        if action == 'trigger':
-            if not summary:
-                raise ValueError("The summary property is required for "
-                    "event_action=trigger events.")
-            event['payload'] = {'summary':summary, 'source':source, 
-                'severity':severity}
-            if payload:
-                event['payload'].update(payload)
-            if custom_details:
-                details = event['payload'].get('custom_details', {})
-                details.update(custom_details)
-                event['payload']['custom_details'] = custom_details
-            if images:
-                event['images'] = images
-            if links:
-                event['links'] = links 
-        if dedup_key:
-            event['dedup_key'] = dedup_key
-        elif not action == 'trigger':
-            raise ValueError("The dedup_key property is required for"
-                "event_action=%s events."%action)
-        response = self.post('/v2/enqueue', json=event)
-        raise_on_error(response)
-        response_body = try_decoding(response)
-        if not 'dedup_key' in response_body:
-            raise PDClientError("Malformed response body; does not contain "
-                "deduplication key.", response=response)
-        return response_body['dedup_key']
-
-    def trigger(self, summary, source, dedup_key=None, severity='critical',
-            payload=None, custom_details=None, images=None, links=None):
-        """
-        Trigger an incident
-
-        :param summary:
-            Summary / brief description of the incident
-
         :type summary: str
         :type source: str
         :type dedup_key: str
@@ -600,11 +587,24 @@ class EventsAPISession(PDSession):
         :type custom_details: dict
         :type images: list
         :type links: list
-
         """
-        return self.send_event('trigger', source=source, summary=summary,
-            dedup_key=dedup_key, severity=severity, payload=payload,
-            custom_details=custom_details, images=images, links=links)
+        for local in ('payload', 'custom_details'):
+            local_var = locals()[local]
+            if not (local_var is None or type(local_var) is dict):
+                raise ValueError(local+" must be a dict")
+        event = {'payload': {'summary':summary, 'source':source,
+            'severity':severity}}
+        if type(payload) is dict:
+            event['payload'] = payload
+        if type(custom_details) is dict:
+            details = event.setdefault('payload', {}).get('custom_details', {})
+            details.update(custom_details)
+            event['payload']['custom_details'] = details
+        if images:
+            event['images'] = images
+        if links:
+            event['links'] = links
+        return self.send_event('trigger', dedup_key=dedup_key, **event)
 
     def set_api_key(self, api_key):
         """
