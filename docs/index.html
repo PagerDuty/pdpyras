@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 3.0 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 3.0.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -677,6 +677,12 @@ and request will increase by a factor of this amount.</p>
 <dd><p>Truncated key for secure display/identification purposes.</p>
 </dd></dl>
 
+<dl class="attribute">
+<dt id="pdpyras.PDSession.user_agent">
+<code class="descname">user_agent</code><a class="headerlink" href="#pdpyras.PDSession.user_agent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unique user-agent header for making requests</p>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -1022,7 +1028,7 @@ PagerDuty through the Events API and inherits from <a class="reference internal"
 
 <dl class="method">
 <dt id="pdpyras.EventsAPISession.send_event">
-<code class="descname">send_event</code><span class="sig-paren">(</span><em>action</em>, <em>summary=None</em>, <em>dedup_key=None</em>, <em>source=None</em>, <em>severity='critical'</em>, <em>payload=None</em>, <em>custom_details=None</em>, <em>images=None</em>, <em>links=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.send_event" title="Permalink to this definition">¶</a></dt>
+<code class="descname">send_event</code><span class="sig-paren">(</span><em>action</em>, <em>dedup_key=None</em>, <em>**properties</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.send_event" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sends an event to the v2 Events API.</p>
 <p>See: <a class="reference external" href="https://v2.developer.pagerduty.com/docs/send-an-event-events-api-v2">https://v2.developer.pagerduty.com/docs/send-an-event-events-api-v2</a></p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1032,27 +1038,14 @@ PagerDuty through the Events API and inherits from <a class="reference internal"
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>action</strong> (<em>str</em>) – The action to perform through the Events API: trigger, acknowledge
 or resolve.</li>
-<li><strong>summary</strong> (<em>str</em>) – A description of what is wrong. This is required if <code class="docutils literal notranslate"><span class="pre">action</span></code> is
-<code class="docutils literal notranslate"><span class="pre">trigger</span></code>.</li>
 <li><strong>dedup_key</strong> (<em>str</em>) – The deduplication key; used for determining event uniqueness and
 associating actions with existing incidents.</li>
-<li><strong>source</strong> – A human-readable name identifying the system that is affected.</li>
-<li><strong>severity</strong> (<em>str</em>) – Alert severity. Sets the <code class="docutils literal notranslate"><span class="pre">payload.severity</span></code> property.</li>
-<li><strong>payload</strong> (<em>dict</em>) – Set the payload directly. Can be used in conjunction with other
-parameters that also set payload properties; these properties will
-be merged into the default payload, and any properties in this
-parameter will take precedence.</li>
-<li><strong>custom_details</strong> (<em>dict</em>) – The <code class="docutils literal notranslate"><span class="pre">payload.custom_details</span></code> property of the payload. Will
-override the property set in the <code class="docutils literal notranslate"><span class="pre">payload</span></code> parameter if given.</li>
-<li><strong>images</strong> (<em>list</em>) – Set the <code class="docutils literal notranslate"><span class="pre">images</span></code> property of the event.</li>
-<li><strong>links</strong> (<em>list</em>) – Set the <code class="docutils literal notranslate"><span class="pre">links</span></code> property of the event.</li>
+<li><strong>**properties</strong> – Additional properties to set, i.e. if <code class="docutils literal notranslate"><span class="pre">action</span></code> is <code class="docutils literal notranslate"><span class="pre">trigger</span></code>
+this would include <code class="docutils literal notranslate"><span class="pre">payload</span></code></li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">str</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The deduplication key of the incident, if any.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The deduplication key of the incident, if any.</p>
 </td>
 </tr>
 </tbody>
@@ -1081,7 +1074,25 @@ override the property set in the <code class="docutils literal notranslate"><spa
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>summary</strong> (<em>str</em>) – Summary / brief description of the incident</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>summary</strong> (<em>str</em>) – Summary / brief description of what is wrong.</li>
+<li><strong>source</strong> (<em>str</em>) – A human-readable name identifying the system that is affected.</li>
+<li><strong>dedup_key</strong> (<em>str</em>) – The deduplication key; used for determining event uniqueness and
+associating actions with existing incidents.</li>
+<li><strong>severity</strong> (<em>str</em>) – Alert severity. Sets the <code class="docutils literal notranslate"><span class="pre">payload.severity</span></code> property.</li>
+<li><strong>payload</strong> (<em>dict</em>) – Set the payload directly. Can be used in conjunction with other
+parameters that also set payload properties; these properties will
+be merged into the default payload, and any properties in this
+parameter will take precedence.</li>
+<li><strong>custom_details</strong> (<em>dict</em>) – The <code class="docutils literal notranslate"><span class="pre">payload.custom_details</span></code> property of the payload. Will
+override the property set in the <code class="docutils literal notranslate"><span class="pre">payload</span></code> parameter if given.</li>
+<li><strong>images</strong> (<em>list</em>) – Set the <code class="docutils literal notranslate"><span class="pre">images</span></code> property of the event.</li>
+<li><strong>links</strong> (<em>list</em>) – Set the <code class="docutils literal notranslate"><span class="pre">links</span></code> property of the event.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">str</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -1244,7 +1255,7 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 <dl class="function">
 <dt id="pdpyras.try_decoding">
 <code class="descclassname">pdpyras.</code><code class="descname">try_decoding</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.try_decoding" title="Permalink to this definition">¶</a></dt>
-<dd><p>JSON-decode the body of a response and raise PDClientError if it fails.</p>
+<dd><p>JSON-decode a response body and raise <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> if it fails.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
