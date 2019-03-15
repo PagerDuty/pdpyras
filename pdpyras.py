@@ -17,7 +17,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '3.0'
+__version__ = '3.0.1'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -234,7 +234,7 @@ def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
 
 def try_decoding(r):
     """
-    JSON-decode the body of a response and raise PDClientError if it fails.
+    JSON-decode a response body and raise :class:`PDClientError` if it fails.
 
     :param r:
         `requests.Response`_ object
