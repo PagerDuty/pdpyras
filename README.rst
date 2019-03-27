@@ -14,8 +14,9 @@ and simple-as-possible-but-no-simpler HTTP client for accessing the PagerDuty
 REST API and events API.
 
 It takes care of all of the most common prerequisites and necessities
-associated with accessing the API, so you can focus on the request/response
-body schemas and do what you need to get done.
+pertaining to accessing the API so that implementers can focus on the request
+and response body schemas of each particular resource (as documented in our
+`REST API Reference`_) and do what they need to get done.
 
 Features
 ********
@@ -255,7 +256,7 @@ parameter to advance through each page of data.
 
 As of version 2.2, there are also the methods
 :attr:`pdpyras.APISession.list_all` and :attr:`pdpyras.APISession.dict_all`
-which return a list or dictionary of all results, respsectively. 
+which return a list or dictionary of all results, respectively.
 
 **Example:** Get a dictionary of all users, keyed by email, and use it to find
 the ID of the user whose email is ``bob@example.com``
@@ -587,7 +588,7 @@ in the commit message.
 .. _requests.Session: http://docs.python-requests.org/en/master/api/#request-sessions
 .. _requests.Session.request: http://docs.python-requests.org/en/master/api/#requests.Session.request
 .. _`resource index`: https://v2.developer.pagerduty.com/docs/endpoints#resources-index
-.. _`REST API Reference`: v2.developer.pagerduty.com/v2/page/api-reference#!/API_Reference/get_api_reference
+.. _`REST API Reference`: https://api-reference.pagerduty.com/#!/API_Reference/get_api_reference
 .. _`setuptools`: https://pypi.org/project/setuptools/
 .. _`pdpyras.py`: https://raw.githubusercontent.com/PagerDuty/pdpyras/master/pdpyras.py
 

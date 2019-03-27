@@ -45,8 +45,9 @@
 and simple-as-possible-but-no-simpler HTTP client for accessing the PagerDuty
 REST API and events API.</p>
 <p>It takes care of all of the most common prerequisites and necessities
-associated with accessing the API, so you can focus on the request/response
-body schemas and do what you need to get done.</p>
+pertaining to accessing the API so that implementers can focus on the request
+and response body schemas of each particular resource (as documented in our
+<a class="reference external" href="https://api-reference.pagerduty.com/#!/API_Reference/get_api_reference">REST API Reference</a>) and do what they need to get done.</p>
 <div class="section" id="features">
 <h3>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
@@ -248,7 +249,7 @@ refer to the documentation provided by the Requests project.</li>
 <h3>Data Access Abstraction<a class="headerlink" href="#data-access-abstraction" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">APISession</span></code> class, in addition to providing a more convenient way of
 making the HTTP requests to the API, provides methods that yield/return dicts
-representing the PagerDuty objects with their defined schemas (see: <a class="reference external" href="v2.developer.pagerduty.com/v2/page/api-reference#!/API_Reference/get_api_reference">REST API
+representing the PagerDuty objects with their defined schemas (see: <a class="reference external" href="https://api-reference.pagerduty.com/#!/API_Reference/get_api_reference">REST API
 Reference</a>) without needing to go through enclosing them in a data envelope.</p>
 <p>In other words, in the process of getting from an API call to the object
 representing the desired result, all of the following are taken care of:</p>
@@ -270,7 +271,7 @@ all results from a resource index, automatically incrementing the <code class="d
 parameter to advance through each page of data.</p>
 <p>As of version 2.2, there are also the methods
 <a class="reference internal" href="#pdpyras.APISession.list_all" title="pdpyras.APISession.list_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.list_all</span></code></a> and <a class="reference internal" href="#pdpyras.APISession.dict_all" title="pdpyras.APISession.dict_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.dict_all</span></code></a>
-which return a list or dictionary of all results, respsectively.</p>
+which return a list or dictionary of all results, respectively.</p>
 <p><strong>Example:</strong> Get a dictionary of all users, keyed by email, and use it to find
 the ID of the user whose email is <code class="docutils literal notranslate"><span class="pre">bob&#64;example.com</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">users</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">dict_all</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="s1">&#39;email&#39;</span><span class="p">)</span>
