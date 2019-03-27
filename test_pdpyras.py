@@ -16,6 +16,7 @@ import datetime
 import json
 import logging
 import os
+import requests
 import sys
 import unittest
 
@@ -57,7 +58,14 @@ class Response(object):
         self.json = MagicMock()
         self.json.return_value = json.loads(text)
 
-class EventsSessionTest(unittest.TestCase):
+class SessionTest(unittest.TestCase):
+
+    def assertDictContainsSubset(self, d0, d1):
+        self.assertTrue(set(d0.keys()).issubset(set(d1.keys())),
+            msg="First dict is not a subset of second dict")
+        self.assertEqual(d0, dict([(k, d1[k]) for k in d0]))
+
+class EventsSessionTest(SessionTest):
 
     def test_send_event(self):
         sess = pdpyras.EventsAPISession('routingkey')
@@ -80,6 +88,10 @@ class EventsSessionTest(unittest.TestCase):
             self.assertEqual(
                 'https://events.pagerduty.com/v2/enqueue',
                 parent.request.call_args[0][1])
+            self.assertDictContainsSubset(
+                {'Content-Type': 'application/json',
+                 'X-Routing-Key': 'routingkey'},
+                parent.request.call_args[1]['headers'])
             self.assertEqual(
                 {
                     'event_action':'trigger',
@@ -102,10 +114,7 @@ class EventsSessionTest(unittest.TestCase):
                 {'event_action':'acknowledge', 'dedup_key':'abc123'},
                 parent.request.call_args[1]['json'])
 
-class APISessionTest(unittest.TestCase):
-
-    def assertDictContainsSubset(self, d0, d1):
-        self.assertEqual(d0, dict([(k, d1[k]) for k in d0 if k in d1]))
+class APISessionTest(SessionTest):
 
     def debug(self, sess):
         """
@@ -228,11 +237,17 @@ class APISessionTest(unittest.TestCase):
         # Expected headers:
         headers_get = {
             'Accept': 'application/vnd.pagerduty+json;version=2',
-            'Authorization': 'Token token=12345'
+            'Authorization': 'Token token=12345',
+            'User-Agent': 'pdpyras/%s python-requests/%s Python/%d.%d'%(
+                pdpyras.__version__,
+                requests.__version__,
+                sys.version_info.major,
+                sys.version_info.minor
+            ),
         }
         # Check default headers:
-        self.assertDictContainsSubset(headers_get, sess.headers)
-        headers_get.update(sess.headers)
+        self.assertDictContainsSubset(headers_get, sess.prepare_headers('GET'))
+        headers_get.update(sess.prepare_headers('GET'))
         # When submitting post/put, the content type should also be set
         headers_post = headers_get.copy()
         headers_post.update({'Content-Type': 'application/json'})

@@ -366,6 +366,12 @@ class PDSession(requests.Session):
         pass
 
     def prepare_headers(self, method):
+        """
+        Append special additional per-request headers.
+
+        :param method:
+            The HTTP method, in upper case.
+        """
         return self.headers
 
     def request(self, method, url, **kwargs):
@@ -474,6 +480,16 @@ class PDSession(requests.Session):
         """Truncated key for secure display/identification purposes."""
         return last_4(self.api_key)
 
+    @property
+    def user_agent(self):
+        """Unique user-agent header for making requests"""
+        return 'pdpyras/%s python-requests/%s Python/%d.%d'%(
+            __version__,
+            requests.__version__,
+            sys.version_info.major,
+            sys.version_info.minor
+        )
+
 class EventsAPISession(PDSession):
 
     """
@@ -490,16 +506,25 @@ class EventsAPISession(PDSession):
 
     def acknowledge(self, dedup_key):
         """
-        Acknowledge an alert
+        Acknowledge an alert via Events API.
 
         :param dedup_key:
             The deduplication key of the alert to set to the acknowledged state.
         """
         return self.send_event('acknowledge', dedup_key=dedup_key)
 
+    def prepare_headers(self, method):
+        """Add user agent and content type headers for Events API requests."""
+        headers = deepcopy(self.headers)
+        headers.update({
+            'Content-Type': 'application/json',
+            'User-Agent': self.user_agent,
+        })
+        return headers
+
     def resolve(self, dedup_key):
         """
-        Resolve an alert.
+        Resolve an alert via Events API.
 
         :param dedup_key:
             The deduplication key of the alert to resolve.
@@ -508,7 +533,7 @@ class EventsAPISession(PDSession):
 
     def send_event(self, action, dedup_key=None, **properties):
         """
-        Sends an event to the v2 Events API.
+        Send an event to the v2 Events API.
 
         See: https://v2.developer.pagerduty.com/docs/send-an-event-events-api-v2
 
@@ -617,7 +642,6 @@ class EventsAPISession(PDSession):
         self._api_key = api_key
         self.headers.update({
             'X-Routing-Key': api_key,
-            'Content-Type': 'application/json',
         })
 
 class APISession(PDSession):
@@ -926,13 +950,13 @@ class APISession(PDSession):
         self.api_time[key] += response.elapsed.total_seconds()
 
     def prepare_headers(self, method):
-        my_headers = {}
-        my_headers.update(self.headers)
+        headers = deepcopy(self.headers)
+        headers['User-Agent'] = self.user_agent
         if self.default_from is not None:
-            my_headers['From'] = self.default_from
+            headers['From'] = self.default_from
         if method in ('POST', 'PUT'):
-            my_headers['Content-Type'] = 'application/json'
-        return my_headers
+            headers['Content-Type'] = 'application/json'
+        return headers
 
     def profiler_key(self, method, path, suffix=None):
         """
