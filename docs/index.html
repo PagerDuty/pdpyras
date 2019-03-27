@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 3.0.1 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 3.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -43,10 +43,10 @@
 <p>This library supplies a class <a class="reference internal" href="#pdpyras.APISession" title="pdpyras.APISession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.APISession</span></code></a> extending
 <a class="reference external" href="http://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a> from the <a class="reference external" href="http://docs.python-requests.org/en/master/">Requests</a> HTTP library. It serves as a practical
 and simple-as-possible-but-no-simpler HTTP client for accessing the PagerDuty
-REST API.</p>
-<p>It enables you to simply make requests to the PagerDuty REST API and focus on
-the schema of information, while taking care of all of the most common
-prerequisites and necessities associated with accessing the API.</p>
+REST API and events API.</p>
+<p>It takes care of all of the most common prerequisites and necessities
+associated with accessing the API, so you can focus on the request/response
+body schemas and do what you need to get done.</p>
 <div class="section" id="features">
 <h3>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
@@ -59,7 +59,7 @@ persistence</li>
 automatic pagination</li>
 <li>Individual object retrieval by name</li>
 <li>API request profiling</li>
-<li>Events API client</li>
+<li>Bonus Events API client</li>
 </ul>
 </div>
 <div class="section" id="history">
@@ -277,20 +277,26 @@ the ID of the user whose email is <code class="docutils literal notranslate"><sp
 <span class="nb">print</span><span class="p">(</span><span class="n">users</span><span class="p">[</span><span class="s1">&#39;bob@example.com&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
-<p><strong>Regarding Performance of Iteration:</strong></p>
+</div>
+<div class="section" id="disclaimers-regarding-iteration">
+<h4>Disclaimers Regarding Iteration<a class="headerlink" href="#disclaimers-regarding-iteration" title="Permalink to this headline">¶</a></h4>
+<p><strong>Regarding Performance:</strong></p>
 <p>Because HTTP requests are made synchronously and not in parallel threads, the
 data will be retrieved one page at a time and the functions <code class="docutils literal notranslate"><span class="pre">list_all</span></code> and
 <code class="docutils literal notranslate"><span class="pre">dict_all</span></code> will not return until after the HTTP response from the final API
 call is received. Simply put, the functions will take longer to return if the
 total number of resuls is higher.</p>
-<p><strong>Updating and Deleting Records En Masse:</strong></p>
+<p><strong>Updating and Deleting Records:</strong></p>
 <p>If performing page-wise operations, i.e. making changes immediately after
 fetching each page of results, rather than pre-fetching all objects and then
 operating on them, one must be cautious not to perform any changes to the
-results that would affect the set being iterated over. That is because, should
-any objects be removed from the set (i.e. the objects included in the iteration
-query), then the offset when accessing the next page of resultswill still be
-incremented, whereas the position of the first object in the next page will
+results that would affect the set being iterated over.</p>
+<p>To elaborate, this happens whenever a resource object is deleted, or it is
+updated in such a way that the filter parameters in <code class="docutils literal notranslate"><span class="pre">iter_all</span></code> no longer
+apply to it. This is because indexes’ contents update in real time. Thus,
+should any objects be removed from the set (the objects included in the
+iteration), then the offset when accessing the next page of results will still
+be incremented, whereas the position of the first object in the next page will
 shift to a lower rank in the overall list of objects.</p>
 <p>In other words: let’s say that one is reading and then tearing pages from a
 notebook. If the algorithm is “go through 100 pages, do things with the pages,
@@ -300,9 +306,13 @@ the 101st page before starting will shift to become the first page after going
 through the first hundred pages. Thus, when going to the 101st page after
 finishing tearing out the first hundred pages, the second hundred pages will be
 skipped over, and similarly for pages 401-500, 601-700 and so on.</p>
+<p>Also, note, a similar effect would occur if creating objects during iteration.</p>
 <p>As of version 3, this issue is still applicable. To avoid it, do not use
 <code class="docutils literal notranslate"><span class="pre">iter_all</span></code>, but use <code class="docutils literal notranslate"><span class="pre">list_all</span></code> or <code class="docutils literal notranslate"><span class="pre">dict_all</span></code> to pre-fetch the set of
-records to be operated on, and then iterate over the results.</p>
+records to be operated on, and then iterate over the results. This still does
+not constitute a completely bulletproof safeguard against set changes caused by
+insert/update/delete operations carried out by other simultaneous processes
+(i.e. a user renaming a service through the web UI).</p>
 </div>
 <div class="section" id="reading">
 <h4>Reading<a class="headerlink" href="#reading" title="Permalink to this headline">¶</a></h4>
@@ -594,6 +604,20 @@ will be raised if this happens.</p>
 <dt id="pdpyras.PDSession.postprocess">
 <code class="descname">postprocess</code><span class="sig-paren">(</span><em>response</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.postprocess" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform supplemental actions immediately after receiving a response.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pdpyras.PDSession.prepare_headers">
+<code class="descname">prepare_headers</code><span class="sig-paren">(</span><em>method</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.prepare_headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append special additional per-request headers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>method</strong> – The HTTP method, in upper case.</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -904,6 +928,20 @@ and can be extended in child classes.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="pdpyras.APISession.prepare_headers">
+<code class="descname">prepare_headers</code><span class="sig-paren">(</span><em>method</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.prepare_headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append special additional per-request headers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>method</strong> – The HTTP method, in upper case.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="pdpyras.APISession.profiler_key">
 <code class="descname">profiler_key</code><span class="sig-paren">(</span><em>method</em>, <em>path</em>, <em>suffix=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.profiler_key" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates a fixed-format key to classify a request, i.e. for profiling.</p>
@@ -1001,7 +1039,7 @@ PagerDuty through the Events API and inherits from <a class="reference internal"
 <dl class="method">
 <dt id="pdpyras.EventsAPISession.acknowledge">
 <code class="descname">acknowledge</code><span class="sig-paren">(</span><em>dedup_key</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.acknowledge" title="Permalink to this definition">¶</a></dt>
-<dd><p>Acknowledge an alert</p>
+<dd><p>Acknowledge an alert via Events API.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1013,9 +1051,15 @@ PagerDuty through the Events API and inherits from <a class="reference internal"
 </dd></dl>
 
 <dl class="method">
+<dt id="pdpyras.EventsAPISession.prepare_headers">
+<code class="descname">prepare_headers</code><span class="sig-paren">(</span><em>method</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.prepare_headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add user agent and content type headers for Events API requests.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="pdpyras.EventsAPISession.resolve">
 <code class="descname">resolve</code><span class="sig-paren">(</span><em>dedup_key</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.resolve" title="Permalink to this definition">¶</a></dt>
-<dd><p>Resolve an alert.</p>
+<dd><p>Resolve an alert via Events API.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1029,7 +1073,7 @@ PagerDuty through the Events API and inherits from <a class="reference internal"
 <dl class="method">
 <dt id="pdpyras.EventsAPISession.send_event">
 <code class="descname">send_event</code><span class="sig-paren">(</span><em>action</em>, <em>dedup_key=None</em>, <em>**properties</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.send_event" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sends an event to the v2 Events API.</p>
+<dd><p>Send an event to the v2 Events API.</p>
 <p>See: <a class="reference external" href="https://v2.developer.pagerduty.com/docs/send-an-event-events-api-v2">https://v2.developer.pagerduty.com/docs/send-an-event-events-api-v2</a></p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1328,6 +1372,7 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </li>
 <li><a class="reference internal" href="#data-access-abstraction">Data Access Abstraction</a><ul>
 <li><a class="reference internal" href="#iteration">Iteration</a></li>
+<li><a class="reference internal" href="#disclaimers-regarding-iteration">Disclaimers Regarding Iteration</a></li>
 <li><a class="reference internal" href="#reading">Reading</a></li>
 <li><a class="reference internal" href="#creating-and-updating">Creating and Updating</a></li>
 <li><a class="reference internal" href="#deleting">Deleting</a></li>

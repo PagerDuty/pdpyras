@@ -11,11 +11,11 @@ About
 This library supplies a class :class:`pdpyras.APISession` extending
 `requests.Session`_ from the Requests_ HTTP library. It serves as a practical
 and simple-as-possible-but-no-simpler HTTP client for accessing the PagerDuty
-REST API. 
+REST API and events API.
 
-It enables you to simply make requests to the PagerDuty REST API and focus on
-the schema of information, while taking care of all of the most common
-prerequisites and necessities associated with accessing the API.
+It takes care of all of the most common prerequisites and necessities
+associated with accessing the API, so you can focus on the request/response
+body schemas and do what you need to get done.
 
 Features
 ********
@@ -28,7 +28,7 @@ Features
   automatic pagination
 - Individual object retrieval by name
 - API request profiling
-- Events API client
+- Bonus Events API client
 
 History
 *******
@@ -265,7 +265,10 @@ the ID of the user whose email is ``bob@example.com``
     users = session.dict_all('users', by='email')
     print(users['bob@example.com']['id'])
 
-**Regarding Performance of Iteration:**
+Disclaimers Regarding Iteration
++++++++++++++++++++++++++++++++
+
+**Regarding Performance:**
 
 Because HTTP requests are made synchronously and not in parallel threads, the
 data will be retrieved one page at a time and the functions ``list_all`` and
@@ -273,15 +276,19 @@ data will be retrieved one page at a time and the functions ``list_all`` and
 call is received. Simply put, the functions will take longer to return if the
 total number of resuls is higher.
 
-**Updating and Deleting Records En Masse:**
+**Updating and Deleting Records:**
 
 If performing page-wise operations, i.e. making changes immediately after
 fetching each page of results, rather than pre-fetching all objects and then
 operating on them, one must be cautious not to perform any changes to the
-results that would affect the set being iterated over. That is because, should
-any objects be removed from the set (i.e. the objects included in the iteration
-query), then the offset when accessing the next page of resultswill still be
-incremented, whereas the position of the first object in the next page will
+results that would affect the set being iterated over.
+
+To elaborate, this happens whenever a resource object is deleted, or it is
+updated in such a way that the filter parameters in ``iter_all`` no longer
+apply to it. This is because indexes' contents update in real time. Thus,
+should any objects be removed from the set (the objects included in the
+iteration), then the offset when accessing the next page of results will still
+be incremented, whereas the position of the first object in the next page will
 shift to a lower rank in the overall list of objects.
 
 In other words: let's say that one is reading and then tearing pages from a
@@ -293,9 +300,14 @@ through the first hundred pages. Thus, when going to the 101st page after
 finishing tearing out the first hundred pages, the second hundred pages will be
 skipped over, and similarly for pages 401-500, 601-700 and so on.
 
+Also, note, a similar effect would occur if creating objects during iteration.
+
 As of version 3, this issue is still applicable. To avoid it, do not use
 ``iter_all``, but use ``list_all`` or ``dict_all`` to pre-fetch the set of
-records to be operated on, and then iterate over the results.
+records to be operated on, and then iterate over the results. This still does
+not constitute a completely bulletproof safeguard against set changes caused by
+insert/update/delete operations carried out by other simultaneous processes
+(i.e. a user renaming a service through the web UI).
 
 Reading
 +++++++
