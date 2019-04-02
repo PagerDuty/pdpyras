@@ -1264,6 +1264,19 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </div>
 <div class="section" id="changelog">
 <h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<p><strong>2019-04-02: version 3.0.2:</strong></p>
+<p>Important bug fixes to the custom HTTP retry logic:</p>
+<ul class="simple">
+<li>Fixed <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> in <code class="docutils literal notranslate"><span class="pre">APISession.request</span></code></li>
+<li>Fixed incorrect behavior (retrying more than the specified amount of times) due to faulty comparison logic</li>
+</ul>
+<p><strong>2019-03-14: version 3.0.1:</strong></p>
+<p>A light Events API client methods refactor:</p>
+<ul class="simple">
+<li>All keyword arguments specific to sending trigger events have been refactored out of the generic <code class="docutils literal notranslate"><span class="pre">EventsAPISession.send_event</span></code> method</li>
+<li>Now, instead, <code class="docutils literal notranslate"><span class="pre">send_event</span></code> and uses a catch-all keyword argument to set event properties.</li>
+<li>The keyword arguments specific to triggering incidents are in the method EventsAPISession.trigger method.</li>
+</ul>
 <p><strong>2019-03-12: version 3.0:</strong></p>
 <ul class="simple">
 <li>Added new Events API session class that still has most of the same functional features as the REST API session class.</li>

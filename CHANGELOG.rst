@@ -1,3 +1,18 @@
+**2019-04-02: version 3.0.2:**
+
+Important bug fixes to the custom HTTP retry logic:
+
+* Fixed ``KeyError`` in ``APISession.request``
+* Fixed incorrect behavior (retrying more than the specified amount of times) due to faulty comparison logic
+
+**2019-03-14: version 3.0.1:**
+
+A light Events API client methods refactor:
+
+* All keyword arguments specific to sending trigger events have been refactored out of the generic ``EventsAPISession.send_event`` method
+* Now, instead, ``send_event`` and uses a catch-all keyword argument to set event properties.
+* The keyword arguments specific to triggering incidents are in the method EventsAPISession.trigger method.
+
 **2019-03-12: version 3.0:**
 
 * Added new Events API session class that still has most of the same functional features as the REST API session class.
