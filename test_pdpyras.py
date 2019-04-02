@@ -322,7 +322,7 @@ class APISessionTest(unittest.TestCase):
                 '/services')
             request.reset_mock()
 
-            # Test default retry logic;
+            # Test retry logic;
             with patch.object(pdpyras.time, 'sleep') as sleep:
                 # Test getting a connection error and succeeding the final time.
                 returns = [
@@ -347,6 +347,26 @@ class APISessionTest(unittest.TestCase):
                 self.assertEqual(sess.max_network_attempts+1,
                     request.call_count)
                 self.assertEqual(sess.max_network_attempts, sleep.call_count)
+
+                # Test custom retry logic:
+                sess.retry[404] = 3
+                request.side_effect = [
+                    Response(404, json.dumps({})),
+                    Response(404, json.dumps({})),
+                    Response(200, json.dumps({'user': user})),
+                ]
+                r = sess.get('/users/P123456')
+                self.assertEqual(200, r.status_code)
+                # Test retry logic with too many 404s
+                sess.retry[404] = 1
+                request.side_effect = [
+                    Response(404, json.dumps({})),
+                    Response(404, json.dumps({})),
+                    Response(200, json.dumps({'user': user})),
+                ]
+                self.assertRaises(pdpyras.PDClientError, sess.get,
+                    '/users/P123456')
+
 
     def test_resource_envelope(self):
         do_http_things = MagicMock()
