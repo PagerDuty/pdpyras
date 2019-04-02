@@ -661,7 +661,7 @@ specified by the value at each key as follows:</p>
 default behavior)</li>
 <li><code class="docutils literal notranslate"><span class="pre">n</span></code>, where <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>, to retry <code class="docutils literal notranslate"><span class="pre">n</span></code> times (or up
 to <a class="reference internal" href="#pdpyras.PDSession.max_http_attempts" title="pdpyras.PDSession.max_http_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_http_attempts</span></code></a> total for all statuses, whichever is
-encountered first), and rase a <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> after that many
+encountered first), and raise a <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> after that many
 attempts. For each successive attempt, the wait time will increase by a
 factor of <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a>.</li>
 </ul>
@@ -1315,6 +1315,19 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </div>
 <div class="section" id="changelog">
 <h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<p><strong>2019-04-02: version 3.0.2:</strong></p>
+<p>Important bug fixes to the custom HTTP retry logic:</p>
+<ul class="simple">
+<li>Fixed <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> in <code class="docutils literal notranslate"><span class="pre">APISession.request</span></code></li>
+<li>Fixed incorrect behavior (retrying more than the specified amount of times) due to faulty comparison logic</li>
+</ul>
+<p><strong>2019-03-14: version 3.0.1:</strong></p>
+<p>A light Events API client methods refactor:</p>
+<ul class="simple">
+<li>All keyword arguments specific to sending trigger events have been refactored out of the generic <code class="docutils literal notranslate"><span class="pre">EventsAPISession.send_event</span></code> method</li>
+<li>Now, instead, <code class="docutils literal notranslate"><span class="pre">send_event</span></code> and uses a catch-all keyword argument to set event properties.</li>
+<li>The keyword arguments specific to triggering incidents are in the method EventsAPISession.trigger method.</li>
+</ul>
 <p><strong>2019-03-12: version 3.0:</strong></p>
 <ul class="simple">
 <li>Added new Events API session class that still has most of the same functional features as the REST API session class.</li>

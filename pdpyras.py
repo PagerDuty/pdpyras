@@ -300,7 +300,7 @@ class PDSession(requests.Session):
       default behavior) 
     * ``n``, where ``n > 0``, to retry ``n`` times (or up
       to :attr:`max_http_attempts` total for all statuses, whichever is
-      encountered first), and rase a :class:`PDClientError` after that many
+      encountered first), and raise a :class:`PDClientError` after that many
       attempts. For each successive attempt, the wait time will increase by a
       factor of :attr:`sleep_timer_base`.
 
@@ -433,14 +433,14 @@ class PDSession(requests.Session):
                 # Take special action as defined by the retry logic
                 if retry_logic != -1:
                     # Retry a specific number of times (-1 implies infinite)
-                    if http_attempts[status]>retry_logic or \
+                    if http_attempts.get(status, 0)>=retry_logic or \
                             sum(http_attempts.values())>self.max_http_attempts:
                         raise PDClientError("Non-transient HTTP error: "
-                            "exceeded maximum number of attempts to make a "
-                            "successful request. Currently encountering status "
-                            "%d."%status, response=response)
-                    http_attempts[status] = 1 + \
-                        http_attempts.setdefault(status, 0)
+                            "exceeded maximum number of attempts (%d) to make "
+                            "a successful request. Currently encountering "
+                            "status %d."%(self.retry[status], status),
+                            response=response)
+                    http_attempts[status] = 1 + http_attempts.get(status, 0)
                 sleep_timer *= self.sleep_timer_base
                 self.log.debug("HTTP error (%d); retrying in %g seconds.",
                     status, sleep_timer)
