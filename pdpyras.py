@@ -288,6 +288,23 @@ class PDSession(requests.Session):
 
     permitted_methods = ()
 
+    raise_if_http_error = True
+    """
+    Raise an exception upon receiving an error response from the server.
+
+    This affects iteration (in the REST API) as well as the generic request
+    method itself.
+
+    In the general case: if set to True, then upon receiving a non-transient
+    HTTP error (from too many retries), an exception will be raised. Otherwise,
+    the response object will be returned.
+
+    In iteration: if set to true, an exception will be raised in
+    :attr:`iter_all` if a HTTP error is encountered. This is the default
+    behavior in versions >= 2.1.0.  If False, the behavior is to halt iteration
+    upon receiving a HTTP error.
+    """
+
     retry = None
     """
     A dict defining the retry behavior for each HTTP response status code.
@@ -435,11 +452,14 @@ class PDSession(requests.Session):
                     # Retry a specific number of times (-1 implies infinite)
                     if http_attempts.get(status, 0)>=retry_logic or \
                             sum(http_attempts.values())>self.max_http_attempts:
-                        raise PDClientError("Non-transient HTTP error: "
-                            "exceeded maximum number of attempts (%d) to make "
-                            "a successful request. Currently encountering "
-                            "status %d."%(self.retry[status], status),
-                            response=response)
+                        msg = "Non-transient HTTP error: exceeded maximum " \
+                            "number of attempts (%d) to make a successful " \
+                            "request. Currently encountering status %d."%(
+                                self.retry[status], status)
+                        if self.raise_if_http_error:
+                            raise PDClientError(msg, response=response)
+                        else:
+                            return response
                     http_attempts[status] = 1 + http_attempts.get(status, 0)
                 sleep_timer *= self.sleep_timer_base
                 self.log.debug("HTTP error (%d); retrying in %g seconds.",
@@ -685,15 +705,6 @@ class APISession(PDSession):
     """
 
     permitted_methods = ('GET', 'POST', 'PUT', 'DELETE')
-
-    raise_if_http_error = True
-    """
-    Raise an exception upon receiving an error response from the server.
-
-    If set to true, an exception will be raised in :attr:`iter_all` if a HTTP
-    error is encountered. This is the default behavior in versions >= 2.1.0.
-    If False, the behavior is to halt iteration upon receiving a HTTP error.
-    """
 
     url = 'https://api.pagerduty.com'
     """Base URL of the REST API"""

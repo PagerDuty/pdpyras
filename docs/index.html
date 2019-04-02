@@ -621,6 +621,21 @@ will be raised if this happens.</p>
 </table>
 </dd></dl>
 
+<dl class="attribute">
+<dt id="pdpyras.PDSession.raise_if_http_error">
+<code class="descname">raise_if_http_error</code><em class="property"> = True</em><a class="headerlink" href="#pdpyras.PDSession.raise_if_http_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raise an exception upon receiving an error response from the server.</p>
+<p>This affects iteration (in the REST API) as well as the generic request
+method itself.</p>
+<p>In the general case: if set to True, then upon receiving a non-transient
+HTTP error (from too many retries), an exception will be raised. Otherwise,
+the response object will be returned.</p>
+<p>In iteration: if set to true, an exception will be raised in
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">iter_all</span></code> if a HTTP error is encountered. This is the default
+behavior in versions &gt;= 2.1.0.  If False, the behavior is to halt iteration
+upon receiving a HTTP error.</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="pdpyras.PDSession.request">
 <code class="descname">request</code><span class="sig-paren">(</span><em>method</em>, <em>url</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.request" title="Permalink to this definition">¶</a></dt>
@@ -965,15 +980,6 @@ colon, i.e. <code class="docutils literal notranslate"><span class="pre">get:esc
 </tr>
 </tbody>
 </table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pdpyras.APISession.raise_if_http_error">
-<code class="descname">raise_if_http_error</code><em class="property"> = True</em><a class="headerlink" href="#pdpyras.APISession.raise_if_http_error" title="Permalink to this definition">¶</a></dt>
-<dd><p>Raise an exception upon receiving an error response from the server.</p>
-<p>If set to true, an exception will be raised in <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpyras.APISession.iter_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">iter_all</span></code></a> if a HTTP
-error is encountered. This is the default behavior in versions &gt;= 2.1.0.
-If False, the behavior is to halt iteration upon receiving a HTTP error.</p>
 </dd></dl>
 
 <dl class="method">
