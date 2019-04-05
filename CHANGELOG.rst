@@ -1,3 +1,7 @@
+**2019-04-05: version 3.1:**
+
+* Introduction of a custom ``User-Agent`` header to distinguish the API client as such, for the purposes of usage analytics
+
 **2019-04-02: version 3.0.2:**
 
 Important bug fixes to the custom HTTP retry logic:

@@ -212,8 +212,8 @@ PagerDuty account:</p>
 <ul class="simple">
 <li><strong>There is no need to include the API base URL.</strong> Any path relative to the web
 root, leading slash or no, is automatically appended to the base URL when
-constructing an API request, i.e. one can specify <code class="docutils literal notranslate"><span class="pre">users/PABC123</span></code> instead
-of <code class="docutils literal notranslate"><span class="pre">https://api.pagerduty.com/users/PABC123</span></code>.</li>
+constructing an API request, i.e. one can specify <code class="docutils literal notranslate"><span class="pre">users/PABC123</span></code> or
+<code class="docutils literal notranslate"><span class="pre">/users/PABC123</span></code> instead of <code class="docutils literal notranslate"><span class="pre">https://api.pagerduty.com/users/PABC123</span></code>.</li>
 <li>One can also pass the full URL of an API endpoint and it will still work, i.e.
 the <code class="docutils literal notranslate"><span class="pre">self</span></code> property of any object can be used, and there is no need to strip
 out the API base URL.</li>
@@ -221,9 +221,22 @@ out the API base URL.</li>
 </div>
 <div class="section" id="request-and-response-bodies">
 <h4>Request and Response Bodies<a class="headerlink" href="#request-and-response-bodies" title="Permalink to this headline">¶</a></h4>
+<p>Note that when working with the REST API using <code class="docutils literal notranslate"><span class="pre">pdpyras.APISession</span></code>, the
+implementer is not insulated from having to work directly with the schemas of
+requests and responses. Rather, one must follow the <a class="reference external" href="https://api-reference.pagerduty.com/#!/API_Reference/get_api_reference">REST API Reference</a> which
+documents the schemas at length, and construct/access objects representing the
+request and response bodies, while the API client takes care of everything else.</p>
 <ul class="simple">
-<li>Data is represented as dictionary objects, and should have a structure that
-mirrors that of the API schema</li>
+<li>Data is represented as dictionary or list  objects, and should have a
+structure that mirrors that of the API schema:<ul>
+<li>If the data type documented in the schema is
+<a class="reference external" href="https://v2.developer.pagerduty.com/docs/types#object">object</a>, then the
+corresponding type in Python will be <code class="docutils literal notranslate"><span class="pre">dict</span></code>.</li>
+<li>If the data type documented in the schema is
+<a class="reference external" href="https://v2.developer.pagerduty.com/docs/types#array">array</a>, then the
+corresponding type in Python will be <code class="docutils literal notranslate"><span class="pre">list</span></code>.</li>
+</ul>
+</li>
 <li>Everything is automatically JSON-encoded and decoded, using it as follows:<ul>
 <li>To send a JSON request body, pass a <code class="docutils literal notranslate"><span class="pre">dict</span></code> object (or <code class="docutils literal notranslate"><span class="pre">list</span></code>, where
 applicable) in the <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument.</li>
@@ -231,18 +244,20 @@ applicable) in the <code class="docutils literal notranslate"><span class="pre">
 the <a class="reference external" href="http://docs.python-requests.org/en/master/api/#requests.Response.json">json</a>
 method of the response object.</li>
 <li>If using the <code class="docutils literal notranslate"><span class="pre">r{VERB}</span></code> methods, i.e.  <code class="docutils literal notranslate"><span class="pre">rget</span></code>, the return value will be
-the <code class="docutils literal notranslate"><span class="pre">dict</span></code>/<code class="docutils literal notranslate"><span class="pre">list</span></code> and there is no need to call <code class="docutils literal notranslate"><span class="pre">response.json()</span></code></li>
+the <code class="docutils literal notranslate"><span class="pre">dict</span></code>/<code class="docutils literal notranslate"><span class="pre">list</span></code> object decoded from the <a class="reference external" href="https://v2.developer.pagerduty.com/docs/wrapped-entities">wrapped entity</a>  and there is
+no need to call <code class="docutils literal notranslate"><span class="pre">response.json()</span></code>.</li>
+<li>Similarly, the <code class="docutils literal notranslate"><span class="pre">j{VERB}</span></code> methods, i.e.  <code class="docutils literal notranslate"><span class="pre">jget</span></code>, return the object
+decoded from the JSON string in the response body (but without attempting
+to unwrap any wrapped entities it may contain).</li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="section" id="using-special-features-of-requests">
 <h4>Using Special Features of Requests<a class="headerlink" href="#using-special-features-of-requests" title="Permalink to this headline">¶</a></h4>
-<ul class="simple">
-<li>Keyword arguments to the verb functions get passed through to the similarly-
-named functions in <a class="reference external" href="http://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>, so for additional options, please
-refer to the documentation provided by the Requests project.</li>
-</ul>
+<p>Keyword arguments to the HTTP methods get passed through to the similarly-
+named functions in <a class="reference external" href="http://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>, so for additional options, please refer
+to the documentation provided by the Requests project.</p>
 </div>
 </div>
 <div class="section" id="data-access-abstraction">
@@ -269,7 +284,18 @@ in question, i.e. for <code class="docutils literal notranslate"><span class="pr
 <p>The method <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpyras.APISession.iter_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.iter_all</span></code></a> returns an iterator that yields
 all results from a resource index, automatically incrementing the <code class="docutils literal notranslate"><span class="pre">offset</span></code>
 parameter to advance through each page of data.</p>
-<p>As of version 2.2, there are also the methods
+<p>Note, one can perform <a class="reference external" href="https://v2.developer.pagerduty.com/docs/filtering">filtering</a> with iteration to constrain
+constrain the range of results, by passing in a dictionary object as the <code class="docutils literal notranslate"><span class="pre">params</span></code>
+keyword argument. Any parameters will be automatically merged with the pagination
+parameters and serialized into the final URL, so there is no need to manually
+construct the URL, i.e. append <code class="docutils literal notranslate"><span class="pre">?key1=value1&amp;key2=value2</span></code>.</p>
+<p><strong>Example:</strong> Find all users with “Dav” in their name/email (i.e. Dave/David) in
+the PagerDuty account:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">dave</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">iter_all</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;query&#39;</span><span class="p">:</span><span class="s2">&quot;Dav&quot;</span><span class="p">}):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> &lt;</span><span class="si">%s</span><span class="s2">&gt;&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">dave</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">dave</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>Also, note, as of version 2.2, there are the methods
 <a class="reference internal" href="#pdpyras.APISession.list_all" title="pdpyras.APISession.list_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.list_all</span></code></a> and <a class="reference internal" href="#pdpyras.APISession.dict_all" title="pdpyras.APISession.dict_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.dict_all</span></code></a>
 which return a list or dictionary of all results, respectively.</p>
 <p><strong>Example:</strong> Get a dictionary of all users, keyed by email, and use it to find
@@ -287,11 +313,11 @@ data will be retrieved one page at a time and the functions <code class="docutil
 <code class="docutils literal notranslate"><span class="pre">dict_all</span></code> will not return until after the HTTP response from the final API
 call is received. Simply put, the functions will take longer to return if the
 total number of resuls is higher.</p>
-<p><strong>Updating and Deleting Records:</strong></p>
+<p><strong>On Updating and Deleting Records:</strong></p>
 <p>If performing page-wise operations, i.e. making changes immediately after
 fetching each page of results, rather than pre-fetching all objects and then
 operating on them, one must be cautious not to perform any changes to the
-results that would affect the set being iterated over.</p>
+results that would affect the set over which iteration is taking place.</p>
 <p>To elaborate, this happens whenever a resource object is deleted, or it is
 updated in such a way that the filter parameters in <code class="docutils literal notranslate"><span class="pre">iter_all</span></code> no longer
 apply to it. This is because indexes’ contents update in real time. Thus,
@@ -385,11 +411,11 @@ in multi-update actions.</p>
 <ul class="simple">
 <li><a class="reference external" href="https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents">PUT /incidents</a></li>
 <li><a class="reference external" href="https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents_id_alerts">PUT /incidents/{id}/alerts</a></li>
-<li>PUT /priorities (not yet published, as of 2018-11-28)</li>
+<li><strong>PUT /priorities</strong> (not yet published, as of 2018-11-28)</li>
 </ul>
 <p><strong>Please note:</strong> as of yet, merging incidents is not supported by <code class="docutils literal notranslate"><span class="pre">rput</span></code>.
 For this and other unsupported endpoints, you will need to call <code class="docutils literal notranslate"><span class="pre">put</span></code> directly,
-or <code class="docutils literal notranslate"><span class="pre">jput</span></code> to get the response body as a dictionary.</p>
+or <code class="docutils literal notranslate"><span class="pre">jput</span></code> to get the response body as a dictionary object.</p>
 <p>To use, simply pass in a list of objects or references (dictionaries having a
 structure according to the API schema reference for that object type) to the
 <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument of <a class="reference internal" href="#pdpyras.APISession.rput" title="pdpyras.APISession.rput"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rput</span></code></a>, and the final
@@ -1321,6 +1347,10 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </div>
 <div class="section" id="changelog">
 <h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<p><strong>2019-04-05: version 3.1:</strong></p>
+<ul class="simple">
+<li>Introduction of a custom <code class="docutils literal notranslate"><span class="pre">User-Agent</span></code> header to distinguish the API client as such, for the purposes of usage analytics</li>
+</ul>
 <p><strong>2019-04-02: version 3.0.2:</strong></p>
 <p>Important bug fixes to the custom HTTP retry logic:</p>
 <ul class="simple">

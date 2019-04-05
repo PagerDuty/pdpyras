@@ -195,9 +195,9 @@ In all cases, when sending or receiving data through the REST API using
 URLs
 ++++
 * **There is no need to include the API base URL.** Any path relative to the web
-  root, leading slash or no, is automatically appended to the base URL when 
-  constructing an API request, i.e. one can specify ``users/PABC123`` instead
-  of ``https://api.pagerduty.com/users/PABC123``.
+  root, leading slash or no, is automatically appended to the base URL when
+  constructing an API request, i.e. one can specify ``users/PABC123`` or
+  ``/users/PABC123`` instead of ``https://api.pagerduty.com/users/PABC123``.
 
 * One can also pass the full URL of an API endpoint and it will still work, i.e. 
   the ``self`` property of any object can be used, and there is no need to strip
@@ -205,8 +205,22 @@ URLs
 
 Request and Response Bodies
 +++++++++++++++++++++++++++
-* Data is represented as dictionary objects, and should have a structure that
-  mirrors that of the API schema
+Note that when working with the REST API using ``pdpyras.APISession``, the
+implementer is not insulated from having to work directly with the schemas of
+requests and responses. Rather, one must follow the `REST API Reference`_ which
+documents the schemas at length, and construct/access objects representing the
+request and response bodies, while the API client takes care of everything else.
+
+* Data is represented as dictionary or list  objects, and should have a
+  structure that mirrors that of the API schema:
+
+  - If the data type documented in the schema is
+    `object <https://v2.developer.pagerduty.com/docs/types#object>`_, then the
+    corresponding type in Python will be ``dict``.
+
+  - If the data type documented in the schema is
+    `array <https://v2.developer.pagerduty.com/docs/types#array>`_, then the
+    corresponding type in Python will be ``list``.
 
 * Everything is automatically JSON-encoded and decoded, using it as follows:
 
@@ -219,13 +233,19 @@ Request and Response Bodies
     method of the response object.
 
   - If using the ``r{VERB}`` methods, i.e.  ``rget``, the return value will be
-    the ``dict``/``list`` and there is no need to call ``response.json()``
+    the ``dict``/``list`` object decoded from the `wrapped entity
+    <https://v2.developer.pagerduty.com/docs/wrapped-entities>`_  and there is
+    no need to call ``response.json()``. 
+
+  - Similarly, the ``j{VERB}`` methods, i.e.  ``jget``, return the object
+    decoded from the JSON string in the response body (but without attempting
+    to unwrap any wrapped entities it may contain).
 
 Using Special Features of Requests
 ++++++++++++++++++++++++++++++++++
-* Keyword arguments to the verb functions get passed through to the similarly-
-  named functions in `requests.Session`_, so for additional options, please
-  refer to the documentation provided by the Requests project.
+Keyword arguments to the HTTP methods get passed through to the similarly-
+named functions in `requests.Session`_, so for additional options, please refer
+to the documentation provided by the Requests project.
 
 Data Access Abstraction
 ***********************
@@ -254,7 +274,22 @@ The method :attr:`pdpyras.APISession.iter_all` returns an iterator that yields
 all results from a resource index, automatically incrementing the ``offset``
 parameter to advance through each page of data.
 
-As of version 2.2, there are also the methods
+Note, one can perform `filtering
+<https://v2.developer.pagerduty.com/docs/filtering>`_ with iteration to constrain
+constrain the range of results, by passing in a dictionary object as the ``params``
+keyword argument. Any parameters will be automatically merged with the pagination
+parameters and serialized into the final URL, so there is no need to manually 
+construct the URL, i.e. append ``?key1=value1&key2=value2``.
+
+**Example:** Find all users with "Dav" in their name/email (i.e. Dave/David) in
+the PagerDuty account:
+
+::
+
+    for dave in session.iter_all('users', params={'query':"Dav"}):
+        print("%s <%s>"%(dave['name'], dave['email']))
+
+Also, note, as of version 2.2, there are the methods
 :attr:`pdpyras.APISession.list_all` and :attr:`pdpyras.APISession.dict_all`
 which return a list or dictionary of all results, respectively.
 
@@ -277,12 +312,12 @@ data will be retrieved one page at a time and the functions ``list_all`` and
 call is received. Simply put, the functions will take longer to return if the
 total number of resuls is higher.
 
-**Updating and Deleting Records:**
+**On Updating and Deleting Records:**
 
 If performing page-wise operations, i.e. making changes immediately after
 fetching each page of results, rather than pre-fetching all objects and then
 operating on them, one must be cautious not to perform any changes to the
-results that would affect the set being iterated over.
+results that would affect the set over which iteration is taking place.
 
 To elaborate, this happens whenever a resource object is deleted, or it is
 updated in such a way that the filter parameters in ``iter_all`` no longer
@@ -390,11 +425,11 @@ As of this writing, multi-update is limited to the following actions:
 
 * `PUT /incidents <https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents>`_
 * `PUT /incidents/{id}/alerts <https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents_id_alerts>`_
-* PUT /priorities (not yet published, as of 2018-11-28)
+* **PUT /priorities** (not yet published, as of 2018-11-28)
 
 **Please note:** as of yet, merging incidents is not supported by ``rput``.
 For this and other unsupported endpoints, you will need to call ``put`` directly,
-or ``jput`` to get the response body as a dictionary.
+or ``jput`` to get the response body as a dictionary object.
 
 To use, simply pass in a list of objects or references (dictionaries having a
 structure according to the API schema reference for that object type) to the
