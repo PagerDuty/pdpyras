@@ -379,8 +379,10 @@ class APISessionTest(SessionTest):
                     Response(404, json.dumps({})),
                     Response(200, json.dumps({'user': user})),
                 ]
-                self.assertRaises(pdpyras.PDClientError, sess.get,
-                    '/users/P123456')
+                sess.log = MagicMock()
+                r = sess.get('/users/P123456')
+                self.assertEqual(404, r.status_code)
+                sess.log.error.assert_called_once()
 
 
     def test_resource_envelope(self):

@@ -549,7 +549,7 @@ it will retry indefinitely. This is a sane approach; if it is ever responding
 with 429, this means that the REST API is receiving (for the given REST API
 key) too many requests, and the issue should by nature be transient. Similarly,
 the hard-coded default behavior for status 401 (unauthorized) is to immediately 
-return and print an error message to the log.
+raise :class:`pdpyras.PDClientError`
 
 It is, however, possible to override this behavior using
 :attr:`pdpyras.PDSession.retry`.

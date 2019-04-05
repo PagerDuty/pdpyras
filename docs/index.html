@@ -517,7 +517,7 @@ it will retry indefinitely. This is a sane approach; if it is ever responding
 with 429, this means that the REST API is receiving (for the given REST API
 key) too many requests, and the issue should by nature be transient. Similarly,
 the hard-coded default behavior for status 401 (unauthorized) is to immediately
-return and print an error message to the log.</p>
+raise <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code></a></p>
 <p>It is, however, possible to override this behavior using
 <a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.retry</span></code></a>.</p>
 </div>
@@ -1160,7 +1160,8 @@ associating actions with existing incidents.</li>
 <li><strong>payload</strong> (<em>dict</em>) – Set the payload directly. Can be used in conjunction with other
 parameters that also set payload properties; these properties will
 be merged into the default payload, and any properties in this
-parameter will take precedence.</li>
+parameter will take precedence except with regard to
+<code class="docutils literal notranslate"><span class="pre">custom_details</span></code>.</li>
 <li><strong>custom_details</strong> (<em>dict</em>) – The <code class="docutils literal notranslate"><span class="pre">payload.custom_details</span></code> property of the payload. Will
 override the property set in the <code class="docutils literal notranslate"><span class="pre">payload</span></code> parameter if given.</li>
 <li><strong>images</strong> (<em>list</em>) – Set the <code class="docutils literal notranslate"><span class="pre">images</span></code> property of the event.</li>

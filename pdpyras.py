@@ -452,14 +452,11 @@ class PDSession(requests.Session):
                     # Retry a specific number of times (-1 implies infinite)
                     if http_attempts.get(status, 0)>=retry_logic or \
                             sum(http_attempts.values())>self.max_http_attempts:
-                        msg = "Non-transient HTTP error: exceeded maximum " \
-                            "number of attempts (%d) to make a successful " \
-                            "request. Currently encountering status %d."%(
-                                self.retry[status], status)
-                        if self.raise_if_http_error:
-                            raise PDClientError(msg, response=response)
-                        else:
-                            return response
+                        self.log.error("Non-transient HTTP error: exceeded " \
+                            "maximum number of attempts (%d) to make a " \
+                            "successful request. Currently encountering "
+                            "status %d.", self.retry[status], status)
+                        return response
                     http_attempts[status] = 1 + http_attempts.get(status, 0)
                 sleep_timer *= self.sleep_timer_base
                 self.log.debug("HTTP error (%d); retrying in %g seconds.",
@@ -607,7 +604,8 @@ class EventsAPISession(PDSession):
             Set the payload directly. Can be used in conjunction with other
             parameters that also set payload properties; these properties will
             be merged into the default payload, and any properties in this
-            parameter will take precedence.
+            parameter will take precedence except with regard to
+            ``custom_details``.
         :param custom_details:
             The ``payload.custom_details`` property of the payload. Will
             override the property set in the ``payload`` parameter if given.
