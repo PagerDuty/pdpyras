@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 3.1 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 3.1.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -1348,6 +1348,18 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </div>
 <div class="section" id="changelog">
 <h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<p><strong>2019-04-05: version 3.1.1</strong></p>
+<ul class="simple">
+<li><dl class="first docutils">
+<dt>Changed behavior of HTTP retry that caused issues with some internal tools: raising <code class="docutils literal notranslate"><span class="pre">PDClientError</span></code> in the event of non-transient HTTP error, in the <code class="docutils literal notranslate"><span class="pre">request</span></code> method, versus returning the request object and logging it. The previous behavior was:</dt>
+<dd><ul class="first last">
+<li>Not the intended design</li>
+<li>At odds with the documentated behavior</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
 <p><strong>2019-04-05: version 3.1:</strong></p>
 <ul class="simple">
 <li>Introduction of a custom <code class="docutils literal notranslate"><span class="pre">User-Agent</span></code> header to distinguish the API client as such, for the purposes of usage analytics</li>
