@@ -1,1 +1,6 @@
-.sphinxsidebarwrapper { position: fixed; width: 15em; }
+.sphinxsidebarwrapper {
+    position: fixed;
+    width: 16em;
+    height: 100%;
+    overflow-y: scroll;
+}
