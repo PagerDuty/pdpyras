@@ -631,5 +631,5 @@ in the commit message.
 
 .. codeauthor:: Demitri Morgan <demitri@pagerduty.com>
 
-.. |travis-build| image:: https://travis-ci.com/PagerDuty/pdpyras.svg?branch=master
-    :target: https://travis-ci.com/PagerDuty/pdpyras
+.. |travis-build| image:: https://travis-ci.com/Deconstrained/pdpyras.svg?branch=master
+    :target: https://travis-ci.com/Deconstrained/pdpyras
