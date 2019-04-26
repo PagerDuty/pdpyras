@@ -3,7 +3,7 @@ PDPYRAS: PagerDuty Python REST API Sessions
 ===========================================
 A minimal, practical Python client for the PagerDuty REST API.
 
-|travis-build|
+|circleci-build|
 
 * `GitHub repository <https://github.com/PagerDuty/pdpyras>`_ 
 * `Documentation <https://pagerduty.github.io/pdpyras>`_
@@ -633,3 +633,5 @@ in the commit message.
 
 .. |travis-build| image:: https://travis-ci.com/Deconstrained/pdpyras.svg?branch=master
     :target: https://travis-ci.com/Deconstrained/pdpyras
+.. |circleci-build| image:: https://circleci.com/gh/PagerDuty/pdpyras.svg?style=svg
+    :target: https://circleci.com/gh/PagerDuty/pdpyras
