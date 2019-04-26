@@ -8,10 +8,10 @@ venv: &venv
   name: Setup Virtualenv
   command: |
     virtualenv .python
-    . .python/bin/activate
 getenv: &getenv
   name: Get Environment Info
   command: |
+    . .python/bin/activate
     which python
     python -V
     which pip
@@ -19,10 +19,12 @@ getenv: &getenv
 depinst: &depinst
   name: Install Dependencies
   command: |
+    . .python/bin/activate
     pip install -r requirements.txt
 test: &test
   name: Run Unit Tests
   command: |
+    . .python/bin/activate
     python ./test_pdpyras.py
 
 jobs:
