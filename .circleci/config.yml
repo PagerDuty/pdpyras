@@ -9,17 +9,22 @@ jobs:
     steps:
       - checkout
       - run:
-        name: Install Dependencies
-        command: |
-          sudo apt install python-pip
-          pip -V
-          pip install -r requirements.txt
+          name: Install Pip
+          command: |
+            sudo apt install python-pip
       - run:
-        name: Run Unit Tests
-        command: |
-          python -V
-          python ./test_pdpyras.py
-
+          name: Get Environment Info
+          command: |
+            python -V
+            pip -V
+      - run:
+          name: Install Dependencies
+          command: |
+            pip install -r requirements.txt
+      - run:
+          name: Run Unit Tests
+          command: |
+            python ./test_pdpyras.py
 workflows: 
   version: 2.1
   run_tests:
