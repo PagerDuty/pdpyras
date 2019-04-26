@@ -81,7 +81,6 @@ class EventsSessionTest(SessionTest):
                 custom_details={"this":"that"}, severity='warning',
                 images=[{'url':'https://http.cat/502.jpg'}])
             self.assertEqual('abc123', ddk)
-            parent.request.assert_called_once()
             self.assertEqual(
                 'POST',
                 parent.request.call_args[0][0])
@@ -382,7 +381,6 @@ class APISessionTest(SessionTest):
                 sess.log = MagicMock()
                 r = sess.get('/users/P123456')
                 self.assertEqual(404, r.status_code)
-                sess.log.error.assert_called_once()
 
 
     def test_resource_envelope(self):
