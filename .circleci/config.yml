@@ -1,33 +1,102 @@
 version: 2.1
+
+pip: &pip
+  name: Install Pip
+  command: |
+    sudo apt install python-pip python-virtualenv
+venv: &venv
+  name: Setup Virtualenv
+  command: |
+    virtualenv .python
+    . .python/bin/activate
+getenv: &getenv
+  name: Get Environment Info
+  command: |
+    which python
+    python -V
+    which pip
+    pip -V
+depinst: &depinst
+  name: Install Dependencies
+  command: |
+    pip install -r requirements.txt
+test: &test
+  name: Run Unit Tests
+  command: |
+    python ./test_pdpyras.py
+
 jobs:
-  setup_and_test:
+
+  py2_7:
     docker:
       - image: circleci/python:2.7-stretch
+    steps:
+      - checkout
+      - run:
+          <<: *pip
+      - run:
+          <<: *venv
+      - run:
+          <<: *getenv
+      - run:
+          <<: *depinst
+      - run:
+          <<: *test
+
+  py3_5:
+    docker:
       - image: circleci/python:3.5-stretch
+    steps:
+      - checkout
+      - run:
+          <<: *pip
+      - run:
+          <<: *venv
+      - run:
+          <<: *getenv
+      - run:
+          <<: *depinst
+      - run:
+          <<: *test
+
+  py3_6:
+    docker:
       - image: circleci/python:3.6-stretch
+    steps:
+      - checkout
+      - run:
+          <<: *pip
+      - run:
+          <<: *venv
+      - run:
+          <<: *getenv
+      - run:
+          <<: *depinst
+      - run:
+          <<: *test
+
+  py3_7:
+    docker:
       - image: circleci/python:3.7-stretch
     steps:
       - checkout
       - run:
-          name: Install Pip
-          command: |
-            sudo apt install python-pip
+          <<: *pip
       - run:
-          name: Get Environment Info
-          command: |
-            python -V
-            pip -V
+          <<: *venv
       - run:
-          name: Install Dependencies
-          command: |
-            pip install -r requirements.txt
+          <<: *getenv
       - run:
-          name: Run Unit Tests
-          command: |
-            python ./test_pdpyras.py
+          <<: *depinst
+      - run:
+          <<: *test
+
 workflows: 
   version: 2.1
   run_tests:
     jobs:
-      - setup_and_test
+      - py2_7
+      - py3_5
+      - py3_6
+      - py3_7
 
