@@ -312,7 +312,7 @@ Because HTTP requests are made synchronously and not in parallel threads, the
 data will be retrieved one page at a time and the functions ``list_all`` and
 ``dict_all`` will not return until after the HTTP response from the final API
 call is received. Simply put, the functions will take longer to return if the
-total number of resuls is higher.
+total number of results is higher.
 
 **On Updating and Deleting Records:**
 
@@ -544,17 +544,19 @@ before finally returning with the status 404 `requests.Response`_ object:
     # isinstance(session, pdpyras.APISession)
     response = session.get('/users/PNOEXST') 
 
-**Default Rate Limit Behavior:**
+**Default Behavior:**
 
 Note that without specifying any retry behavior for status 429 (rate limiting),
 it will retry indefinitely. This is a sane approach; if it is ever responding
 with 429, this means that the REST API is receiving (for the given REST API
-key) too many requests, and the issue should by nature be transient. Similarly,
-the hard-coded default behavior for status 401 (unauthorized) is to immediately 
-raise :class:`pdpyras.PDClientError`
+key) too many requests, and the issue should by nature be transient. 
 
-It is, however, possible to override this behavior using
-:attr:`pdpyras.PDSession.retry`.
+Similarly, there is hard-coded default behavior for status 401 (unauthorized):
+immediately raise :class:`pdpyras.PDClientError` (as this can be considered in
+all cases a completely non-transient error).
+
+It is still possible to override these behaviors using
+:attr:`pdpyras.PDSession.retry`, but it is not recommended.
 
 Events API Usage
 ****************

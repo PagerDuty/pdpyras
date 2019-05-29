@@ -313,7 +313,7 @@ the ID of the user whose email is <code class="docutils literal notranslate"><sp
 data will be retrieved one page at a time and the functions <code class="docutils literal notranslate"><span class="pre">list_all</span></code> and
 <code class="docutils literal notranslate"><span class="pre">dict_all</span></code> will not return until after the HTTP response from the final API
 call is received. Simply put, the functions will take longer to return if the
-total number of resuls is higher.</p>
+total number of results is higher.</p>
 <p><strong>On Updating and Deleting Records:</strong></p>
 <p>If performing page-wise operations, i.e. making changes immediately after
 fetching each page of results, rather than pre-fetching all objects and then
@@ -512,15 +512,16 @@ before finally returning with the status 404 <a class="reference external" href=
 <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;/users/PNOEXST&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><strong>Default Rate Limit Behavior:</strong></p>
+<p><strong>Default Behavior:</strong></p>
 <p>Note that without specifying any retry behavior for status 429 (rate limiting),
 it will retry indefinitely. This is a sane approach; if it is ever responding
 with 429, this means that the REST API is receiving (for the given REST API
-key) too many requests, and the issue should by nature be transient. Similarly,
-the hard-coded default behavior for status 401 (unauthorized) is to immediately
-raise <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code></a></p>
-<p>It is, however, possible to override this behavior using
-<a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.retry</span></code></a>.</p>
+key) too many requests, and the issue should by nature be transient.</p>
+<p>Similarly, there is hard-coded default behavior for status 401 (unauthorized):
+immediately raise <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code></a> (as this can be considered in
+all cases a completely non-transient error).</p>
+<p>It is still possible to override these behaviors using
+<a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.retry</span></code></a>, but it is not recommended.</p>
 </div>
 <div class="section" id="events-api-usage">
 <h3>Events API Usage<a class="headerlink" href="#events-api-usage" title="Permalink to this headline">¶</a></h3>
