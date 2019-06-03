@@ -264,11 +264,24 @@ representing the desired result, all of the following are taken care of:
 3. Validate that the result contains the predicted envelope property.
 4. Access the property that is encapsulated within the response.
 
-**Please note,** not all API endpoints are supported. The general rule is that
-the envelope name must follow from the innermost resource name for the API path
-in question, i.e. for ``/escalation_policies/{id}`` the envelope name must be
+Supported Endpoints
++++++++++++++++++++
+
+**Please note,** not all API endpoints are supported for these convenience
+functions.. The general rules are that the name of the wrapped resource
+property must follow from the innermost resource name for the API path in
+question, and that the "nodes" in the URL path (between forward slashes) must
+alternate between resource type and ID.
+
+For instance, for ``/escalation_policies/{id}`` the name must be
 ``escalation_policy``, and or for ``/users/{id}/notification_rules`` it must be
 ``notification_rule``.
+
+For user sessions (one API resource/endpoint that breaks these rules), one will need to
+use the plain ``get`` and ``post`` functions, or ``jget`` / ``jpost``, because
+their URLs are formatted as ``/users/{id}/sessions/{type}/{session_id}`` and
+the wrapped resource property name is ``user_sessions`` rather than simply
+``sessions``.
 
 Iteration
 +++++++++

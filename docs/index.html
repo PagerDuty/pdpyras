@@ -275,11 +275,22 @@ representing the desired result, all of the following are taken care of:</p>
 <li>Validate that the result contains the predicted envelope property.</li>
 <li>Access the property that is encapsulated within the response.</li>
 </ol>
-<p><strong>Please note,</strong> not all API endpoints are supported. The general rule is that
-the envelope name must follow from the innermost resource name for the API path
-in question, i.e. for <code class="docutils literal notranslate"><span class="pre">/escalation_policies/{id}</span></code> the envelope name must be
+<div class="section" id="supported-endpoints">
+<h4>Supported Endpoints<a class="headerlink" href="#supported-endpoints" title="Permalink to this headline">¶</a></h4>
+<p><strong>Please note,</strong> not all API endpoints are supported for these convenience
+functions.. The general rules are that the name of the wrapped resource
+property must follow from the innermost resource name for the API path in
+question, and that the “nodes” in the URL path (between forward slashes) must
+alternate between resource type and ID.</p>
+<p>For instance, for <code class="docutils literal notranslate"><span class="pre">/escalation_policies/{id}</span></code> the name must be
 <code class="docutils literal notranslate"><span class="pre">escalation_policy</span></code>, and or for <code class="docutils literal notranslate"><span class="pre">/users/{id}/notification_rules</span></code> it must be
 <code class="docutils literal notranslate"><span class="pre">notification_rule</span></code>.</p>
+<p>For user sessions (one API resource/endpoint that breaks these rules), one will need to
+use the plain <code class="docutils literal notranslate"><span class="pre">get</span></code> and <code class="docutils literal notranslate"><span class="pre">post</span></code> functions, or <code class="docutils literal notranslate"><span class="pre">jget</span></code> / <code class="docutils literal notranslate"><span class="pre">jpost</span></code>, because
+their URLs are formatted as <code class="docutils literal notranslate"><span class="pre">/users/{id}/sessions/{type}/{session_id}</span></code> and
+the wrapped resource property name is <code class="docutils literal notranslate"><span class="pre">user_sessions</span></code> rather than simply
+<code class="docutils literal notranslate"><span class="pre">sessions</span></code>.</p>
+</div>
 <div class="section" id="iteration">
 <h4>Iteration<a class="headerlink" href="#iteration" title="Permalink to this headline">¶</a></h4>
 <p>The method <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpyras.APISession.iter_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.iter_all</span></code></a> returns an iterator that yields
@@ -1436,6 +1447,7 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </ul>
 </li>
 <li><a class="reference internal" href="#data-access-abstraction">Data Access Abstraction</a><ul>
+<li><a class="reference internal" href="#supported-endpoints">Supported Endpoints</a></li>
 <li><a class="reference internal" href="#iteration">Iteration</a></li>
 <li><a class="reference internal" href="#disclaimers-regarding-iteration">Disclaimers Regarding Iteration</a></li>
 <li><a class="reference internal" href="#reading">Reading</a></li>
