@@ -2,7 +2,7 @@ docs: pdpyras.py README.rst CHANGELOG.rst sphinx/source/index.rst
 	rm -fr ./docs && cd sphinx && make html && cd .. && mv sphinx/build/html ./docs && touch ./docs/.nojekyll
 
 test:
-	cd tests && ./test_pdpyras.py
+	./test_pdpyras.py
 
 dist: pdpyras.py setup.py
 	rm -f dist/* && python setup.py sdist
