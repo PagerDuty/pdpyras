@@ -444,6 +444,7 @@ class PDSession(requests.Session):
                     e, sleep_timer)
                 time.sleep(sleep_timer)
                 continue
+
             status = response.status_code
             retry_logic = self.retry.get(status, 0)
             if not response.ok and retry_logic != 0:
@@ -463,13 +464,13 @@ class PDSession(requests.Session):
                     status, sleep_timer)
                 time.sleep(sleep_timer)
                 continue
-            elif response.status_code == 429:
+            elif status == 429:
                 sleep_timer *= self.sleep_timer_base
                 self.log.debug("Hit API rate limit (response status 429); "
                     "retrying in %g seconds", sleep_timer)
                 time.sleep(sleep_timer)
                 continue
-            elif response.status_code == 401:
+            elif status == 401:
                 # Stop. Authentication failed. We shouldn't try doing any more,
                 # because we'll run into problems later anyway.
                 raise PDClientError(
@@ -936,7 +937,7 @@ class APISession(PDSession):
 
     def postprocess(self, response, suffix=None):
         """
-        Records performance information about the API call.
+        Records performance information / request metadata about the API call.
 
         This method is called automatically by :func:`request` for all requests,
         and can be extended in child classes.
@@ -951,12 +952,29 @@ class APISession(PDSession):
         :type response: `requests.Response`_
         :type suffix: str or None
         """
-        key = self.profiler_key(response.request.method, response.url,
-            suffix=suffix)
+        method = response.request.method
+        request_date = response.headers.get('date', '(missing header)')
+        request_id = response.headers.get('x-request-id', '(missing header)')
+        request_time = response.elapsed.total_seconds()
+        status = response.status_code
+        url = response.url
+
+        key = self.profiler_key(method, url, suffix=suffix)
         self.api_call_counts.setdefault(key, 0)
         self.api_time.setdefault(key, 0.0)
         self.api_call_counts[key] += 1
-        self.api_time[key] += response.elapsed.total_seconds()
+        self.api_time[key] += request_time
+
+        # Request ID / timestamp logging
+        self.log.debug("Request completed: #method=%s|#url=%s|#status=%d|"
+            "#x_request_id=%s|#date=%s|#wall_time_s=%g", method, url, status,
+            request_id, request_date, request_time)
+        if int(status/100) == 5:
+            request_id = response.headers['x-request-id']
+            self.log.error("PagerDuty API server error (%d)! "
+                "For additional diagnostics, contact PagerDuty support "
+                "and reference x_request_id=%s / date=%s",
+                status, request_id, request_date)
 
     def prepare_headers(self, method):
         headers = deepcopy(self.headers)
