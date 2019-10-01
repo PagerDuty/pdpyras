@@ -638,7 +638,7 @@ class EventsAPISession(PDSession):
         event = {'payload': {'summary':summary, 'source':source,
             'severity':severity}}
         if type(payload) is dict:
-            event['payload'] = payload
+            event['payload'].update(payload)
         if type(custom_details) is dict:
             details = event.setdefault('payload', {}).get('custom_details', {})
             details.update(custom_details)
