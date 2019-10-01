@@ -5,3 +5,4 @@ dist/
 pdpyras.egg-info/
 docs/.buildinfo
 tmp/
+.DS_Store

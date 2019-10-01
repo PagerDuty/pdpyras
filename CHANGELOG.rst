@@ -1,3 +1,7 @@
+**2019-10-01: version 3.1.2**
+
+* Fixed regression bug / departure from documentation (#17): the ``payload`` parameter does not merge with but rather completely replaces the default payload
+
 **2019-04-05: version 3.1.1**
 
 * Changed behavior of HTTP retry that caused issues with some internal tools: raising ``PDClientError`` in the event of non-transient HTTP error, in the ``request`` method, versus returning the request object and logging it. The previous behavior was:
