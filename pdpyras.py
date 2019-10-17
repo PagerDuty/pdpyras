@@ -787,8 +787,8 @@ class APISession(PDSession):
         obj_iter = self.iter_all(resource, params=query_params)
         return next(iter(filter(equiv, obj_iter)), None)
 
-    def iter_all(self, path, params=None, paginate=True, item_hook=None,
-            total=False):
+    def iter_all(self, path, params=None, paginate=True, page_size=None, 
+            item_hook=None, total=False):
         """
         Iterator for the contents of an index endpoint or query.
 
@@ -811,6 +811,10 @@ class APISession(PDSession):
             Useful for special index endpoints that don't fully support
             pagination yet, i.e. "nested" endpoints like (as of this writing):
             ``/users/{id}/contact_methods`` and ``/services/{id}/integrations``
+        :param page_size:
+            If set, the ``page_size`` argument will override the ``default_page_size`` 
+            parameter on the session and set the ``limit`` parameter to a custom 
+            value (default is 100), altering the number of pagination results.
         :param item_hook:
             Callable object that will be invoked for each iteration, i.e. for
             printing progress. It will be called with three parameters: a dict
@@ -825,6 +829,7 @@ class APISession(PDSession):
         :type path: str
         :type params: dict or None
         :type paginate: bool
+        :type page_size: int or None
         :type total: bool
         :yields: Results from the index endpoint.
         :rtype: dict
@@ -839,7 +844,10 @@ class APISession(PDSession):
         data = {}
         if paginate:
             # Retrieve 100 at a time unless otherwise specified:
-            data['limit'] = self.default_page_size
+            if page_size is None:
+                data['limit'] = self.default_page_size
+            else:
+                data['limit'] = page_size
         if total:
             data['total'] = 1
         if params is not None:
