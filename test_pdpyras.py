@@ -152,7 +152,6 @@ class APISessionTest(SessionTest):
     def test_iter_all(self, get):
         sess = pdpyras.APISession('token')
         sess.log = MagicMock() # Or go with self.debug(sess) to see output
-        sess.default_page_size = 10
         page = lambda n, t: {
             'users': [{'id':i} for i in range(10*n, 10*(n+1))],
             'total': t,
@@ -168,7 +167,7 @@ class APISessionTest(SessionTest):
         ]
         weirdurl='https://api.pagerduty.com/users?number=1'
         hook = MagicMock()
-        items = list(sess.iter_all(weirdurl, item_hook=hook, total=True))
+        items = list(sess.iter_all(weirdurl, item_hook=hook, total=True, page_size=10))
         self.assertEqual(3, get.call_count)
         self.assertEqual(30, len(items))
         get.assert_has_calls(
