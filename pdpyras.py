@@ -376,6 +376,23 @@ class PDSession(requests.Session):
     def api_key(self, api_key):
         self.set_api_key(api_key)
 
+    @property
+    def api_key_access(self):
+        if not hasattr(self, '_api_key_access') or self._api_key_access is None:
+            try:
+                response = self.rget('/users/me')
+                self._api_key_access = 'user'
+            except PDClientError as e:
+                if e.response is not None:
+                    message = e.response.json().get('error')
+                    if e.response.status_code == 400 and 'account-level access token' in message:
+                        self._api_key_access = 'account'
+                        return self._api_key_access
+                self.log.error("Failed to obtain API key access level; encountered error")
+                self._api_key_access = None
+                raise e
+        return self._api_key_access
+    
     def postprocess(self, response):
         """
         Perform supplemental actions immediately after receiving a response.
