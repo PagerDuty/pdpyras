@@ -396,7 +396,6 @@ class APISessionTest(SessionTest):
                 r = sess.get('/users/P123456')
                 self.assertEqual(404, r.status_code)
 
-
     def test_resource_envelope(self):
         do_http_things = MagicMock()
         response = MagicMock()

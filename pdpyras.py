@@ -7,6 +7,7 @@ import sys
 import time
 import warnings
 from copy import deepcopy
+from random import random
 
 import requests
 from urllib3.connection import ConnectionError as Urllib3Error
@@ -376,6 +377,9 @@ class PDSession(requests.Session):
     def api_key(self, api_key):
         self.set_api_key(api_key)
 
+    def cooldown_factor(self):
+        return self.sleep_timer_base*(1+self.stagger_cooldown*random())
+
     def postprocess(self, response):
         """
         Perform supplemental actions immediately after receiving a response.
@@ -439,7 +443,7 @@ class PDSession(requests.Session):
                     raise PDClientError("Non-transient network error; exceeded "
                         "maximum number of attempts (%d) to connect to the "
                         "API"%self.max_network_attempts)
-                sleep_timer *= self.sleep_timer_base
+                sleep_timer *= self.cooldown_factor()
                 self.log.debug("Connection error: %s; retrying in %g seconds.",
                     e, sleep_timer)
                 time.sleep(sleep_timer)
@@ -492,6 +496,47 @@ class PDSession(requests.Session):
         set this property.
         """
         self._api_key =  api_key
+
+    @property
+    def stagger_cooldown(self):
+        """
+        Randomizing factor for wait times between retries during rate limiting.
+
+        If set to number greater than 0, the sleep time for rate limiting will
+        (for each successive sleep) be adjusted by a factor of one plus a
+        uniformly-distributed random number between 0 and 1 times this number,
+        on top of the base sleep timer :attr:`sleep_timer_base`.
+
+        For example:
+
+        * If this is 1, and :attr:`sleep_timer_base` is 2 (default), then after
+          each status 429 response, the sleep time will change overall by a
+          random factor between 2 and 4, whereas if it is zero, it will change
+          by a factor of 2.
+        * If :attr:`sleep_timer_base` is 1, then the cooldown time will be
+          adjusted by a random factor between one and one plus this number.
+
+        If the number is set to zero, then this behavior is effectively
+        disabled, and the cooldown factor (by which the sleep time is adjusted)
+        will just be :attr:`sleep_timer_base`
+
+        Setting this to a nonzero number helps avoid the "thundering herd"
+        effect that can potentially be caused by many API clients making
+        simultaneous concurrent API requests and consequently waiting for the
+        same amount of time before retrying.  It is currently zero by default
+        for consistent behavior with previous versions.
+        """
+        if hasattr(self, '_stagger_cooldown'):
+            return self._stagger_cooldown
+        else:
+            return 0
+
+    @stagger_cooldown.setter
+    def stagger_cooldown(self, val):
+        if type(val) not in [float, int] or val<0:
+            raise ValueError("Cooldown randomization factor stagger_cooldown "
+                "must be a positive real number") 
+        self._stagger_cooldown = val
 
     @property
     def trunc_key(self):
