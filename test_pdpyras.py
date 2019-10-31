@@ -228,8 +228,10 @@ class APISessionTest(SessionTest):
         sess = pdpyras.APISession('apikey')
         sess.log = logger
         sess.postprocess(response)
-        logger.error.assert_called_once()
-        logger.debug.assert_called_once()
+        if not (sys.version_info.major == 3 and sys.version_info.minor == 5):
+            # These assertion methods are not available in Python 3.5
+            logger.error.assert_called_once()
+            logger.debug.assert_called_once()
         # Make sure we have correct logging params / number of params:
         logger.error.call_args[0][0]%logger.error.call_args[0][1:]
         logger.debug.call_args[0][0]%logger.debug.call_args[0][1:]
