@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 3.1.2 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 3.2 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -747,6 +747,33 @@ and request will increase by a factor of this amount.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="pdpyras.PDSession.stagger_cooldown">
+<em class="property">property </em><code class="sig-name descname">stagger_cooldown</code><a class="headerlink" href="#pdpyras.PDSession.stagger_cooldown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Randomizing factor for wait times between retries during rate limiting.</p>
+<p>If set to number greater than 0, the sleep time for rate limiting will
+(for each successive sleep) be adjusted by a factor of one plus a
+uniformly-distributed random number between 0 and 1 times this number,
+on top of the base sleep timer <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a>.</p>
+<p>For example:</p>
+<ul class="simple">
+<li><p>If this is 1, and <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a> is 2 (default), then after
+each status 429 response, the sleep time will change overall by a
+random factor between 2 and 4, whereas if it is zero, it will change
+by a factor of 2.</p></li>
+<li><p>If <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a> is 1, then the cooldown time will be
+adjusted by a random factor between one and one plus this number.</p></li>
+</ul>
+<p>If the number is set to zero, then this behavior is effectively
+disabled, and the cooldown factor (by which the sleep time is adjusted)
+will just be <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a></p>
+<p>Setting this to a nonzero number helps avoid the “thundering herd”
+effect that can potentially be caused by many API clients making
+simultaneous concurrent API requests and consequently waiting for the
+same amount of time before retrying.  It is currently zero by default
+for consistent behavior with previous versions.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="pdpyras.PDSession.trunc_key">
 <em class="property">property </em><code class="sig-name descname">trunc_key</code><a class="headerlink" href="#pdpyras.PDSession.trunc_key" title="Permalink to this definition">¶</a></dt>
 <dd><p>Truncated key for secure display/identification purposes.</p>
@@ -941,7 +968,7 @@ to <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpy
 <dl class="method">
 <dt id="pdpyras.APISession.postprocess">
 <code class="sig-name descname">postprocess</code><span class="sig-paren">(</span><em class="sig-param">response</em>, <em class="sig-param">suffix=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.postprocess" title="Permalink to this definition">¶</a></dt>
-<dd><p>Records performance information about the API call.</p>
+<dd><p>Records performance information / request metadata about the API call.</p>
 <p>This method is called automatically by <code class="xref py py-func docutils literal notranslate"><span class="pre">request()</span></code> for all requests,
 and can be extended in child classes.</p>
 <dl class="field-list simple">
@@ -1205,6 +1232,11 @@ of the given resource.</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="pdpyras.random">
+<code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">random</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; x in the interval [0, 1).<a class="headerlink" href="#pdpyras.random" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
 <dt id="pdpyras.resource_envelope">
 <code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">resource_envelope</code><span class="sig-paren">(</span><em class="sig-param">method</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.resource_envelope" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convenience and consistency decorator for HTTP verb functions.</p>
@@ -1295,6 +1327,13 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </div>
 <div class="section" id="changelog">
 <h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<p><strong>2019-10-31: version 3.2</strong></p>
+<ul class="simple">
+<li><p>The page size (<code class="docutils literal notranslate"><span class="pre">limit</span></code>) parameter can now be set on a per-call basis in any of the <code class="docutils literal notranslate"><span class="pre">*_all</span></code> methods (i.e. <code class="xref py py-attr docutils literal notranslate"><span class="pre">PDSession.iter_all</span></code>) by passing the <code class="docutils literal notranslate"><span class="pre">page_size</span></code> keyword argument. If the argument is not present, the default page size will be used.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">X-Request-Id</span></code> header in responses is now captured in log messages to make it easier to identify API calls when communicating with PagerDuty Support</p></li>
+<li><p>Extended API call metadata is also now logged.</p></li>
+<li><p>The cooldown time between rate limit responses can optionally be randomized by setting <a class="reference internal" href="#pdpyras.PDSession.stagger_cooldown" title="pdpyras.PDSession.stagger_cooldown"><code class="xref py py-attr docutils literal notranslate"><span class="pre">PDSession.stagger_cooldown</span></code></a> to a positive number.</p></li>
+</ul>
 <p><strong>2019-10-01: version 3.1.2</strong></p>
 <ul class="simple">
 <li><p>Fixed regression bug / departure from documentation (#17): the <code class="docutils literal notranslate"><span class="pre">payload</span></code> parameter does not merge with but rather completely replaces the default payload</p></li>

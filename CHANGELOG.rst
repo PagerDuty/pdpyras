@@ -1,3 +1,10 @@
+**2019-10-31: version 3.2**
+
+* The page size (``limit``) parameter can now be set on a per-call basis in any of the ``*_all`` methods (i.e. :attr:`PDSession.iter_all`) by passing the ``page_size`` keyword argument. If the argument is not present, the default page size will be used.
+* The ``X-Request-Id`` header in responses is now captured in log messages to make it easier to identify API calls when communicating with PagerDuty Support
+* Extended API call metadata is also now logged.
+* The cooldown time between rate limit responses can optionally be randomized by setting :attr:`PDSession.stagger_cooldown` to a positive number.
+
 **2019-10-01: version 3.1.2**
 
 * Fixed regression bug / departure from documentation (#17): the ``payload`` parameter does not merge with but rather completely replaces the default payload
