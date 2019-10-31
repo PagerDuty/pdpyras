@@ -7,6 +7,7 @@ import sys
 import time
 import warnings
 from copy import deepcopy
+from random import random
 
 import requests
 from urllib3.connection import ConnectionError as Urllib3Error
@@ -17,7 +18,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '3.1.2'
+__version__ = '3.2'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -376,6 +377,9 @@ class PDSession(requests.Session):
     def api_key(self, api_key):
         self.set_api_key(api_key)
 
+    def cooldown_factor(self):
+        return self.sleep_timer_base*(1+self.stagger_cooldown*random())
+
     def postprocess(self, response):
         """
         Perform supplemental actions immediately after receiving a response.
@@ -439,11 +443,12 @@ class PDSession(requests.Session):
                     raise PDClientError("Non-transient network error; exceeded "
                         "maximum number of attempts (%d) to connect to the "
                         "API"%self.max_network_attempts)
-                sleep_timer *= self.sleep_timer_base
+                sleep_timer *= self.cooldown_factor()
                 self.log.debug("Connection error: %s; retrying in %g seconds.",
                     e, sleep_timer)
                 time.sleep(sleep_timer)
                 continue
+
             status = response.status_code
             retry_logic = self.retry.get(status, 0)
             if not response.ok and retry_logic != 0:
@@ -463,13 +468,13 @@ class PDSession(requests.Session):
                     status, sleep_timer)
                 time.sleep(sleep_timer)
                 continue
-            elif response.status_code == 429:
+            elif status == 429:
                 sleep_timer *= self.sleep_timer_base
                 self.log.debug("Hit API rate limit (response status 429); "
                     "retrying in %g seconds", sleep_timer)
                 time.sleep(sleep_timer)
                 continue
-            elif response.status_code == 401:
+            elif status == 401:
                 # Stop. Authentication failed. We shouldn't try doing any more,
                 # because we'll run into problems later anyway.
                 raise PDClientError(
@@ -491,6 +496,47 @@ class PDSession(requests.Session):
         set this property.
         """
         self._api_key =  api_key
+
+    @property
+    def stagger_cooldown(self):
+        """
+        Randomizing factor for wait times between retries during rate limiting.
+
+        If set to number greater than 0, the sleep time for rate limiting will
+        (for each successive sleep) be adjusted by a factor of one plus a
+        uniformly-distributed random number between 0 and 1 times this number,
+        on top of the base sleep timer :attr:`sleep_timer_base`.
+
+        For example:
+
+        * If this is 1, and :attr:`sleep_timer_base` is 2 (default), then after
+          each status 429 response, the sleep time will change overall by a
+          random factor between 2 and 4, whereas if it is zero, it will change
+          by a factor of 2.
+        * If :attr:`sleep_timer_base` is 1, then the cooldown time will be
+          adjusted by a random factor between one and one plus this number.
+
+        If the number is set to zero, then this behavior is effectively
+        disabled, and the cooldown factor (by which the sleep time is adjusted)
+        will just be :attr:`sleep_timer_base`
+
+        Setting this to a nonzero number helps avoid the "thundering herd"
+        effect that can potentially be caused by many API clients making
+        simultaneous concurrent API requests and consequently waiting for the
+        same amount of time before retrying.  It is currently zero by default
+        for consistent behavior with previous versions.
+        """
+        if hasattr(self, '_stagger_cooldown'):
+            return self._stagger_cooldown
+        else:
+            return 0
+
+    @stagger_cooldown.setter
+    def stagger_cooldown(self, val):
+        if type(val) not in [float, int] or val<0:
+            raise ValueError("Cooldown randomization factor stagger_cooldown "
+                "must be a positive real number") 
+        self._stagger_cooldown = val
 
     @property
     def trunc_key(self):
@@ -944,7 +990,7 @@ class APISession(PDSession):
 
     def postprocess(self, response, suffix=None):
         """
-        Records performance information about the API call.
+        Records performance information / request metadata about the API call.
 
         This method is called automatically by :func:`request` for all requests,
         and can be extended in child classes.
@@ -959,12 +1005,29 @@ class APISession(PDSession):
         :type response: `requests.Response`_
         :type suffix: str or None
         """
-        key = self.profiler_key(response.request.method, response.url,
-            suffix=suffix)
+        method = response.request.method
+        request_date = response.headers.get('date', '(missing header)')
+        request_id = response.headers.get('x-request-id', '(missing header)')
+        request_time = response.elapsed.total_seconds()
+        status = response.status_code
+        url = response.url
+
+        key = self.profiler_key(method, url, suffix=suffix)
         self.api_call_counts.setdefault(key, 0)
         self.api_time.setdefault(key, 0.0)
         self.api_call_counts[key] += 1
-        self.api_time[key] += response.elapsed.total_seconds()
+        self.api_time[key] += request_time
+
+        # Request ID / timestamp logging
+        self.log.debug("Request completed: #method=%s|#url=%s|#status=%d|"
+            "#x_request_id=%s|#date=%s|#wall_time_s=%g", method, url, status,
+            request_id, request_date, request_time)
+        if int(status/100) == 5:
+            request_id = response.headers['x-request-id']
+            self.log.error("PagerDuty API server error (%d)! "
+                "For additional diagnostics, contact PagerDuty support "
+                "and reference x_request_id=%s / date=%s",
+                status, request_id, request_date)
 
     def prepare_headers(self, method):
         headers = deepcopy(self.headers)

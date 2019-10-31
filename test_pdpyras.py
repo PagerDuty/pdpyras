@@ -48,12 +48,15 @@ class Response(object):
         self.status_code = code
         self.text = text
         self.ok = code < 400
+        self.headers = MagicMock()
         if url:
             self.url = url
         else:
             self.url = 'https://api.pagerduty.com/resource/id'
         self.elapsed = datetime.timedelta(0,1.5)
         self.request = MagicMock()
+        self.headers = {'date': 'somedate',
+            'x-request-id': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'}
         self.request.method = method
         self.json = MagicMock()
         self.json.return_value = json.loads(text)
@@ -199,6 +202,7 @@ class APISessionTest(SessionTest):
         self.assertRaises(pdpyras.PDClientError, list, sess.iter_all(weirdurl))
 
     def test_postprocess(self):
+        logger = MagicMock()
         response = Response(201, json.dumps({'key':'value'}), method='POST')
         response.url = 'https://api.pagerduty.com/users/PCWKOPZ/contact_methods'
         sess = pdpyras.APISession('apikey')
@@ -218,6 +222,18 @@ class APISessionTest(SessionTest):
         # Individual resource access endpoint
         self.assertEqual(1, sess.api_call_counts['get:users/{id}'])
         self.assertEqual(1.5, sess.api_time['get:users/{id}'])
+        response = Response(500, json.dumps({'key': 'value'}), method='GET')
+        response.url = 'https://api.pagerduty.com/users/PCWKOPZ/contact_methods'
+        sess = pdpyras.APISession('apikey')
+        sess.log = logger
+        sess.postprocess(response)
+        if not (sys.version_info.major == 3 and sys.version_info.minor == 5):
+            # These assertion methods are not available in Python 3.5
+            logger.error.assert_called_once()
+            logger.debug.assert_called_once()
+        # Make sure we have correct logging params / number of params:
+        logger.error.call_args[0][0]%logger.error.call_args[0][1:]
+        logger.debug.call_args[0][0]%logger.debug.call_args[0][1:]
 
     def test_raise_on_error(self):
         self.assertRaises(pdpyras.PDClientError, pdpyras.raise_on_error,
@@ -380,7 +396,6 @@ class APISessionTest(SessionTest):
                 sess.log = MagicMock()
                 r = sess.get('/users/P123456')
                 self.assertEqual(404, r.status_code)
-
 
     def test_resource_envelope(self):
         do_http_things = MagicMock()
