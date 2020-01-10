@@ -1,3 +1,7 @@
+**2020-01-10: version 3.2.1**
+
+* Fixed bug in :attr:`APISession.trunc_token`; property name typo causes ``AttributeError``
+
 **2019-10-31: version 3.2**
 
 * The page size (``limit``) parameter can now be set on a per-call basis in any of the ``*_all`` methods (i.e. :attr:`PDSession.iter_all`) by passing the ``page_size`` keyword argument. If the argument is not present, the default page size will be used.
