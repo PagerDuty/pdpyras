@@ -529,6 +529,10 @@ class APISessionTest(SessionTest):
         self.assertEqual('something', sess.subdomain)
         rget.assert_called_once_with('users', params={'limit':1})
 
+    def test_truncated_token(self):
+        sess = pdpyras.APISession('abcd1234')
+        self.assertEqual('*1234', sess.trunc_token)
+
 class APIUtilsTest(unittest.TestCase):
 
     def test_tokenize_url_path(self):
