@@ -1133,7 +1133,7 @@ class APISession(PDSession):
     @property
     def trunc_token(self):
         """Truncated token for secure display/identification purposes."""
-        return last_4(self.token)
+        return last_4(self.api_key)
 
 class PDClientError(Exception): 
     """
