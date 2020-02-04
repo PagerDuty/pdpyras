@@ -189,6 +189,31 @@ PagerDuty account:
     # PUT the updated list back up to the API
     updated_incidents = session.rput('incidents', json=incidents)
 
+Using an OAuth 2 Access Token to Authenticate
+*********************************************
+
+When using an OAuth2 token, include the keyword argument ``auth_type='oauth2'``
+or ``auth_type='bearer'`` to the constructor. This tells the client to set the
+``Authorization`` header appropriately in order to use this type of API
+credential.
+
+Example:
+
+::
+
+    from pdpyras import APISession
+    session = APISession(oauth_token_here, auth_type='oauth2')
+
+Note, obtaining an access token via the OAuth 2 flow is outside the purview of
+an API client, and should be performed separately by your application.
+
+For further information on OAuth 2 authentication with PagerDuty, refer to the
+official documentation:
+
+* `OAuth 2 Functionality <https://v2.developer.pagerduty.com/docs/oauth-2-functionality>`
+* `OAuth 2: PKCE Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-pkce>`
+* `OAuth 2: Authorization Code Grant Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-client-secret>`
+
 General Concepts
 ****************
 In all cases, when sending or receiving data through the REST API using
@@ -231,7 +256,7 @@ request and response bodies, while the API client takes care of everything else.
 
   - To get the response body as a ``dict`` (or ``list``, if applicable), call 
     the `json
-    <http://docs.python-requests.org/en/master/api/#requests.Response.json>`_
+    <https://2.python-requests.org/en/master/api/#requests.Response.json>`_
     method of the response object.
 
   - If using the ``r{VERB}`` methods, i.e.  ``rget``, the return value will be
@@ -636,10 +661,10 @@ in the commit message.
 .. _make: https://www.gnu.org/software/make/
 .. _pagination: https://v2.developer.pagerduty.com/docs/pagination
 .. _pypd: https://github.com/PagerDuty/pagerduty-api-python-client/
-.. _Requests: http://docs.python-requests.org/en/master/
-.. _requests.Response: http://docs.python-requests.org/en/master/api/#requests.Response
-.. _requests.Session: http://docs.python-requests.org/en/master/api/#request-sessions
-.. _requests.Session.request: http://docs.python-requests.org/en/master/api/#requests.Session.request
+.. _Requests: https://2.python-requests.org/en/master/
+.. _requests.Response: https://2.python-requests.org/en/master/api/#requests.Response
+.. _requests.Session: https://2.python-requests.org/en/master/api/#request-sessions
+.. _requests.Session.request: https://2.python-requests.org/en/master/api/#requests.Session.request
 .. _`resource index`: https://v2.developer.pagerduty.com/docs/endpoints#resources-index
 .. _`REST API Reference`: https://api-reference.pagerduty.com/#!/API_Reference/get_api_reference
 .. _`setuptools`: https://pypi.org/project/setuptools/
