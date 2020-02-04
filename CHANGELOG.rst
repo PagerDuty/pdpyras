@@ -1,3 +1,8 @@
+**2020-02-04: Version 4.0**
+
+* Added support for using OAuth 2 access tokens to authenticate (`#23 <https://github.com/PagerDuty/pdpyras/issues/23>`)
+* Added a property that indicates the access level/scope of a given API credential (`#22 <https://github.com/PagerDuty/pdpyras/issues/22>`)
+
 **2020-01-10: version 3.2.1**
 
 * Fixed bug in :attr:`APISession.trunc_token`; property name typo causes ``AttributeError``

@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>Index &#8212; PagerDuty Python REST API Sessions 3.2.1 documentation</title>
+    <title>Index &#8212; PagerDuty Python REST API Sessions 4.0 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -55,15 +55,33 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#pdpyras.EventsAPISession.acknowledge">acknowledge() (pdpyras.EventsAPISession method)</a>
 </li>
+      <li><a href="index.html#pdpyras.APISession.after_set_api_key">after_set_api_key() (pdpyras.APISession method)</a>
+
+      <ul>
+        <li><a href="index.html#pdpyras.PDSession.after_set_api_key">(pdpyras.PDSession method)</a>
+</li>
+      </ul></li>
       <li><a href="index.html#pdpyras.APISession.api_call_counts">api_call_counts (pdpyras.APISession attribute)</a>
 </li>
       <li><a href="index.html#pdpyras.PDSession.api_key">api_key() (pdpyras.PDSession property)</a>
+</li>
+      <li><a href="index.html#pdpyras.PDSession.api_key_access">api_key_access() (pdpyras.PDSession property)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#pdpyras.APISession.api_time">api_time (pdpyras.APISession attribute)</a>
 </li>
       <li><a href="index.html#pdpyras.APISession">APISession (class in pdpyras)</a>
+</li>
+      <li><a href="index.html#pdpyras.APISession.auth_header">auth_header() (pdpyras.APISession property)</a>
+
+      <ul>
+        <li><a href="index.html#pdpyras.EventsAPISession.auth_header">(pdpyras.EventsAPISession property)</a>
+</li>
+        <li><a href="index.html#pdpyras.PDSession.auth_header">(pdpyras.PDSession property)</a>
+</li>
+      </ul></li>
+      <li><a href="index.html#pdpyras.APISession.auth_type">auth_type() (pdpyras.APISession property)</a>
 </li>
       <li><a href="index.html#pdpyras.auto_json">auto_json() (in module pdpyras)</a>
 </li>
@@ -213,18 +231,12 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#pdpyras.EventsAPISession.send_event">send_event() (pdpyras.EventsAPISession method)</a>
 </li>
-      <li><a href="index.html#pdpyras.APISession.set_api_key">set_api_key() (pdpyras.APISession method)</a>
-
-      <ul>
-        <li><a href="index.html#pdpyras.EventsAPISession.set_api_key">(pdpyras.EventsAPISession method)</a>
+      <li><a href="index.html#pdpyras.PDSession.set_api_key">set_api_key() (pdpyras.PDSession method)</a>
 </li>
-        <li><a href="index.html#pdpyras.PDSession.set_api_key">(pdpyras.PDSession method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#pdpyras.PDSession.sleep_timer">sleep_timer (pdpyras.PDSession attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#pdpyras.PDSession.sleep_timer_base">sleep_timer_base (pdpyras.PDSession attribute)</a>
 </li>
       <li><a href="index.html#pdpyras.PDSession.stagger_cooldown">stagger_cooldown() (pdpyras.PDSession property)</a>
@@ -260,10 +272,6 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#pdpyras.APISession.url">url (pdpyras.APISession attribute)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#pdpyras.PDSession.user_agent">user_agent() (pdpyras.PDSession property)</a>
 </li>
   </ul></td>
 </tr></table>
