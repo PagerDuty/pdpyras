@@ -364,6 +364,14 @@ class PDSession(requests.Session):
             self.__class__.__name__, my_name))
         self.retry = {}
 
+    def after_set_api_key(self):
+        """
+        Setter hook for setting or updating the API key.
+
+        Child classes should implement this to perform additional steps.
+        """
+        pass
+
     @property
     def api_key(self):
         """
@@ -375,7 +383,18 @@ class PDSession(requests.Session):
 
     @api_key.setter
     def api_key(self, api_key):
-        self.set_api_key(api_key)
+        if not (isinstance(api_key, string_types) and api_key):
+            raise ValueError("API credential must be a non-empty string.")
+        self._api_key = api_key
+        self.headers.update(self.auth_header)
+        self.after_set_api_key()
+
+    @property
+    def auth_header(self):
+        """
+        Generates the header with the API credential used for authentication.
+        """
+        raise NotImplementedError
 
     def cooldown_factor(self):
         return self.sleep_timer_base*(1+self.stagger_cooldown*random())
@@ -487,15 +506,18 @@ class PDSession(requests.Session):
 
     def set_api_key(self, api_key):
         """
-        Set the API key/token.
+        (Deprecated) set the API key/token.
 
-        Child classes should implement this method to do special things like
-        setting default headers.
-
-        The getter will return the value of self._api_key, so any setters should
-        set this property.
+        :param api_key:
+            The API key to use
+        :type api_key: str
         """
-        self._api_key =  api_key
+        raise DeprecationWarning("This method is deprecated. Please use the "
+            "object setter directly (i.e. session.api_key = <value>) or "
+            "implement the after_set_api_key method in a child class of "
+            "PDSession to define a hook that runs when the API credential is "
+            "changed.")
+        self.api_key = api_key
 
     @property
     def stagger_cooldown(self):
@@ -566,6 +588,10 @@ class EventsAPISession(PDSession):
     permitted_methods = ('POST',)
 
     url = "https://events.pagerduty.com"
+
+    @property
+    def auth_header(self):
+        return {'X-Routing-Key': self.api_key}
 
     def acknowledge(self, dedup_key):
         """
@@ -695,19 +721,6 @@ class EventsAPISession(PDSession):
             event['links'] = links
         return self.send_event('trigger', dedup_key=dedup_key, **event)
 
-    def set_api_key(self, api_key):
-        """
-        Sets the routing key in the ``X-Routing-Key`` header.
-
-        :param api_key:
-            The routing key to use for this session.
-        :type api_key: str
-        """
-        self._api_key = api_key
-        self.headers.update({
-            'X-Routing-Key': api_key,
-        })
-
 class APISession(PDSession):
     """
     Reusable PagerDuty REST API session objects for making API requests.
@@ -753,16 +766,42 @@ class APISession(PDSession):
     url = 'https://api.pagerduty.com'
     """Base URL of the REST API"""
 
-    def __init__(self, api_key, name=None, default_from=None):
-        if not (isinstance(api_key, string_types) and api_key):
-            raise ValueError("API token must be a non-empty string.")
+    def __init__(self, api_key, name=None, default_from=None,
+            auth_type='token'):
         self.api_call_counts = {}
         self.api_time = {}
+        self.auth_type = auth_type
         super(APISession, self).__init__(api_key, name)
         self.default_from = default_from
         self.headers.update({
             'Accept': 'application/vnd.pagerduty+json;version=2',
         })
+
+    def after_set_api_key(self):
+        self._subdomain = None
+
+    @property
+    def auth_type(self):
+        """
+        Defines the method of API authentication. 
+
+        By default this is "token"; if "oauth2", the API key will be used.
+        """
+        return self._auth_type
+
+    @auth_type.setter
+    def auth_type(self, value):
+        if value not in ('token', 'bearer', 'oauth2'):
+            raise AttributeError("auth_type value must be \"token\" (default) "
+                "or \"bearer\" or \"oauth\" to use OAuth2 authentication.")
+        self._auth_type = value
+
+    @property
+    def auth_header(self):
+        if self.auth_type in ('bearer', 'oauth2'):
+            return {"Authorization": "Bearer "+self.api_key}
+        else:
+            return {"Authorization": "Token token="+self.api_key}
 
     def dict_all(self, path, **kw):
         """
@@ -792,7 +831,6 @@ class APISession(PDSession):
         by = kw.pop('by', 'id')
         iterator = self.iter_all(path, **kw)
         return {obj[by]:obj for obj in iterator}
-
 
     def find(self, resource, query, attribute='name', params=None):
         """
@@ -1095,13 +1133,6 @@ class APISession(PDSession):
         :param \*\*kw: Keyword arguments to pass to ``requests.Session.put``
         """
         return self.put(path, **kw)
-
-    def set_api_key(self, api_key):
-        self._api_key = api_key
-        self._subdomain = None
-        self.headers.update({
-            'Authorization': 'Token token='+api_key,
-        })
 
     @property
     def subdomain(self):

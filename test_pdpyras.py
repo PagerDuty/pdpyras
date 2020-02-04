@@ -127,6 +127,15 @@ class APISessionTest(SessionTest):
         sess.log.addHandler(sh)
         sess.log.setLevel(logging.DEBUG)
 
+    def test_oauth_headers(self):
+        secret = 'randomly generated lol'
+        for authtype in 'oauth2', 'bearer':
+            sess = pdpyras.APISession(secret, auth_type=authtype)
+            self.assertEqual(
+                sess.headers['Authorization'],
+                "Bearer "+secret
+            )
+
     def test_profiler_key(self):
         sess = pdpyras.APISession('token')
         self.assertEqual(
