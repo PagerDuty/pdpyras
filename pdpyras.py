@@ -18,7 +18,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '3.2.1'
+__version__ = '4.0'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -453,7 +453,7 @@ class PDSession(requests.Session):
             base URL will be prepended.
         :param \*\*kwargs:
             Additional keyword arguments to pass to `requests.Session.request
-            <http://docs.python-requests.org/en/master/api/#requests.Session.request>`_
+            <https://2.python-requests.org/en/master/api/#requests.Session.request>`_
         :type method: str
         :type url: str
         :returns: the HTTP response object
@@ -594,7 +594,6 @@ class PDSession(requests.Session):
 
     @property
     def user_agent(self):
-        """Unique user-agent header for making requests"""
         return 'pdpyras/%s python-requests/%s Python/%d.%d'%(
             __version__,
             requests.__version__,

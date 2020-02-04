@@ -210,9 +210,9 @@ an API client, and should be performed separately by your application.
 For further information on OAuth 2 authentication with PagerDuty, refer to the
 official documentation:
 
-* `OAuth 2 Functionality <https://v2.developer.pagerduty.com/docs/oauth-2-functionality>`
-* `OAuth 2: PKCE Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-pkce>`
-* `OAuth 2: Authorization Code Grant Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-client-secret>`
+* `OAuth 2 Functionality <https://v2.developer.pagerduty.com/docs/oauth-2-functionality>`_
+* `OAuth 2: PKCE Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-pkce>`_
+* `OAuth 2: Authorization Code Grant Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-client-secret>`_
 
 General Concepts
 ****************
