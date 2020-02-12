@@ -93,6 +93,23 @@ jobs:
       - run:
           <<: *test
 
+  py3_8:
+    docker:
+      - image: circleci/python:3.8-stretch
+    steps:
+      - checkout
+      - run:
+          <<: *pip
+      - run:
+          <<: *venv
+      - run:
+          <<: *getenv
+      - run:
+          <<: *depinst
+      - run:
+          <<: *test
+
+
 workflows: 
   version: 2.1
   run_tests:
@@ -101,4 +118,5 @@ workflows:
       - py3_5
       - py3_6
       - py3_7
+      - py3_8
 
