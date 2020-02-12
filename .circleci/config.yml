@@ -31,7 +31,7 @@ jobs:
 
   py2_7:
     docker:
-      - image: circleci/python:2.7-stretch
+      - image: circleci/python:2.7-buster
     steps:
       - checkout
       - run:
@@ -47,7 +47,7 @@ jobs:
 
   py3_5:
     docker:
-      - image: circleci/python:3.5-stretch
+      - image: circleci/python:3.5-buster
     steps:
       - checkout
       - run:
@@ -63,7 +63,7 @@ jobs:
 
   py3_6:
     docker:
-      - image: circleci/python:3.6-stretch
+      - image: circleci/python:3.6-buster
     steps:
       - checkout
       - run:
@@ -79,7 +79,7 @@ jobs:
 
   py3_7:
     docker:
-      - image: circleci/python:3.7-stretch
+      - image: circleci/python:3.7-buster
     steps:
       - checkout
       - run:
@@ -95,7 +95,7 @@ jobs:
 
   py3_8:
     docker:
-      - image: circleci/python:3.8-stretch
+      - image: circleci/python:3.8-buster
     steps:
       - checkout
       - run:
