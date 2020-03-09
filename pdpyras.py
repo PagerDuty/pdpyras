@@ -306,7 +306,7 @@ class PDSession(requests.Session):
     upon receiving a HTTP error.
     """
 
-    retry = None
+    retry = {}
     """
     A dict defining the retry behavior for each HTTP response status code.
 
@@ -362,7 +362,6 @@ class PDSession(requests.Session):
             my_name = self.trunc_key
         self.log = logging.getLogger('pdpyras.%s(%s)'%(
             self.__class__.__name__, my_name))
-        self.retry = {}
 
     def after_set_api_key(self):
         """
