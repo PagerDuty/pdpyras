@@ -210,6 +210,22 @@ class APISessionTest(SessionTest):
         sess.raise_if_http_error = True
         self.assertRaises(pdpyras.PDClientError, list, sess.iter_all(weirdurl))
 
+    @patch.object(pdpyras.APISession, 'rpost')
+    @patch.object(pdpyras.APISession, 'iter_all')
+    def test_persist(self, iterator, creator):
+        user = {
+            "name": "User McUserson",
+            "email": "user@organization.com",
+            "type": "user"
+        }
+        iterator.return_value = iter([user])
+        sess = pdpyras.APISession('apiKey')
+        sess.persist('users', 'email', user)
+        creator.assert_not_called()
+        iterator.return_value = iter([])
+        sess.persist('users', 'email', user)
+        creator.assert_called_with('users', json=user)
+
     def test_postprocess(self):
         logger = MagicMock()
         response = Response(201, json.dumps({'key':'value'}), method='POST')

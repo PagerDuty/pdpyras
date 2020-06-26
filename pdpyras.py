@@ -1052,6 +1052,39 @@ class APISession(PDSession):
         """
         return list(self.iter_all(path, **kw))
 
+    def persist(self, resource, attr, values):
+        """
+        Finds or creates and returns a resource matching an idempotency key.
+
+        Given a resource name, an attribute to use as an idempotency key and a
+        set of attribute:value pairs as a dict, create a resource with the
+        specified attributes if it doesn't exist already and return the resource
+        persisted via the API (whether or not it already existed).
+
+        :param resource:
+            The resource name. Must be a valid API resource that is supported by
+            the ``r*`` methods; see :ref:`Supported Endpoints`.
+        :param attr:
+            Name of the attribute to use as the idempotency key. For instance,
+            "email" when the resource is "users" will not create the user if a
+            user with the email address given in ``values`` already exists.
+        :param values:
+            The content of the resource to be created, if it does not already
+            exist. This must contain an item with a key that is the same as the
+            ``attr`` argument.
+        :type resource: str
+        :type attr: str
+        :type values: dict
+        :rtype: dict
+        """
+        if attr not in values:
+            raise ValueError("Argument `values` must contain a key equal "
+                "to the `attr` argument (expected idempotency key: '%s')."%attr)
+        existing = self.find(resource, values[attr], attribute=attr)
+        if existing:
+            return existing
+        return self.rpost(resource, json=values)
+
     def postprocess(self, response, suffix=None):
         """
         Records performance information / request metadata about the API call.

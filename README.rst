@@ -303,12 +303,12 @@ For instance, for ``/escalation_policies/{id}`` the name must be
 ``escalation_policy``, and or for ``/users/{id}/notification_rules`` it must be
 ``notification_rules``.
 
-For example, with user sessions (one API resource/endpoint that breaks these
-rules), one will need to use the plain ``get`` and ``post`` functions, or
-``jget`` / ``jpost``, because their URLs are formatted as
-``/users/{id}/sessions/{type}/{session_id}`` and the wrapped resource property
-name is ``user_sessions`` / ``user_session`` rather than simply ``sessions`` /
-``session``.
+For example, with `user sessions <https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1users~1%7Bid%7D~1sessions/get>`_
+(one API resource/endpoint that does not follow these rules), one will need to
+use the plain ``get`` and ``post`` functions, or ``jget`` / ``jpost``, because
+their URLs are formatted as ``/users/{id}/sessions/{type}/{session_id}`` and
+the wrapped resource property name is ``user_sessions`` / ``user_session``
+rather than simply ``sessions`` / ``session``.
 
 Iteration
 +++++++++
@@ -443,6 +443,25 @@ user the admin role and prints a message when done:
             json={'role':'admin'}
         )
         print("%s now has admin superpowers"%user['name'])
+
+Idempotent Resource Creation
+++++++++++++++++++++++++++++
+Beyond just creating a resource, :attr:`pdpyras.APISession.persist` can be used
+to perform a check for a preexisting object before creating it; it returns the
+persisted resource, whether or not the object already existed.
+
+For instance, the following will create a user having email address
+``user@organization.com`` if one does not already exist, and print that user's
+name:
+
+::
+
+    user = session.persist('users', 'email', {
+        "name": "User McUserson",
+        "email": "user@organization.com",
+        "type": "user"
+    })
+    print(user['name'])
 
 Deleting
 ++++++++
