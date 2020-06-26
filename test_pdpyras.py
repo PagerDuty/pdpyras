@@ -529,6 +529,23 @@ class APISessionTest(SessionTest):
                 '/incidents', json=incidents)
         )
 
+
+    @patch.object(pdpyras.APISession, 'put')
+    def test_resource_path(self, put_method):
+        sess = pdpyras.APISession('some-key')
+        resource_url = 'https://api.pagerduty.com/users/PSOMEUSR'
+        user = {
+            'id': 'PSOMEUSR',
+            'type': 'user',
+            'self': resource_url,
+            'name': 'User McUserson',
+            'email': 'user@organization.com'
+        }
+        put_method.return_value = Response(200, json.dumps({'user': user}),
+            method='PUT', url=resource_url)
+        sess.rput(user, json=user)
+        put_method.assert_called_with(resource_url, json={'user': user})
+
     @patch.object(pdpyras.APISession, 'get')
     def test_rget(self, get):
         response200 = Response(200, '{"user":{"type":"user_reference",'

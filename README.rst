@@ -516,6 +516,39 @@ incidents require the ``From`` header, which should be the login email address
 of a valid PagerDuty user. To set this, pass it through using the ``headers``
 keyword argument, or set the :attr:`pdpyras.APISession.default_from` property.
 
+Using Resources in Place of URLs
+++++++++++++++++++++++++++++++++
+As of version 4.1, one may send the dictionary representation of a resource to
+any of the ``r*`` methods, with the exception of ``rpost``, in place of a URL
+or path. The dictionary must contain a ``self`` item that is the URL of the
+resource.
+
+This eliminates the need to construct the resource's path/URL, or to keep a
+temporary variable with the URL needed for accessing the object.
+
+For instance, to reload a service object previously fetched from the API, i.e.
+to ensure one has the latest data for that resource:
+
+::
+
+    user = session.rget('users/PSOMEUSR')
+
+    # Do things that take a lot of time during which the user might change
+    # ...
+
+    # Reload the user:
+    user = session.rget(user)
+    # as opposed to:
+    # user = session.rget('users/PSOMEUSR')
+
+Another example: to delete a service:
+
+::
+
+    session.rdelete(service)
+    # as opposed to:
+    # session.rdelete(service['self'])
+
 Error Handling
 **************
 What happens when, for any of the ``r*`` methods, the API responds with a

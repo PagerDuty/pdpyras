@@ -1,6 +1,7 @@
 **2020-06-26: Version 4.1**
 
 * Added new idempotent resource creator function, :attr:`APISession.persist`
+* Added the ability to use resource dictionaries (that have a ``self`` attribute) in place of URLs.
 
 **2020-02-04: Version 4.0**
 
