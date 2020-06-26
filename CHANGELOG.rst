@@ -1,3 +1,7 @@
+**2020-06-26: Version 4.1**
+
+* Added new idempotent resource creator function, :attr:`APISession.persist`
+
 **2020-02-04: Version 4.0**
 
 * Added support for using OAuth 2 access tokens to authenticate (`#23 <https://github.com/PagerDuty/pdpyras/issues/23>`_)
