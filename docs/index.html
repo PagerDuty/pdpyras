@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 4.0 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 4.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -47,7 +47,7 @@ REST API and events API.</p>
 <p>It takes care of all of the most common prerequisites and necessities
 pertaining to accessing the API so that implementers can focus on the request
 and response body schemas of each particular resource (as documented in our
-<a class="reference external" href="https://api-reference.pagerduty.com/#!/API_Reference/get_api_reference">REST API Reference</a>) and do what they need to get done.</p>
+<a class="reference external" href="https://developer.pagerduty.com/api-reference/">REST API Reference</a>) and do what they need to get done.</p>
 <div class="section" id="features">
 <h3>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
@@ -246,7 +246,7 @@ out the API base URL.</p></li>
 <h4>Request and Response Bodies<a class="headerlink" href="#request-and-response-bodies" title="Permalink to this headline">¶</a></h4>
 <p>Note that when working with the REST API using <code class="docutils literal notranslate"><span class="pre">pdpyras.APISession</span></code>, the
 implementer is not insulated from having to work directly with the schemas of
-requests and responses. Rather, one must follow the <a class="reference external" href="https://api-reference.pagerduty.com/#!/API_Reference/get_api_reference">REST API Reference</a> which
+requests and responses. Rather, one must follow the <a class="reference external" href="https://developer.pagerduty.com/api-reference/">REST API Reference</a> which
 documents the schemas at length, and construct/access objects representing the
 request and response bodies, while the API client takes care of everything else.</p>
 <ul class="simple">
@@ -289,7 +289,7 @@ to the documentation provided by the Requests project.</p>
 <h3>Data Access Abstraction<a class="headerlink" href="#data-access-abstraction" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">APISession</span></code> class, in addition to providing a more convenient way of
 making the HTTP requests to the API, provides methods that yield/return dicts
-representing the PagerDuty objects with their defined schemas (see: <a class="reference external" href="https://api-reference.pagerduty.com/#!/API_Reference/get_api_reference">REST API
+representing the PagerDuty objects with their defined schemas (see: <a class="reference external" href="https://developer.pagerduty.com/api-reference/">REST API
 Reference</a>) without needing to go through enclosing them in a data envelope.</p>
 <p>In other words, in the process of getting from an API call to the object
 representing the desired result, all of the following are taken care of:</p>
@@ -309,12 +309,12 @@ alternate between resource type and ID.</p>
 <p>For instance, for <code class="docutils literal notranslate"><span class="pre">/escalation_policies/{id}</span></code> the name must be
 <code class="docutils literal notranslate"><span class="pre">escalation_policy</span></code>, and or for <code class="docutils literal notranslate"><span class="pre">/users/{id}/notification_rules</span></code> it must be
 <code class="docutils literal notranslate"><span class="pre">notification_rules</span></code>.</p>
-<p>For example, with user sessions (one API resource/endpoint that breaks these
-rules), one will need to use the plain <code class="docutils literal notranslate"><span class="pre">get</span></code> and <code class="docutils literal notranslate"><span class="pre">post</span></code> functions, or
-<code class="docutils literal notranslate"><span class="pre">jget</span></code> / <code class="docutils literal notranslate"><span class="pre">jpost</span></code>, because their URLs are formatted as
-<code class="docutils literal notranslate"><span class="pre">/users/{id}/sessions/{type}/{session_id}</span></code> and the wrapped resource property
-name is <code class="docutils literal notranslate"><span class="pre">user_sessions</span></code> / <code class="docutils literal notranslate"><span class="pre">user_session</span></code> rather than simply <code class="docutils literal notranslate"><span class="pre">sessions</span></code> /
-<code class="docutils literal notranslate"><span class="pre">session</span></code>.</p>
+<p>For example, with <a class="reference external" href="https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1users~1%7Bid%7D~1sessions/get">user sessions</a>
+(one API resource/endpoint that does not follow these rules), one will need to
+use the plain <code class="docutils literal notranslate"><span class="pre">get</span></code> and <code class="docutils literal notranslate"><span class="pre">post</span></code> functions, or <code class="docutils literal notranslate"><span class="pre">jget</span></code> / <code class="docutils literal notranslate"><span class="pre">jpost</span></code>, because
+their URLs are formatted as <code class="docutils literal notranslate"><span class="pre">/users/{id}/sessions/{type}/{session_id}</span></code> and
+the wrapped resource property name is <code class="docutils literal notranslate"><span class="pre">user_sessions</span></code> / <code class="docutils literal notranslate"><span class="pre">user_session</span></code>
+rather than simply <code class="docutils literal notranslate"><span class="pre">sessions</span></code> / <code class="docutils literal notranslate"><span class="pre">session</span></code>.</p>
 </div>
 <div class="section" id="iteration">
 <h4>Iteration<a class="headerlink" href="#iteration" title="Permalink to this headline">¶</a></h4>
@@ -428,6 +428,23 @@ user the admin role and prints a message when done:</p>
 </pre></div>
 </div>
 </div>
+<div class="section" id="idempotent-resource-creation">
+<h4>Idempotent Resource Creation<a class="headerlink" href="#idempotent-resource-creation" title="Permalink to this headline">¶</a></h4>
+<p>Beyond just creating a resource, <a class="reference internal" href="#pdpyras.APISession.persist" title="pdpyras.APISession.persist"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.persist</span></code></a> can be used
+to perform a check for a preexisting object before creating it; it returns the
+persisted resource, whether or not the object already existed.</p>
+<p>For instance, the following will create a user having email address
+<code class="docutils literal notranslate"><span class="pre">user&#64;organization.com</span></code> if one does not already exist, and print that user’s
+name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">persist</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="s1">&#39;email&#39;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;User McUserson&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;user@organization.com&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span>
+<span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="deleting">
 <h4>Deleting<a class="headerlink" href="#deleting" title="Permalink to this headline">¶</a></h4>
 <p>The <code class="docutils literal notranslate"><span class="pre">rdelete</span></code> method has no return value, but otherwise behaves in exactly
@@ -446,8 +463,8 @@ the API responds with a non-success HTTP status.</p>
 in multi-update actions.</p>
 <p>As of this writing, multi-update is limited to the following actions:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents">PUT /incidents</a></p></li>
-<li><p><a class="reference external" href="https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents_id_alerts">PUT /incidents/{id}/alerts</a></p></li>
+<li><p><a class="reference external" href="https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1incidents/put">PUT /incidents</a></p></li>
+<li><p><a class="reference external" href="https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1incidents~1%7Bid%7D~1alerts/put">PUT /incidents/{id}/alerts</a></p></li>
 <li><p><strong>PUT /priorities</strong> (not yet published, as of 2018-11-28)</p></li>
 </ul>
 <p><strong>Please note:</strong> as of yet, merging incidents is not supported by <code class="docutils literal notranslate"><span class="pre">rput</span></code>.
@@ -472,6 +489,34 @@ actions.</p>
 incidents require the <code class="docutils literal notranslate"><span class="pre">From</span></code> header, which should be the login email address
 of a valid PagerDuty user. To set this, pass it through using the <code class="docutils literal notranslate"><span class="pre">headers</span></code>
 keyword argument, or set the <a class="reference internal" href="#pdpyras.APISession.default_from" title="pdpyras.APISession.default_from"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.default_from</span></code></a> property.</p>
+</div>
+<div class="section" id="using-resources-in-place-of-urls">
+<h4>Using Resources in Place of URLs<a class="headerlink" href="#using-resources-in-place-of-urls" title="Permalink to this headline">¶</a></h4>
+<p>As of version 4.1, one may send the dictionary representation of a resource to
+any of the <code class="docutils literal notranslate"><span class="pre">r*</span></code> methods, with the exception of <code class="docutils literal notranslate"><span class="pre">rpost</span></code>, in place of a URL
+or path. The dictionary must contain a <code class="docutils literal notranslate"><span class="pre">self</span></code> item that is the URL of the
+resource.</p>
+<p>This eliminates the need to construct the resource’s path/URL, or to keep a
+temporary variable with the URL needed for accessing the object.</p>
+<p>For instance, to reload a service object previously fetched from the API, i.e.
+to ensure one has the latest data for that resource:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s1">&#39;users/PSOMEUSR&#39;</span><span class="p">)</span>
+
+<span class="c1"># Do things that take a lot of time during which the user might change</span>
+<span class="c1"># ...</span>
+
+<span class="c1"># Reload the user:</span>
+<span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+<span class="c1"># as opposed to:</span>
+<span class="c1"># user = session.rget(&#39;users/PSOMEUSR&#39;)</span>
+</pre></div>
+</div>
+<p>Another example: to delete a service:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">session</span><span class="o">.</span><span class="n">rdelete</span><span class="p">(</span><span class="n">service</span><span class="p">)</span>
+<span class="c1"># as opposed to:</span>
+<span class="c1"># session.rdelete(service[&#39;self&#39;])</span>
+</pre></div>
+</div>
 </div>
 </div>
 <div class="section" id="error-handling">
@@ -1030,6 +1075,33 @@ to <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpy
 </dd></dl>
 
 <dl class="method">
+<dt id="pdpyras.APISession.persist">
+<code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param">resource</em>, <em class="sig-param">attr</em>, <em class="sig-param">values</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.persist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds or creates and returns a resource matching an idempotency key.</p>
+<p>Given a resource name, an attribute to use as an idempotency key and a
+set of attribute:value pairs as a dict, create a resource with the
+specified attributes if it doesn’t exist already and return the resource
+persisted via the API (whether or not it already existed).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resource</strong> (<em>str</em>) – The resource name. Must be a valid API resource that is supported by
+the <code class="docutils literal notranslate"><span class="pre">r*</span></code> methods; see <a class="reference internal" href="#supported-endpoints"><span class="std std-ref">Supported Endpoints</span></a>.</p></li>
+<li><p><strong>attr</strong> (<em>str</em>) – Name of the attribute to use as the idempotency key. For instance,
+“email” when the resource is “users” will not create the user if a
+user with the email address given in <code class="docutils literal notranslate"><span class="pre">values</span></code> already exists.</p></li>
+<li><p><strong>values</strong> (<em>dict</em>) – The content of the resource to be created, if it does not already
+exist. This must contain an item with a key that is the same as the
+<code class="docutils literal notranslate"><span class="pre">attr</span></code> argument.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
 <dt id="pdpyras.APISession.postprocess">
 <code class="sig-name descname">postprocess</code><span class="sig-paren">(</span><em class="sig-param">response</em>, <em class="sig-param">suffix=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.postprocess" title="Permalink to this definition">¶</a></dt>
 <dd><p>Records performance information / request metadata about the API call.</p>
@@ -1339,6 +1411,17 @@ resource’s index URL</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="pdpyras.resource_path">
+<code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">resource_path</code><span class="sig-paren">(</span><em class="sig-param">method</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.resource_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>API call decorator that allows passing a resource dict as the path/URL</p>
+<p>Most resources returned by the API will contain a <code class="docutils literal notranslate"><span class="pre">self</span></code> attribute that is
+the URL of the resource itself.</p>
+<p>Using this decorator allows the implementer to pass either a URL/path or
+such a resource dictionary as the <code class="docutils literal notranslate"><span class="pre">path</span></code> argument, thus eliminating the
+need to re-construct the resource URL or hold it in a temporary variable.</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="pdpyras.tokenize_url_path">
 <code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">tokenize_url_path</code><span class="sig-paren">(</span><em class="sig-param">url</em>, <em class="sig-param">baseurl='https://api.pagerduty.com'</em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.tokenize_url_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>Classifies a URL according to some global patterns in the API.</p>
@@ -1376,6 +1459,11 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </div>
 <div class="section" id="changelog">
 <h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<p><strong>2020-06-26: Version 4.1</strong></p>
+<ul class="simple">
+<li><p>Added new idempotent resource creator function, <a class="reference internal" href="#pdpyras.APISession.persist" title="pdpyras.APISession.persist"><code class="xref py py-attr docutils literal notranslate"><span class="pre">APISession.persist</span></code></a></p></li>
+<li><p>Added the ability to use resource dictionaries (that have a <code class="docutils literal notranslate"><span class="pre">self</span></code> attribute) in place of URLs.</p></li>
+</ul>
 <p><strong>2020-02-04: Version 4.0</strong></p>
 <ul class="simple">
 <li><p>Added support for using OAuth 2 access tokens to authenticate (<a class="reference external" href="https://github.com/PagerDuty/pdpyras/issues/23">#23</a>)</p></li>
@@ -1487,8 +1575,10 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 <li><a class="reference internal" href="#disclaimers-regarding-iteration">Disclaimers Regarding Iteration</a></li>
 <li><a class="reference internal" href="#reading">Reading</a></li>
 <li><a class="reference internal" href="#creating-and-updating">Creating and Updating</a></li>
+<li><a class="reference internal" href="#idempotent-resource-creation">Idempotent Resource Creation</a></li>
 <li><a class="reference internal" href="#deleting">Deleting</a></li>
 <li><a class="reference internal" href="#managing-a-k-a-multi-updating">Managing, a.k.a. Multi-Updating</a></li>
+<li><a class="reference internal" href="#using-resources-in-place-of-urls">Using Resources in Place of URLs</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#error-handling">Error Handling</a></li>

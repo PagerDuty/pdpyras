@@ -303,12 +303,12 @@ For instance, for ``/escalation_policies/{id}`` the name must be
 ``escalation_policy``, and or for ``/users/{id}/notification_rules`` it must be
 ``notification_rules``.
 
-For example, with user sessions (one API resource/endpoint that breaks these
-rules), one will need to use the plain ``get`` and ``post`` functions, or
-``jget`` / ``jpost``, because their URLs are formatted as
-``/users/{id}/sessions/{type}/{session_id}`` and the wrapped resource property
-name is ``user_sessions`` / ``user_session`` rather than simply ``sessions`` /
-``session``.
+For example, with `user sessions <https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1users~1%7Bid%7D~1sessions/get>`_
+(one API resource/endpoint that does not follow these rules), one will need to
+use the plain ``get`` and ``post`` functions, or ``jget`` / ``jpost``, because
+their URLs are formatted as ``/users/{id}/sessions/{type}/{session_id}`` and
+the wrapped resource property name is ``user_sessions`` / ``user_session``
+rather than simply ``sessions`` / ``session``.
 
 Iteration
 +++++++++
@@ -444,6 +444,25 @@ user the admin role and prints a message when done:
         )
         print("%s now has admin superpowers"%user['name'])
 
+Idempotent Resource Creation
+++++++++++++++++++++++++++++
+Beyond just creating a resource, :attr:`pdpyras.APISession.persist` can be used
+to perform a check for a preexisting object before creating it; it returns the
+persisted resource, whether or not the object already existed.
+
+For instance, the following will create a user having email address
+``user@organization.com`` if one does not already exist, and print that user's
+name:
+
+::
+
+    user = session.persist('users', 'email', {
+        "name": "User McUserson",
+        "email": "user@organization.com",
+        "type": "user"
+    })
+    print(user['name'])
+
 Deleting
 ++++++++
 The ``rdelete`` method has no return value, but otherwise behaves in exactly
@@ -465,8 +484,8 @@ in multi-update actions.
 
 As of this writing, multi-update is limited to the following actions:
 
-* `PUT /incidents <https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents>`_
-* `PUT /incidents/{id}/alerts <https://v2.developer.pagerduty.com/v2/page/api-reference#!/Incidents/put_incidents_id_alerts>`_
+* `PUT /incidents <https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1incidents/put>`_
+* `PUT /incidents/{id}/alerts <https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1incidents~1%7Bid%7D~1alerts/put>`_
 * **PUT /priorities** (not yet published, as of 2018-11-28)
 
 **Please note:** as of yet, merging incidents is not supported by ``rput``.
@@ -496,6 +515,39 @@ It is important to note, however, that certain actions such as updating
 incidents require the ``From`` header, which should be the login email address
 of a valid PagerDuty user. To set this, pass it through using the ``headers``
 keyword argument, or set the :attr:`pdpyras.APISession.default_from` property.
+
+Using Resources in Place of URLs
+++++++++++++++++++++++++++++++++
+As of version 4.1, one may send the dictionary representation of a resource to
+any of the ``r*`` methods, with the exception of ``rpost``, in place of a URL
+or path. The dictionary must contain a ``self`` item that is the URL of the
+resource.
+
+This eliminates the need to construct the resource's path/URL, or to keep a
+temporary variable with the URL needed for accessing the object.
+
+For instance, to reload a service object previously fetched from the API, i.e.
+to ensure one has the latest data for that resource:
+
+::
+
+    user = session.rget('users/PSOMEUSR')
+
+    # Do things that take a lot of time during which the user might change
+    # ...
+
+    # Reload the user:
+    user = session.rget(user)
+    # as opposed to:
+    # user = session.rget('users/PSOMEUSR')
+
+Another example: to delete a service:
+
+::
+
+    session.rdelete(service)
+    # as opposed to:
+    # session.rdelete(service['self'])
 
 Error Handling
 **************
@@ -667,7 +719,7 @@ in the commit message.
 .. _requests.Session: https://2.python-requests.org/en/master/api/#request-sessions
 .. _requests.Session.request: https://2.python-requests.org/en/master/api/#requests.Session.request
 .. _`resource index`: https://v2.developer.pagerduty.com/docs/endpoints#resources-index
-.. _`REST API Reference`: https://api-reference.pagerduty.com/#!/API_Reference/get_api_reference
+.. _`REST API Reference`: https://developer.pagerduty.com/api-reference/
 .. _`setuptools`: https://pypi.org/project/setuptools/
 .. _`pdpyras.py`: https://raw.githubusercontent.com/PagerDuty/pdpyras/master/pdpyras.py
 

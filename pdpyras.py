@@ -18,7 +18,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '4.0'
+__version__ = '4.1'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -169,6 +169,24 @@ def resource_name(obj_type):
         return obj_type[:-1]+'ies'
     else:
         return obj_type+'s'
+
+def resource_path(method):
+    """
+    API call decorator that allows passing a resource dict as the path/URL
+
+    Most resources returned by the API will contain a ``self`` attribute that is
+    the URL of the resource itself.
+
+    Using this decorator allows the implementer to pass either a URL/path or
+    such a resource dictionary as the ``path`` argument, thus eliminating the
+    need to re-construct the resource URL or hold it in a temporary variable.
+    """
+    def call(self, resource, **kw):
+        url = resource
+        if type(resource) is dict and 'self' in resource: # passing an object
+            url = resource['self']
+        return method(self, url, **kw)
+    return call
 
 def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
     """
@@ -1052,6 +1070,39 @@ class APISession(PDSession):
         """
         return list(self.iter_all(path, **kw))
 
+    def persist(self, resource, attr, values):
+        """
+        Finds or creates and returns a resource matching an idempotency key.
+
+        Given a resource name, an attribute to use as an idempotency key and a
+        set of attribute:value pairs as a dict, create a resource with the
+        specified attributes if it doesn't exist already and return the resource
+        persisted via the API (whether or not it already existed).
+
+        :param resource:
+            The resource name. Must be a valid API resource that is supported by
+            the ``r*`` methods; see :ref:`Supported Endpoints`.
+        :param attr:
+            Name of the attribute to use as the idempotency key. For instance,
+            "email" when the resource is "users" will not create the user if a
+            user with the email address given in ``values`` already exists.
+        :param values:
+            The content of the resource to be created, if it does not already
+            exist. This must contain an item with a key that is the same as the
+            ``attr`` argument.
+        :type resource: str
+        :type attr: str
+        :type values: dict
+        :rtype: dict
+        """
+        if attr not in values:
+            raise ValueError("Argument `values` must contain a key equal "
+                "to the `attr` argument (expected idempotency key: '%s')."%attr)
+        existing = self.find(resource, values[attr], attribute=attr)
+        if existing:
+            return existing
+        return self.rpost(resource, json=values)
+
     def postprocess(self, response, suffix=None):
         """
         Records performance information / request metadata about the API call.
@@ -1121,19 +1172,43 @@ class APISession(PDSession):
         :type suffix: str
         :rtype: str
         """
-        my_suffix = "" if suffix is None else "#"+suffix 
+        my_suffix = "" if suffix is None else "#"+suffix
         path_str = '/'.join(tokenize_url_path(path, baseurl=self.url))
         return '%s:%s'%(method.lower(), path_str)+my_suffix
 
-    def rdelete(self, path, **kw):
-        raise_on_error(self.delete(path, **kw))
+    @resource_path
+    def rdelete(self, resource, **kw):
+        """
+        Delete a resource.
 
+        :param resource:
+            The path/URL to which to send the request, or a dict object
+            representing an API resource that contains an item with key ``self``
+            whose value is the URL of the resource.
+        :param \*\*kw:
+            Keyword arguments to pass to ``requests.Session.delete``
+        :type path: str or dict
+        """
+        raise_on_error(self.delete(resource, **kw))
+
+    @resource_path
     @resource_envelope
-    def rget(self, path, **kw):
+    def rget(self, resource, **kw):
         """
         Retrieve a resource and return the encapsulated object in the response
+
+        :param resource:
+            The path/URL to which to send the request, or a dict object
+            representing an API resource that contains an item with key ``self``
+            whose value is the URL of the resource.
+        :param \*\*kw:
+            Keyword arguments to pass to ``requests.Session.rget``
+        :returns:
+            Dictionary representation of the object.
+        :type resource: str or dict
+        :rtype dict:
         """
-        return self.get(path, **kw)
+        return self.get(resource, **kw)
 
     @resource_envelope
     def rpost(self, path, **kw):
@@ -1143,22 +1218,34 @@ class APISession(PDSession):
         Returns the dictionary object representation if creating it was
         successful.
 
-        :param path: The path/URL to which to send the POST request.
-        :param \*\*kw: Keyword arguments to pass to ``requests.Session.post``
-        :returns: Dictionary representation of the created object
-        :rtype: 
+        :param path:
+            The path/URL to which to send the POST request, which should be an
+            index endpoint.
+        :param \*\*kw:
+            Keyword arguments to pass to ``requests.Session.post``
+        :returns:
+            Dictionary representation of the created object
+        :type path: str
+        :rtype dict:
         """
         return self.post(path, **kw)
 
+    @resource_path
     @resource_envelope
-    def rput(self, path, **kw):
+    def rput(self, resource, **kw):
         """
         Update an individual resource, returning the encapsulated object.
 
-        :param path: The path/URL to which to send the PUT request.
-        :param \*\*kw: Keyword arguments to pass to ``requests.Session.put``
+        :param resource:
+            The path/URL to which to send the request, or a dict object
+            representing an API resource that contains an item with key ``self``
+            whose value is the URL of the resource.
+        :param \*\*kw:
+            Keyword arguments to pass to ``requests.Session.put``
+        :returns:
+            Dictionary representation of the updated object
         """
-        return self.put(path, **kw)
+        return self.put(resource, **kw)
 
     @property
     def subdomain(self):
