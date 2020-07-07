@@ -486,7 +486,7 @@ As of this writing, multi-update is limited to the following actions:
 
 * `PUT /incidents <https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1incidents/put>`_
 * `PUT /incidents/{id}/alerts <https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1incidents~1%7Bid%7D~1alerts/put>`_
-* **PUT /priorities** (not yet published, as of 2018-11-28)
+* **PUT /priorities** (not yet published as of 2020-07-07)
 
 **Please note:** as of yet, merging incidents is not supported by ``rput``.
 For this and other unsupported endpoints, you will need to call ``put`` directly,

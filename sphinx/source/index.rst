@@ -7,7 +7,7 @@ Developer Interface
 Generic API Client
 ******************
 This base class implements features common to both :class:`pdpyras.APISession`
-and :class:`pdpyras.EventsAPISession`. 
+and :class:`pdpyras.EventsAPISession`. It cannot itself be used as an API client.
 
 .. autoclass:: pdpyras.PDSession
     :members:
