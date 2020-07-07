@@ -328,6 +328,9 @@ class PDSession(requests.Session):
     """
     A dict defining the retry behavior for each HTTP response status code.
 
+    Note, any value set for this class variable will not be reflected in
+    instances and so it must be set separately for each instance.
+
     Each key in this dictionary represents a HTTP response code. The behavior is
     specified by the value at each key as follows:
 
@@ -380,6 +383,7 @@ class PDSession(requests.Session):
             my_name = self.trunc_key
         self.log = logging.getLogger('pdpyras.%s(%s)'%(
             self.__class__.__name__, my_name))
+        self.retry = {}
 
     def after_set_api_key(self):
         """
