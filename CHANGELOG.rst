@@ -1,3 +1,8 @@
+**2020-07-??: Version 4.2**
+
+* New keyword argument allows for idempotent resource update
+* New error class allows cleaner exception handling
+
 **2020-06-26: Version 4.1**
 
 * Added new idempotent resource creator function, :attr:`APISession.persist`
