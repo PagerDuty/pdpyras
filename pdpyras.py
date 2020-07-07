@@ -70,17 +70,20 @@ def raise_on_error(r):
     :returns: The response object, if its status was success
     :rtype: `requests.Response`_
     """
-    if r.ok:
-        return r
+    received_http_response = bool(r.status_code)
+    if received_http_response:
+        if r.ok:
+            return r
+        else:
+            raise PDHTTPError("%s %s: API responded with non-success status "
+                "(%d): %s" % (
+                    r.request.method.upper(),
+                    r.request.url.replace('https://api.pagerduty.com', ''),
+                    r.status_code,
+                    r.text[:99]
+                ), r)
     else:
-        raise PDClientError("%s %s: API responded with non-success status "
-            "(%d): %s" % (
-                r.request.method.upper(),
-                r.request.url.replace('https://api.pagerduty.com', ''),
-                r.status_code,
-                r.text[:99]
-            ), response=r
-        )
+        raise PDClientError("Network or unknown error: "+str(r))
 
 def resource_envelope(method):
     """
@@ -93,7 +96,8 @@ def resource_envelope(method):
 
     Methods using this decorator will raise a :class:`PDClientError` with its
     ``response`` property being being the `requests.Response`_ object in the
-    case of any error, so that the implementer can access it by catching the
+    case of any error (as of version 4.2 this is subclassed as
+    :class:`PDHTTPError`), so that the implementer can access it by catching the
     exception, and thus design their own custom logic around different types of
     error responses.
 
@@ -261,8 +265,7 @@ def try_decoding(r):
     try:
         return r.json()
     except ValueError as e:
-        raise PDClientError("API responded with invalid JSON: "+r.text[:99],
-            response=r)
+        raise PDHTTPError("API responded with invalid JSON: "+r.text[:99], r)
 
 ###############
 ### CLASSES ###
@@ -518,7 +521,7 @@ class PDSession(requests.Session):
                 if network_attempts > self.max_network_attempts:
                     raise PDClientError("Non-transient network error; exceeded "
                         "maximum number of attempts (%d) to connect to the "
-                        "API"%self.max_network_attempts)
+                        "API."%self.max_network_attempts)
                 sleep_timer *= self.cooldown_factor()
                 self.log.debug("HTTP or network error: %s: %s; retrying in %g "
                     "seconds.", e.__class__.__name__, e, sleep_timer)
@@ -553,10 +556,10 @@ class PDSession(requests.Session):
             elif status == 401:
                 # Stop. Authentication failed. We shouldn't try doing any more,
                 # because we'll run into problems later anyway.
-                raise PDClientError(
+                raise PDHTTPError(
                     "Received 401 Unauthorized response from the API. The "
-                    "access key (%s) might not be valid."%self.trunc_key,
-                    response=response)
+                    "access key (...%s) might not be valid."%self.trunc_key,
+                    response)
             else:
                 # All went according to plan.
                 return response
@@ -1432,3 +1435,42 @@ class PDClientError(Exception):
         self.msg = message
         self.response = response
         super(PDClientError, self).__init__(message)
+
+class PDHTTPError(PDClientError):
+    """
+    Error class representing errors strictly associated with HTTP responses.
+
+    This class was created to make it easier to more cleanly handle errors by
+    way of a class that is guaranteed to have its ``response`` be a valid
+    `requests.Response`_ object.
+
+    Whereas, the more generic :class:`PDClientError` could also be used
+    to denote such things as non-transient network errors wherein no response
+    was recevied from the API.
+
+    For instance, instead of this:
+
+    ::
+
+        try:
+            user = session.rget('/users/PABC123')
+        except pdpyras.PDClientError as e:
+            if e.response is not None:
+                print("HTTP error: "+str(e))
+            else:
+                print(e)
+
+    one could write this:
+
+    ::
+
+        try:
+            user = session.rget('/users/PABC123')
+        except pdpyras.PDHTTPErrror as e:
+            print("HTTP error: "+str(e))
+        except pdpyras.PDClientError as e:
+            print(e)
+    """
+
+    def __init__(self, message, response: requests.Response):
+        super(PDHTTPError, self).__init__(message, response)
