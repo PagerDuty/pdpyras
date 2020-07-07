@@ -18,7 +18,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '4.1'
+__version__ = '4.1.1'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -324,9 +324,12 @@ class PDSession(requests.Session):
     upon receiving a HTTP error.
     """
 
-    retry = None
+    retry = {}
     """
     A dict defining the retry behavior for each HTTP response status code.
+
+    Note, any value set for this class variable will not be reflected in
+    instances and so it must be set separately for each instance.
 
     Each key in this dictionary represents a HTTP response code. The behavior is
     specified by the value at each key as follows:

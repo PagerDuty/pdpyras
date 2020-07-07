@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 4.1 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 4.1.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -792,8 +792,10 @@ base URL will be prepended.</p></li>
 
 <dl class="attribute">
 <dt id="pdpyras.PDSession.retry">
-<code class="sig-name descname">retry</code><em class="property"> = None</em><a class="headerlink" href="#pdpyras.PDSession.retry" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">retry</code><em class="property"> = {}</em><a class="headerlink" href="#pdpyras.PDSession.retry" title="Permalink to this definition">¶</a></dt>
 <dd><p>A dict defining the retry behavior for each HTTP response status code.</p>
+<p>Note, any value set for this class variable will not be reflected in
+instances and so it must be set separately for each instance.</p>
 <p>Each key in this dictionary represents a HTTP response code. The behavior is
 specified by the value at each key as follows:</p>
 <ul class="simple">
@@ -1459,7 +1461,11 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </div>
 <div class="section" id="changelog">
 <h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
-<p><strong>2020-06-26: Version 4.1</strong></p>
+<p><strong>2020-06-26: Version 4.1.1</strong></p>
+<ul class="simple">
+<li><p>Define class variable <code class="docutils literal notranslate"><span class="pre">retry</span></code> initially as <cite>{}</cite> instead of <cite>None</cite> (<a class="reference external" href="https://github.com/PagerDuty/pdpyras/issues/32">#32</a>)</p></li>
+</ul>
+<p><strong>2020-03-08: Version: 4.1</strong></p>
 <ul class="simple">
 <li><p>Added new idempotent resource creator function, <a class="reference internal" href="#pdpyras.APISession.persist" title="pdpyras.APISession.persist"><code class="xref py py-attr docutils literal notranslate"><span class="pre">APISession.persist</span></code></a></p></li>
 <li><p>Added the ability to use resource dictionaries (that have a <code class="docutils literal notranslate"><span class="pre">self</span></code> attribute) in place of URLs.</p></li>
