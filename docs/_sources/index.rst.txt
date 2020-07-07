@@ -41,13 +41,15 @@ Errors
 ******
 .. autoclass:: pdpyras.PDClientError
     :members:
+.. autoclass:: pdpyras.PDHTTPError
+    :members:
 
 Functions
 *********
 
 .. automodule:: pdpyras
     :members:
-    :exclude-members: APISession, EventsAPISession, PDClientError, PDSession
+    :exclude-members: APISession, EventsAPISession, PDClientError, PDHTTPError, PDSession
 
 Changelog
 ---------
