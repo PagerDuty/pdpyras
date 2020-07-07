@@ -1,6 +1,6 @@
 **2020-06-26: Version 4.1.1**
 
-* Define retry initially as `{}` instead of `None` (`#32 <https://github.com/PagerDuty/pdpyras/issues/32>`_)
+* Define class variable ``retry`` initially as `{}` instead of `None` (`#32 <https://github.com/PagerDuty/pdpyras/issues/32>`_)
 
 **2020-03-08: Version: 4.1**
 
