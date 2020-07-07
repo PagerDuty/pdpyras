@@ -1,4 +1,8 @@
-**2020-06-26: Version 4.1**
+**2020-06-26: Version 4.1.1**
+
+* Define retry initially as `{}` instead of `None` (`#32 <https://github.com/PagerDuty/pdpyras/issues/32>`_)
+
+**2020-03-08: Version: 4.1**
 
 * Added new idempotent resource creator function, :attr:`APISession.persist`
 * Added the ability to use resource dictionaries (that have a ``self`` attribute) in place of URLs.
