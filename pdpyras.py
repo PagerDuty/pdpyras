@@ -18,7 +18,7 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '4.1.1'
+__version__ = '4.1.2'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -1026,7 +1026,7 @@ class APISession(PDSession):
                 if 'more' in response:
                     more = response['more']
                 else:
-                    self.log.debug("Pagination is enabled in iteration, but the" 
+                    self.log.debug("Pagination is enabled in iteration, but the"
                         " index endpoint %s responded with no \"more\" property"
                         " in the response. Only the first page of results, "
                         "however many can be gotten, will be included.", path)
