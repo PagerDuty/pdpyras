@@ -205,10 +205,17 @@ class APISessionTest(SessionTest):
         new_items = list(sess.iter_all(weirdurl))
         self.assertEqual(items, new_items)
         get.reset_mock()
+
         # Now test raising an exception:
         get.side_effect = copy.deepcopy(error_encountered)
         sess.raise_if_http_error = True
         self.assertRaises(pdpyras.PDClientError, list, sess.iter_all(weirdurl))
+        get.reset_mock()
+
+        # Test reaching the iteration limit:
+        bigiter = sess.iter_all('log_entries', page_size=100,
+            params={'offset': '9901'})
+        self.assertRaises(StopIteration, next, bigiter)
 
     @patch.object(pdpyras.APISession, 'rpost')
     @patch.object(pdpyras.APISession, 'iter_all')
