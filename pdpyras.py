@@ -998,10 +998,11 @@ class APISession(PDSession):
                 highest_record_index = int(data['offset']) + int(data['limit'])
                 if highest_record_index > ITERATION_LIMIT:
                     self.log.warn("Stopping iteration on endpoint \"%s\" at "
-                        "limit+offset=%d as this exceeds the maximum "
-                        "permitted by the API (%d). The retrieved data "
-                        "may be incomplete.", path, highest_record_index,
-                        ITERATION_LIMIT)
+                        "limit+offset=%d as this exceeds the maximum permitted "
+                        "by the API (%d). The retrieved data may be incomplete."
+                        "For more information, see: %s", path,
+                        highest_record_index, ITERATION_LIMIT,
+                        'https://developer.pagerduty.com/docs/rest-api-v2/pagination')
                     break
             r = self.get(path, params=data.copy())
             if not r.ok:
