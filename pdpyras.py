@@ -18,15 +18,17 @@ if sys.version_info[0] == 3:
 else:
     string_types = basestring
 
-__version__ = '4.1.1'
+__version__ = '4.1.2'
 
 
 # These are API resource endpoints/methods for which multi-update is supported
-valid_multi_update_paths = [
+VALID_MULTI_UPDATE_PATHS = [
     ('incidents', '{index}'),
     ('incidents', '{id}', 'alerts', '{index}'),
     ('priorities', '{index}'),
 ]
+
+ITERATION_LIMIT = 1e4
 
 #########################
 ### UTILITY FUNCTIONS ###
@@ -114,14 +116,14 @@ def resource_envelope(method):
         but with "r" prepended.
     :returns: A callable object; the reformed method
     """
-    global valid_multi_update_paths
+    global VALID_MULTI_UPDATE_PATHS
     http_method = method.__name__.lstrip('r')
     def call(self, path, **kw):
         pass_kw = deepcopy(kw) # Make a copy for modification
         nodes = tokenize_url_path(path, baseurl=self.url)
         is_index = nodes[-1] == '{index}'
         resource = nodes[-2]
-        multi_put = http_method == 'put' and nodes in valid_multi_update_paths
+        multi_put = http_method == 'put' and nodes in VALID_MULTI_UPDATE_PATHS
         envelope_name_single = object_type(resource) # Usually the "type"
         if is_index and http_method=='get' or multi_put:
             # Plural resource name, for index action (GET /<resource>), or for
@@ -987,10 +989,21 @@ class APISession(PDSession):
 
         more = True
         offset = 0
+        if params is not None:
+            offset = int(params.get('offset', 0))
         n = 0
         while more: # Paginate through all results
             if paginate:
                 data['offset'] = offset
+                highest_record_index = int(data['offset']) + int(data['limit'])
+                if highest_record_index > ITERATION_LIMIT:
+                    self.log.warn("Stopping iteration on endpoint \"%s\" at "
+                        "limit+offset=%d as this exceeds the maximum permitted "
+                        "by the API (%d). The retrieved data may be incomplete."
+                        "For more information, see: %s", path,
+                        highest_record_index, ITERATION_LIMIT,
+                        'https://developer.pagerduty.com/docs/rest-api-v2/pagination')
+                    break
             r = self.get(path, params=data.copy())
             if not r.ok:
                 if self.raise_if_http_error:
@@ -1003,7 +1016,7 @@ class APISession(PDSession):
             try:
                 response = r.json()
             except ValueError: 
-                self.log.debug("Stopping iteration on endpoint %s; API "
+                self.log.debug("Stopping iteration on endpoint \"%s\"; API "
                     "responded with invalid JSON.", path)
                 break
             if 'limit' in response:
@@ -1014,7 +1027,7 @@ class APISession(PDSession):
                 if 'more' in response:
                     more = response['more']
                 else:
-                    self.log.debug("Pagination is enabled in iteration, but the" 
+                    self.log.debug("Pagination is enabled in iteration, but the"
                         " index endpoint %s responded with no \"more\" property"
                         " in the response. Only the first page of results, "
                         "however many can be gotten, will be included.", path)
