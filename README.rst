@@ -348,11 +348,9 @@ Disclaimers Regarding Iteration
 
 **Regarding Performance:**
 
-Because HTTP requests are made synchronously and not in parallel threads, the
-data will be retrieved one page at a time and the functions ``list_all`` and
-``dict_all`` will not return until after the HTTP response from the final API
-call is received. Simply put, the functions will take longer to return if the
-total number of results is higher.
+As of version 4.2.2, requests are parallelized if there is a need to retrieve
+more than one page of records. A new parameter, ``max_threads``, can be used
+to configure the thread count for your specific environment/needs.
 
 **On Updating and Deleting Records:**
 

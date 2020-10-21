@@ -15,7 +15,6 @@ import copy
 import datetime
 import json
 import logging
-import os
 import requests
 import sys
 import unittest
@@ -165,13 +164,11 @@ class APISessionTest(SessionTest):
         sess = pdpyras.APISession('token')
         sess.log = MagicMock() # Or go with self.debug(sess) to see output
         page = lambda n, t: {
-            'users': [{'id':i} for i in range(10*n, 10*(n+1))],
+            'users': [{'id': i} for i in range(10*n, 10*(n+1))],
             'total': t,
-            'more': n<(t/10)-1
+            'more': n < (t/10)-1
         }
-        iter_param = lambda p: json.dumps({
-            'limit':10, 'total': True, 'offset': 0
-        })
+
         get.side_effect = [
             Response(200, json.dumps(page(0, 30))),
             Response(200, json.dumps(page(1, 30))),
@@ -180,42 +177,69 @@ class APISessionTest(SessionTest):
         weirdurl='https://api.pagerduty.com/users?number=1'
         hook = MagicMock()
         items = list(sess.iter_all(weirdurl, item_hook=hook, total=True, page_size=10))
+
         self.assertEqual(3, get.call_count)
         self.assertEqual(30, len(items))
         get.assert_has_calls(
             [
-                call(weirdurl, params={'limit':10, 'total':1, 'offset':0}),
-                call(weirdurl, params={'limit':10, 'total':1, 'offset':10}),
-                call(weirdurl, params={'limit':10, 'total':1, 'offset':20}),
+                call(weirdurl, params={'limit': 10, 'total': 1, 'offset': 0}),
+                call(weirdurl, params={'limit': 10, 'total': 1, 'offset': 10}),
+                call(weirdurl, params={'limit': 10, 'total': 1, 'offset': 20}),
             ],
         )
-        hook.assert_any_call({'id':14}, 15, 30)
+        hook.assert_any_call({'id': 14}, 15, 30)
         get.reset_mock()
 
-        # Test stopping iteration on non-success status
+        # Test returning all results that have a successful response
         error_encountered = [
             Response(200, json.dumps(page(0, 50))),
             Response(200, json.dumps(page(1, 50))),
             Response(200, json.dumps(page(2, 50))),
-            Response(400, json.dumps(page(3, 50))), # break
+            Response(400, json.dumps(page(3, 50))),  # these will be missing from the results
             Response(200, json.dumps(page(4, 50))),
         ]
         get.side_effect = copy.deepcopy(error_encountered)
         sess.raise_if_http_error = False
-        new_items = list(sess.iter_all(weirdurl))
-        self.assertEqual(items, new_items)
+        new_items = list(sess.iter_all(weirdurl, page_size=10))
+
+        expected = items + (page(4, 50))['users']  # users from the final successful call above and the original list
+        self.assertEqual(expected, sorted(new_items, key=lambda i: i['id']))
         get.reset_mock()
 
         # Now test raising an exception:
         get.side_effect = copy.deepcopy(error_encountered)
         sess.raise_if_http_error = True
-        self.assertRaises(pdpyras.PDClientError, list, sess.iter_all(weirdurl))
+        self.assertRaises(pdpyras.PDClientError, list, sess.iter_all(weirdurl, page_size=10))
         get.reset_mock()
 
         # Test reaching the iteration limit:
-        bigiter = sess.iter_all('log_entries', page_size=100,
-            params={'offset': '9901'})
-        self.assertRaises(StopIteration, next, bigiter)
+        get.side_effect = [
+            Response(
+                200,
+                json.dumps(
+                    {
+                        'users': [{'id': i} for i in range(9901, 9901+100)],
+                        'total': 10021,
+                        'more': False
+                    }
+                )
+            )
+        ]
+
+        iter_limit = list(sess.iter_all(weirdurl, params={'limit': 200, 'offset': 9901}))
+
+        self.assertEqual(1, get.call_count)
+
+        # We should have 100 items (ids 9901-10000) in the result
+        self.assertEqual(100, len(iter_limit))
+
+        # Make sure the call only returns the records up to the ITERATION_LIMIT
+        # The limit will be adjusted dynamically to account for it
+        get.assert_has_calls(
+            [
+                call(weirdurl, params={'limit': 99, 'total': 1, 'offset': 9901})
+            ]
+        )
 
     @patch.object(pdpyras.APISession, 'rpost')
     @patch.object(pdpyras.APISession, 'iter_all')

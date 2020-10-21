@@ -1,7 +1,7 @@
 
 # Copyright (c) PagerDuty.
 # See LICENSE for details.
-
+import concurrent.futures
 import logging
 import sys
 import time
@@ -209,7 +209,7 @@ def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
     :type method: str
     :type url: str
     :type baseurl: str
-    :rtype: tuple 
+    :rtype: tuple
     """
     urlnparams = url.split('#')[0].split('?') # Ignore all #'s / params
     url_nodes = urlnparams[0].lstrip('/').split('/')
@@ -234,7 +234,7 @@ def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
     # Tokenize / classify the URL now:
     tokenized_nodes = [path_nodes[0]]
     if len(path_nodes) >= 3:
-        # It's an endpoint like one of the following 
+        # It's an endpoint like one of the following
         # /{resource}/{id}/{sub-resource}
         # We're interested in {resource} and {sub_resource}.
         # More deeply-nested endpoints not known to exist.
@@ -265,6 +265,7 @@ def try_decoding(r):
     except ValueError as e:
         raise PDClientError("API responded with invalid JSON: "+r.text[:99],
             response=r)
+
 
 ###############
 ### CLASSES ###
@@ -607,7 +608,7 @@ class PDSession(requests.Session):
     def stagger_cooldown(self, val):
         if type(val) not in [float, int] or val<0:
             raise ValueError("Cooldown randomization factor stagger_cooldown "
-                "must be a positive real number") 
+                "must be a positive real number")
         self._stagger_cooldown = val
 
     @property
@@ -795,7 +796,7 @@ class APISession(PDSession):
     :members:
     """
 
-    api_call_counts = None 
+    api_call_counts = None
     """A dict object recording the number of API calls per endpoint"""
 
     api_time = None
@@ -832,7 +833,7 @@ class APISession(PDSession):
     @property
     def auth_type(self):
         """
-        Defines the method of API authentication. 
+        Defines the method of API authentication.
 
         By default this is "token"; if "oauth2", the API key will be used.
         """
@@ -912,21 +913,23 @@ class APISession(PDSession):
         query_params = {}
         if params is not None:
             query_params.update(params)
-        query_params.update({'query':query})
+        query_params.update({'query': query})
         # When determining uniqueness, web/the API doesn't care about case.
         simplify = lambda s: s.lower()
-        search_term = simplify(query) 
+        search_term = simplify(query)
         equiv = lambda s: simplify(s[attribute]) == search_term
         obj_iter = self.iter_all(resource, params=query_params)
         return next(iter(filter(equiv, obj_iter)), None)
 
-    def iter_all(self, path, params=None, paginate=True, page_size=None, 
-            item_hook=None, total=False):
+    def iter_all(self, path, params=None, paginate=True, page_size=None,
+                 item_hook=None, total=False, max_threads=4):
         """
         Iterator for the contents of an index endpoint or query.
 
         Automatically paginates and yields the results in each page, until all
         matching results have been yielded or a HTTP error response is received.
+        Multiple threads are used to speed up the retrieval of results if more
+        than one page is needed.
 
         Each yielded value is a dict object representing a result returned from
         the index. For example, if requesting the ``/users`` endpoint, each
@@ -945,8 +948,8 @@ class APISession(PDSession):
             pagination yet, i.e. "nested" endpoints like (as of this writing):
             ``/users/{id}/contact_methods`` and ``/services/{id}/integrations``
         :param page_size:
-            If set, the ``page_size`` argument will override the ``default_page_size`` 
-            parameter on the session and set the ``limit`` parameter to a custom 
+            If set, the ``page_size`` argument will override the ``default_page_size``
+            parameter on the session and set the ``limit`` parameter to a custom
             value (default is 100), altering the number of pagination results.
         :param item_hook:
             Callable object that will be invoked for each iteration, i.e. for
@@ -959,11 +962,14 @@ class APISession(PDSession):
             count of records that match the query. Leaving this as False confers
             a small performance advantage, as the API in this case does not have
             to compute the total count of results in the query.
+        :param max_threads:
+            The maximum amount of threads to use while making the requests.
         :type path: str
         :type params: dict or None
         :type paginate: bool
         :type page_size: int or None
         :type total: bool
+        :type max_threads: int
         :yields: Results from the index endpoint.
         :rtype: dict
         """
@@ -974,78 +980,123 @@ class APISession(PDSession):
         # Determine the resource name:
         r_name = path_nodes[-2]
         # Parameters to send:
-        data = {}
-        if paginate:
-            # Retrieve 100 at a time unless otherwise specified:
-            if page_size is None:
-                data['limit'] = self.default_page_size
-            else:
-                data['limit'] = page_size
-        if total:
-            data['total'] = 1
-        if params is not None:
-            # Override defaults with values given:
-            data.update(params)
+        data = params.copy() if params else {}
 
-        more = True
-        offset = 0
-        if params is not None:
-            offset = int(params.get('offset', 0))
+        if 'limit' not in data:
+            data['limit'] = page_size if page_size else self.default_page_size
+
+        #  The total count will be required for at least the first run to paginate in a threaded manner
+        data['total'] = True if paginate else data['total'] if 'total' in data else total
+
+        data['offset'] = 0 if 'offset' not in data else data['offset']
+
+        offset = data.pop('offset')
+        iterator_limit_hit = False
+        requested_record_count = offset + data['limit']
+
+        # Make sure we aren't attempting to go past the ITERATION_LIMIT
+        if ITERATION_LIMIT < requested_record_count:
+            self._log_iteration_limit(path, requested_record_count)
+
+            # Set the limit to retrieve everything up to the ITERATION_LIMIT
+            data['limit'] = int(data['limit'] - (requested_record_count - ITERATION_LIMIT))
+            iterator_limit_hit = True
+
+        # Make the first request to get a total to use if paginating or return that response
+        response = self._handle_get_request(path, data.copy(), offset)
+
+        total_count = response['total']
+
         n = 0
-        while more: # Paginate through all results
-            if paginate:
-                data['offset'] = offset
-                highest_record_index = int(data['offset']) + int(data['limit'])
-                if highest_record_index > ITERATION_LIMIT:
-                    self.log.warn("Stopping iteration on endpoint \"%s\" at "
-                        "limit+offset=%d as this exceeds the maximum permitted "
-                        "by the API (%d). The retrieved data may be incomplete."
-                        "For more information, see: %s", path,
-                        highest_record_index, ITERATION_LIMIT,
-                        'https://developer.pagerduty.com/docs/rest-api-v2/pagination')
-                    break
-            r = self.get(path, params=data.copy())
-            if not r.ok:
-                if self.raise_if_http_error:
-                    raise PDClientError("Encountered HTTP error status (%d) "
-                        "response while iterating through index endpoint %s."%(
-                            r.status_code, path), response=r)
-                self.log.debug("Stopping iteration on endpoint \"%s\"; API "
-                    "responded with non-success status %d", path, r.status_code)
-                break
-            try:
-                response = r.json()
-            except ValueError: 
-                self.log.debug("Stopping iteration on endpoint \"%s\"; API "
-                    "responded with invalid JSON.", path)
-                break
-            if 'limit' in response:
-                data['limit'] = response['limit']
-            more = False
-            total_count = None
-            if paginate:
-                if 'more' in response:
-                    more = response['more']
-                else:
-                    self.log.debug("Pagination is enabled in iteration, but the"
-                        " index endpoint %s responded with no \"more\" property"
-                        " in the response. Only the first page of results, "
-                        "however many can be gotten, will be included.", path)
-                if 'total' in response:
-                    total_count = response['total']
-                else: 
-                    self.log.debug("Pagination and the \"total\" parameter "
-                        "are enabled in iteration, but the index endpoint %s "
-                        "responded with no \"total\" property in the response. "
-                        "Cannot display a total count of this resource without "
-                        "first retrieving all records.", path)
-                offset += data['limit']
+        if (iterator_limit_hit or total_count < data['limit'] or
+                requested_record_count >= total_count or not paginate):
             for result in response[r_name]:
-                n += 1 
+                n += 1
                 # Call a callable object for each item, i.e. to print progress:
                 if hasattr(item_hook, '__call__'):
-                    item_hook(result, n, total_count)
+                    item_hook(result, n, response.get('total'))
                 yield result
+        else:
+            result_list = response[r_name]
+
+            #  Stop getting the total if the caller didn't request it
+            data['total'] = params['total'] if params and 'total' in params else total
+
+            if total_count > ITERATION_LIMIT:
+                self._log_iteration_limit(path, total_count)
+
+            # If the record count it over the iteration limit just get results up to that limit
+            offset_limit = total_count if total_count <= ITERATION_LIMIT else int(ITERATION_LIMIT)
+
+            offsets = [offset for offset in range(offset + data['limit'], offset_limit, data['limit'])]
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+                futures = [executor.submit(self._handle_get_request, path, data.copy(), offset) for offset in offsets]
+                for future in concurrent.futures.as_completed(futures):
+                    result_list.extend(future.result().get(r_name, []))
+
+            total = len(result_list)
+            for result in result_list:
+                n += 1
+                # Call a callable object for each item, i.e. to print progress:
+                if hasattr(item_hook, '__call__'):
+                    item_hook(result, n, total)
+                yield result
+
+    def _handle_get_request(self, path, params, offset):
+        """
+        Private function to handle get requests while iterating through all records.
+
+        :param path:
+            The index endpoint URL to use.
+        :param params:
+            Additional URL parameters to include.
+        :param offset:
+            The offset to begin retrieving records at.
+        :type path: str
+        :type params: dict
+        :type offset: int
+        :rtype: dict
+
+        :raises PDClientError: In the event of HTTP error
+        """
+        params['offset'] = offset
+        params['total'] = 1 if params['total'] else 0
+
+        r = self.get(path, params=params)
+        if not r.ok:
+            if self.raise_if_http_error:
+                raise PDClientError("Encountered HTTP error status (%d) "
+                                    "response while iterating through index endpoint %s." % (
+                                        r.status_code, path), response=r)
+            self.log.debug("Returning empty result set from endpoint \"%s\"; API "
+                           "responded with non-success status %d", path, r.status_code)
+            return {}
+        try:
+            response = r.json()
+        except ValueError:
+            self.log.debug("Returning empty result set from endpoint \"%s\"; API "
+                           "responded with invalid JSON.", path)
+            return {}
+
+        return response
+
+    def _log_iteration_limit(self, path, total):
+        """
+        Log a warning if ITERATION_LIMIT is passed.
+
+        :param path:
+            The endpoint.
+        :param total:
+            The total amount of records (record requests).
+        :type path: str
+        :type total: int
+        """
+        self.log.warning("The retrieved data for endpoint \"%s\" may be incomplete as the total record count is %d"
+                         " and the API limit is %d. For more information, see: %s", path,
+                         total, ITERATION_LIMIT,
+                         'https://developer.pagerduty.com/docs/rest-api-v2/pagination'
+                         )
 
     @auto_json
     def jget(self, path, **kw):

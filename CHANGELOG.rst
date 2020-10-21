@@ -1,3 +1,8 @@
+**2020-10-21: Version 4.2.2**
+
+* Parallelized the calls to retrieve records for ``iter_all``
+    * Added ``max_threads`` to control the thread count used
+
 **2020-09-15: Version 4.1.2**
 
 * Address issue #37 and add some other small enhancements to `iter_all`:

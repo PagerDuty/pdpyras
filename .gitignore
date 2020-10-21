@@ -7,3 +7,4 @@ docs/.buildinfo
 tmp/
 .DS_Store
 .tool-versions
+.idea

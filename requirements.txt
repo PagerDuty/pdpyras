@@ -1,2 +1,3 @@
+futures==3.3.0
 requests >= 2.20.0
 backports.unittest_mock ; python_version<"3.0"
