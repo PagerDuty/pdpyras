@@ -324,7 +324,7 @@ class APISessionTest(SessionTest):
             headers = headers_get.copy()
             request.assert_called_once_with('GET',
                 'https://api.pagerduty.com/users', headers=headers_get,
-                stream=False)
+                stream=False, timeout=pdpyras.TIMEOUT)
             request.reset_mock()
 
             # Test POST/PUT (in terms of code coverage they're identical)
@@ -332,7 +332,7 @@ class APISessionTest(SessionTest):
             sess.request('post', 'users', json={'user':user})
             request.assert_called_once_with(
                 'POST', 'https://api.pagerduty.com/users',
-                headers=headers_post, json={'user':user}, stream=False)
+                headers=headers_post, json={'user':user}, stream=False, timeout=pdpyras.TIMEOUT)
             request.reset_mock()
 
             # Test GET with parameters and using a HTTP verb method
@@ -342,7 +342,7 @@ class APISessionTest(SessionTest):
             request.assert_called_once_with(
                 'GET', 'https://api.pagerduty.com/users',
                 headers=headers_get, params=user_query, stream=False,
-                allow_redirects=True)
+                allow_redirects=True, timeout=pdpyras.TIMEOUT)
             request.reset_mock()
 
             # Test a POST request with additional headers
@@ -355,7 +355,7 @@ class APISessionTest(SessionTest):
             request.assert_called_once_with('POST',
                 'https://api.pagerduty.com/users/PD6LYSO/future_endpoint',
                 headers=headers_special, json={'user': user}, stream=False,
-                data=None)
+                data=None, timeout=pdpyras.TIMEOUT)
             request.reset_mock()
 
             # Test hitting the rate limit
