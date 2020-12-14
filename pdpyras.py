@@ -10,8 +10,8 @@ from copy import deepcopy
 from random import random
 
 import requests
-from urllib3.connection import ConnectionError as Urllib3Error
-from requests.exceptions import ConnectionError as RequestsError
+from urllib3.exceptions import HTTPError, PoolError
+from requests.exceptions import RequestException
 
 if sys.version_info[0] == 3:
     string_types = str
@@ -506,15 +506,15 @@ class PDSession(requests.Session):
             try:
                 response = self.parent.request(method, my_url, **req_kw)
                 self.postprocess(response)
-            except (Urllib3Error, RequestsError) as e:
+            except (HTTPError, PoolError, RequestException) as e:
                 network_attempts += 1
                 if network_attempts > self.max_network_attempts:
                     raise PDClientError("Non-transient network error; exceeded "
                         "maximum number of attempts (%d) to connect to the "
                         "API"%self.max_network_attempts)
                 sleep_timer *= self.cooldown_factor()
-                self.log.debug("Connection error: %s; retrying in %g seconds.",
-                    e, sleep_timer)
+                self.log.debug("HTTP or network error: %s: %s; retrying in %g "
+                    "seconds.", e.__class__.__name__, e, sleep_timer)
                 time.sleep(sleep_timer)
                 continue
 

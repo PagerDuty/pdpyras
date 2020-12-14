@@ -387,7 +387,7 @@ class APISessionTest(SessionTest):
             with patch.object(pdpyras.time, 'sleep') as sleep:
                 # Test getting a connection error and succeeding the final time.
                 returns = [
-                    pdpyras.Urllib3Error("D'oh!")
+                    pdpyras.HTTPError("D'oh!")
                 ]*sess.max_network_attempts
                 returns.append(Response(200, json.dumps({'user': user})))
                 request.side_effect = returns
@@ -399,10 +399,12 @@ class APISessionTest(SessionTest):
                 request.reset_mock()
                 sleep.reset_mock()
 
-                # Now test handling a non-transient error:
-                raises = [pdpyras.RequestsError("D'oh!")]*(
+                # Now test handling a non-transient error when the client
+                # library itself hits odd issues that it can't handle, i.e.
+                # network:
+                raises = [pdpyras.RequestException("D'oh!")]*(
                     sess.max_network_attempts-1)
-                raises.extend([pdpyras.Urllib3Error("D'oh!")]*2)
+                raises.extend([pdpyras.HTTPError("D'oh!")]*2)
                 request.side_effect = raises
                 self.assertRaises(pdpyras.PDClientError, sess.get, '/users')
                 self.assertEqual(sess.max_network_attempts+1,
