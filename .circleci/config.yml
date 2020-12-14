@@ -3,7 +3,7 @@ version: 2.1
 pip: &pip
   name: Install Pip
   command: |
-    sudo apt install python-pip python-virtualenv
+    sudo apt update && sudo apt install python-pip python-virtualenv
 venv: &venv
   name: Setup Virtualenv
   command: |
