@@ -1,13 +1,13 @@
 **2020-09-15: Version 4.1.2**
 
-* Address issue #37 and add some other small enhancements to `iter_all`:
-    * Stop iteration in `iter_all` if the iteration limit (10000) is encountered, versus erroring out (because exceeding it will elicit a 400 response)
-    * Add the ability to set an initial offset via `params` versus always starting from `offset=0` in `iter_all`
+* Address issue #37 and add some other small enhancements to ``iter_all``:
+    * Stop iteration in ``iter_all`` if the iteration limit (10000) is encountered, versus erroring out (because exceeding it will elicit a 400 response)
+    * Add the ability to set an initial offset via ``params`` versus always starting from ``offset=0`` in ``iter_all``
 * Capitalize "constants"
 
 **2020-06-26: Version 4.1.1**
 
-* Define class variable ``retry`` initially as `{}` instead of `None` (`#32 <https://github.com/PagerDuty/pdpyras/issues/32>`_)
+* Define class variable ``retry`` initially as ``{}`` instead of ``None`` (`#32 <https://github.com/PagerDuty/pdpyras/issues/32>`_)
 
 **2020-03-08: Version: 4.1**
 
