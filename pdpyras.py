@@ -30,6 +30,8 @@ VALID_MULTI_UPDATE_PATHS = [
 
 ITERATION_LIMIT = 1e4
 
+TIMEOUT = 5
+
 #########################
 ### UTILITY FUNCTIONS ###
 #########################
@@ -495,7 +497,7 @@ class PDSession(requests.Session):
         # Merge, but do not replace, any headers specified in keyword arguments:
         if 'headers' in kwargs:
             my_headers.update(kwargs['headers'])
-        req_kw.update({'headers': my_headers, 'stream': False})
+        req_kw.update({'headers': my_headers, 'stream': False, 'timeout': TIMEOUT})
         # Compose/normalize URL whether or not path is already a complete URL
         if url.startswith(self.url) or not self.url:
             my_url = url
