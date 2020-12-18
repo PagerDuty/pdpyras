@@ -1156,7 +1156,6 @@ class APISession(PDSession):
             "#x_request_id=%s|#date=%s|#wall_time_s=%g", method, url, status,
             request_id, request_date, request_time)
         if int(status/100) == 5:
-            request_id = response.headers['x-request-id']
             self.log.error("PagerDuty API server error (%d)! "
                 "For additional diagnostics, contact PagerDuty support "
                 "and reference x_request_id=%s / date=%s",
