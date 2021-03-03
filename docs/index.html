@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 4.1.2 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 4.1.3 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -1462,10 +1462,14 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </div>
 <div class="section" id="changelog">
 <h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<p><strong>2021-03-02: Version 4.1.3</strong></p>
+<ul class="simple">
+<li><p>Add warning for Python 2.7</p></li>
+</ul>
 <p><strong>2020-09-15: Version 4.1.2</strong></p>
 <ul class="simple">
 <li><dl class="simple">
-<dt>Address issue #37 and add some other small enhancements to <code class="docutils literal notranslate"><span class="pre">iter_all</span></code>:</dt><dd><ul>
+<dt>Address issue #37 and add other enhancements to <code class="docutils literal notranslate"><span class="pre">iter_all</span></code>:</dt><dd><ul>
 <li><p>Stop iteration in <code class="docutils literal notranslate"><span class="pre">iter_all</span></code> if the iteration limit (10000) is encountered, versus erroring out (because exceeding it will elicit a 400 response)</p></li>
 <li><p>Add the ability to set an initial offset via <code class="docutils literal notranslate"><span class="pre">params</span></code> versus always starting from <code class="docutils literal notranslate"><span class="pre">offset=0</span></code> in <code class="docutils literal notranslate"><span class="pre">iter_all</span></code></p></li>
 </ul>

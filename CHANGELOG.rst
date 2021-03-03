@@ -1,6 +1,10 @@
+**2021-03-02: Version 4.1.3**
+
+* Add warning for Python 2.7
+
 **2020-09-15: Version 4.1.2**
 
-* Address issue #37 and add some other small enhancements to ``iter_all``:
+* Address issue #37 and add other enhancements to ``iter_all``:
     * Stop iteration in ``iter_all`` if the iteration limit (10000) is encountered, versus erroring out (because exceeding it will elicit a 400 response)
     * Add the ability to set an initial offset via ``params`` versus always starting from ``offset=0`` in ``iter_all``
 * Capitalize "constants"
