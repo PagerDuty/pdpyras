@@ -13,13 +13,14 @@ import requests
 from urllib3.exceptions import HTTPError, PoolError
 from requests.exceptions import RequestException
 
-if sys.version_info[0] == 3:
+if sys.version_info[0] >= 3:
     string_types = str
 else:
     string_types = basestring
+    warnings.warn('Module pdpyras will no longer support Python 2.7 as of '
+        'June 21, 2021.')
 
-__version__ = '4.1.2'
-
+__version__ = '4.1.3'
 
 # These are API resource endpoints/methods for which multi-update is supported
 VALID_MULTI_UPDATE_PATHS = [
