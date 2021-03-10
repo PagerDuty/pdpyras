@@ -1,5 +1,6 @@
-**2021-03-02: Version 4.1.3**
+**2021-03-10: Version 4.1.3**
 
+* Use documented method for including the routing key in the request for API V2 (addresses `#53 <https://github.com/PagerDuty/pdpyras/issues/53>`_)
 * Add warning for Python 2.7
 
 **2020-09-15: Version 4.1.2**
