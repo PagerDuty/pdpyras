@@ -20,7 +20,7 @@ else:
     warnings.warn('Module pdpyras will no longer support Python 2.7 as of '
         'June 21, 2021.')
 
-__version__ = '4.1.3'
+__version__ = '4.1.4'
 
 # These are API resource endpoints/methods for which multi-update is supported
 VALID_MULTI_UPDATE_PATHS = [
@@ -697,10 +697,7 @@ class EventsAPISession(PDSession):
         if action not in actions:
             raise ValueError("Event action must be one of: "+', '.join(actions))
 
-        event = {
-            'event_action':action,
-            'routing_key': self.api_key
-        }
+        event = {'event_action':action}
 
         event.update(properties)
         if isinstance(dedup_key, string_types):
@@ -715,6 +712,16 @@ class EventsAPISession(PDSession):
             raise PDClientError("Malformed response body; does not contain "
                 "deduplication key.", response=response)
         return response_body['dedup_key']
+
+    def post(self, *args, **kw):
+        """
+        Override of ``requests.Session.post``
+
+        Adds the ``routing_key`` parameter to the body before sending.
+        """
+        if 'json' in kw and hasattr(kw['json'], 'update'):
+            kw['json'].update({'routing_key': self.api_key})
+        return super(EventsAPISession, self).post(*args, **kw)
 
     def trigger(self, summary, source, dedup_key=None, severity='critical',
             payload=None, custom_details=None, images=None, links=None):
