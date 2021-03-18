@@ -1,3 +1,9 @@
+**2021-03-18: Version 4.1.4**
+
+* Fix regression in :attr:`EventsAPISession.post`
+    * Use case: explicitly-defined body (``json`` keyword argument) without a ``routing_key`` parameter
+    * This was previously possible (before version 4.1.3) with the ``X-Routing-Key`` header (an undocumented API feature)
+
 **2021-03-10: Version 4.1.3**
 
 * Use documented method for including the routing key in the request for API V2 (addresses `#53 <https://github.com/PagerDuty/pdpyras/issues/53>`_)
