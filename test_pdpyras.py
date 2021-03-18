@@ -127,6 +127,26 @@ class EventsSessionTest(SessionTest):
                 },
                 parent.request.call_args[1]['json'])
 
+    def test_send_explicit_event(self):
+        # test sending an event by calling `post` directly as opposed to any of
+        # the methods written into the client for sending events
+        sess = pdpyras.EventsAPISession('routingkey')
+        parent = MagicMock()
+        parent.request = MagicMock()
+        parent.request.side_effect = [Response(202, '{"dedup_key":"abc123"}')]
+        with patch.object(sess, 'parent', new=parent):
+            response = sess.post('/v2/enqueue', json={
+                'payload': {
+                    'summary': 'testing 123',
+                    'source': 'pdpyras integration',
+                    'severity': 'critical'
+                },
+                'event_action': 'trigger'
+            })
+            json_sent = parent.request.call_args[1]['json']
+            self.assertTrue('routing_key' in json_sent)
+            self.assertEqual(json_sent['routing_key'], 'routingkey')
+
 class APISessionTest(SessionTest):
 
     def debug(self, sess):
