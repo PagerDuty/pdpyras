@@ -615,6 +615,77 @@ class APISessionTest(SessionTest):
         sess = pdpyras.APISession('abcd1234')
         self.assertEqual('*1234', sess.trunc_token)
 
+
+class ChangeEventsSessionTest(SessionTest):
+    @patch('pdpyras.PDSession.event_timestamp', datetime.datetime(2020, 3, 25).replace(tzinfo=datetime.timezone.utc).isoformat())
+    def test_submit_change_event(self):
+        sess = pdpyras.ChangeEventsAPISession('routingkey')
+        parent = MagicMock()
+        parent.request = MagicMock()
+        parent.request.side_effect = [ Response(202, '{"id":"abc123"}') ]
+        with patch.object(sess, 'parent', new=parent):
+            ddk = sess.submit(
+                    'testing 123',
+                    'triggered.from.pdpyras',
+                    custom_details={"this":"that"},
+                    links=[{'href':'https://http.cat/502.jpg'}],
+                    )
+            self.assertEqual('abc123', ddk)
+            self.assertEqual(
+                'POST',
+                parent.request.call_args[0][0])
+            self.assertEqual(
+                'https://events.pagerduty.com/v2/change/enqueue',
+                parent.request.call_args[0][1])
+            self.assertDictContainsSubset(
+                {'Content-Type': 'application/json'},
+                parent.request.call_args[1]['headers'])
+            self.assertNotIn(
+                'X-Routing-Key',
+                parent.request.call_args[1]['headers'])
+            self.assertEqual(
+                {
+                    'routing_key':'routingkey',
+                    'payload':{
+                        'summary': 'testing 123',
+                        'timestamp': '2020-03-25T00:00:00+00:00',
+                        'source': 'triggered.from.pdpyras',
+                        'custom_details': {'this':'that'},
+                    },
+                    'links': [{'href':'https://http.cat/502.jpg'}]
+                },
+                parent.request.call_args[1]['json'])
+    @patch('pdpyras.PDSession.event_timestamp', datetime.datetime(2020, 3, 25).replace(tzinfo=datetime.timezone.utc).isoformat())
+    def test_submit_lite_change_event(self):
+        sess = pdpyras.ChangeEventsAPISession('routingkey')
+        parent = MagicMock()
+        parent.request = MagicMock()
+        parent.request.side_effect = [ Response(202, '{"id":"abc123"}') ]
+        with patch.object(sess, 'parent', new=parent):
+            ddk = sess.submit('testing 123')
+            self.assertEqual('abc123', ddk)
+            self.assertEqual(
+                'POST',
+                parent.request.call_args[0][0])
+            self.assertEqual(
+                'https://events.pagerduty.com/v2/change/enqueue',
+                parent.request.call_args[0][1])
+            self.assertDictContainsSubset(
+                {'Content-Type': 'application/json'},
+                parent.request.call_args[1]['headers'])
+            self.assertNotIn(
+                'X-Routing-Key',
+                parent.request.call_args[1]['headers'])
+            self.assertEqual(
+                {
+                    'routing_key':'routingkey',
+                    'payload':{
+                        'summary': 'testing 123',
+                        'timestamp': '2020-03-25T00:00:00+00:00',
+                    },
+                },
+                parent.request.call_args[1]['json'])
+
 class APIUtilsTest(unittest.TestCase):
 
     def test_tokenize_url_path(self):
