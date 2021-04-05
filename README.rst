@@ -443,6 +443,23 @@ user the admin role and prints a message when done:
             json={'role':'admin'}
         )
         print("%s now has admin superpowers"%user['name'])
+        
+
+Example of creating an incident:
+
+::
+
+
+    from pdpyras import APISession
+    session = APISession("YOUR_TOKEN_HERE")
+    payload = {
+    "type": "incident",
+    "title": "This is a test 4",
+    "service": {"id": "SERVICE_ID", "type": "service_reference"},
+    "assignments": [{"assignee": {"id": "USER_ID", "type": "user_reference"}}],
+    }
+    pd_incident = session.rpost("incidents", json=payload)
+
 
 Idempotent Resource Creation
 ++++++++++++++++++++++++++++
