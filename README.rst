@@ -451,13 +451,14 @@ Example of creating an incident:
 
 
     from pdpyras import APISession
-    session = APISession("YOUR_TOKEN_HERE")
-    payload = {
-    "type": "incident",
-    "title": "This is a test 4",
-    "service": {"id": "SERVICE_ID", "type": "service_reference"},
-    "assignments": [{"assignee": {"id": "USER_ID", "type": "user_reference"}}],
-    }
+    api_token = 'your-token-here'
+    session = APISession(api_token)
+      payload = {
+        "type": "incident",
+        "title": "This is a test 4",
+        "service": {"id": "service_id", "type": "service_reference"},
+        "assignments": [{"assignee": {"id": "user_id", "type": "user_reference"}}],
+        }
     pd_incident = session.rpost("incidents", json=payload)
 
 
