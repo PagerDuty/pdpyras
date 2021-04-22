@@ -617,7 +617,7 @@ class APISessionTest(SessionTest):
 
 
 class ChangeEventsSessionTest(SessionTest):
-    @patch('pdpyras.PDSession.event_timestamp', datetime.datetime(2020, 3, 25).replace(tzinfo=datetime.timezone.utc).isoformat())
+    @patch('pdpyras.ChangeEventsAPISession.event_timestamp', datetime.datetime(2020, 3, 25).replace(tzinfo=datetime.timezone.utc).isoformat())
     def test_submit_change_event(self):
         sess = pdpyras.ChangeEventsAPISession('routingkey')
         parent = MagicMock()
@@ -655,7 +655,7 @@ class ChangeEventsSessionTest(SessionTest):
                     'links': [{'href':'https://http.cat/502.jpg'}]
                 },
                 parent.request.call_args[1]['json'])
-    @patch('pdpyras.PDSession.event_timestamp', datetime.datetime(2020, 3, 25).replace(tzinfo=datetime.timezone.utc).isoformat())
+    @patch('pdpyras.ChangeEventsAPISession.event_timestamp', datetime.datetime(2020, 3, 25).replace(tzinfo=datetime.timezone.utc).isoformat())
     def test_submit_lite_change_event(self):
         sess = pdpyras.ChangeEventsAPISession('routingkey')
         parent = MagicMock()

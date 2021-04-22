@@ -629,10 +629,6 @@ class PDSession(requests.Session):
             sys.version_info.minor
         )
 
-    @property
-    def event_timestamp(self):
-        return datetime.now(timezone.utc).isoformat()
-
 class EventsAPISession(PDSession):
 
     """
@@ -810,6 +806,10 @@ class ChangeEventsAPISession(PDSession):
     @property
     def auth_header(self):
         return {}
+
+    @property
+    def event_timestamp(self):
+        return datetime.now(timezone.utc).isoformat()
 
     def prepare_headers(self, method):
         """Add user agent and content type headers for Change Events API requests."""
