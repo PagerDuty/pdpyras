@@ -899,14 +899,20 @@ class APISession(PDSession):
 
     def find(self, resource, query, attribute='name', params=None):
         """
-        Finds an object of a given resource exactly matching a query.
-
-        Will query a given `resource index`_ endpoint using the ``query``
-        parameter supported by most indexes.
+        Finds an object of a given resource type exactly matching a query.
 
         Returns a dict if a result is found. The structure will be that of an
         entry in the index endpoint schema's array of results. Otherwise, it
-        will return `None` if no result is found or an error is encountered.
+        will return ``None`` if no result is found or an error is encountered.
+
+        Works by querying a given `resource index`_ endpoint using the ``query``
+        parameter. To use this function on any given resource, the resource's
+        index must support the ``query`` parameter; otherwise, the function may
+        not work as expected. If the index ignores the parameter, for instance,
+        this function will take much longer to return; results will not be
+        constrained to those matching the query, and so every result in the
+        index will be downloaded and compared against the query up until a
+        matching result is found or all results have been checked.
 
         :param resource:
             The name of the resource endpoint to query, i.e.
