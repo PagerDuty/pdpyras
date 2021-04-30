@@ -1010,12 +1010,18 @@ pagination yet, i.e. “nested” endpoints like
 <dl class="py method">
 <dt id="pdpyras.APISession.find">
 <code class="sig-name descname">find</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span></em>, <em class="sig-param"><span class="n">query</span></em>, <em class="sig-param"><span class="n">attribute</span><span class="o">=</span><span class="default_value">'name'</span></em>, <em class="sig-param"><span class="n">params</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.find" title="Permalink to this definition">¶</a></dt>
-<dd><p>Finds an object of a given resource exactly matching a query.</p>
-<p>Will query a given <a class="reference external" href="https://v2.developer.pagerduty.com/docs/endpoints#resources-index">resource index</a> endpoint using the <code class="docutils literal notranslate"><span class="pre">query</span></code>
-parameter supported by most indexes.</p>
+<dd><p>Finds an object of a given resource type exactly matching a query.</p>
 <p>Returns a dict if a result is found. The structure will be that of an
 entry in the index endpoint schema’s array of results. Otherwise, it
-will return <cite>None</cite> if no result is found or an error is encountered.</p>
+will return <code class="docutils literal notranslate"><span class="pre">None</span></code> if no result is found or an error is encountered.</p>
+<p>Works by querying a given <a class="reference external" href="https://v2.developer.pagerduty.com/docs/endpoints#resources-index">resource index</a> endpoint using the <code class="docutils literal notranslate"><span class="pre">query</span></code>
+parameter. To use this function on any given resource, the resource’s
+index must support the <code class="docutils literal notranslate"><span class="pre">query</span></code> parameter; otherwise, the function may
+not work as expected. If the index ignores the parameter, for instance,
+this function will take much longer to return; results will not be
+constrained to those matching the query, and so every result in the
+index will be downloaded and compared against the query up until a
+matching result is found or all results have been checked.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
