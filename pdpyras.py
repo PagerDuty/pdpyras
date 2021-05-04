@@ -7,7 +7,7 @@ import sys
 import time
 import warnings
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime
 from random import random
 
 import requests
@@ -815,7 +815,7 @@ class ChangeEventsAPISession(PDSession):
 
     @property
     def event_timestamp(self):
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.utcnow().isoformat()+'Z'
 
     def prepare_headers(self, method):
         """Add user agent and content type headers for Change Events API requests."""
