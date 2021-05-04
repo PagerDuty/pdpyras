@@ -7,7 +7,7 @@ import sys
 import time
 import warnings
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime
 from random import random
 
 import requests
@@ -21,7 +21,7 @@ else:
     warnings.warn('Module pdpyras will no longer support Python 2.7 as of '
         'June 21, 2021.')
 
-__version__ = '4.1.4'
+__version__ = '4.2.0'
 
 # These are API resource endpoints/methods for which multi-update is supported
 VALID_MULTI_UPDATE_PATHS = [
@@ -634,7 +634,10 @@ class EventsAPISession(PDSession):
     """
     Session class for submitting events to the PagerDuty v2 Events API.
 
-    Provides methods for submitting events to the Events API.
+    Implements methods for submitting events to PagerDuty through the Events API
+    and inherits from :class:`pdpyras.PDSession`.  For more details on usage of
+    this API, refer to the `Events API v2 documentation
+    <https://developer.pagerduty.com/docs/events-api-v2/overview/>`_
 
     Inherits from :class:`PDSession`.
     """
@@ -794,7 +797,10 @@ class ChangeEventsAPISession(PDSession):
     """
     Session class for submitting change events to the PagerDuty v2 Change Events API.
 
-    Provides methods for submitting change events to the Change Events API.
+    Implements methods for submitting change events to PagerDuty's change events
+    API. See the `Change Events API documentation
+    <https://developer.pagerduty.com/docs/events-api-v2/send-change-events/>`_
+    for more details.
 
     Inherits from :class:`PDSession`.
     """
@@ -809,7 +815,7 @@ class ChangeEventsAPISession(PDSession):
 
     @property
     def event_timestamp(self):
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.utcnow().isoformat()+'Z'
 
     def prepare_headers(self, method):
         """Add user agent and content type headers for Change Events API requests."""
@@ -826,7 +832,7 @@ class ChangeEventsAPISession(PDSession):
 
         See: https://developer.pagerduty.com/docs/events-api-v2/send-change-events/
 
-        :param **properties:
+        :param \*\*properties:
             Properties to set, i.e. ``payload`` and ``links``
         :returns:
             The response ID
@@ -878,9 +884,12 @@ class APISession(PDSession):
     """
     Reusable PagerDuty REST API session objects for making API requests.
 
+    Implements features to facilitate usage of the REST API. For more details on
+    how to use each resource type's API, see the `REST API Reference`_.
+
     Includes some convenience functions as well, i.e. :attr:`rget`, :attr:`find`
     and :attr:`iter_all`, to eliminate some repetitive tasks associated with
-    making API calls.
+    API usage.
 
     Inherits from :class:`PDSession`.
 

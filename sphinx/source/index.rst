@@ -3,19 +3,19 @@
 
 Developer Interface
 -------------------
+API client classes supplied by this library are not intended as replacements
+for API documentation or wrappers of PagerDuty's APIs, but rather wrappers of the
+HTTP client (`requests.Session`_) that make it easier to use PagerDuty's APIs.
 
 Generic API Client
 ******************
-This base class implements features common to both :class:`pdpyras.APISession`
-and :class:`pdpyras.EventsAPISession`. 
+This base class implements features common to all API client classes.
 
 .. autoclass:: pdpyras.PDSession
     :members:
 
 REST API Client
 ***************
-The ``APISession`` class inherits from :class:`pdpyras.PDSession` and
-implements features specific to usage of the REST API.
 
 .. autoclass:: pdpyras.APISession
     :members:
@@ -27,10 +27,14 @@ implements features specific to usage of the REST API.
 
 Events API Client
 *****************
-Class ``EventsAPISession`` implements methods for submitting events to
-PagerDuty through the Events API and inherits from :class:`pdpyras.PDSession`.
 
 .. autoclass:: pdpyras.EventsAPISession
+    :members:
+
+Change Events API Client
+************************
+
+.. autoclass:: pdpyras.ChangeEventsAPISession
     :members:
 
 Errors

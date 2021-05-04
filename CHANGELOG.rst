@@ -1,3 +1,7 @@
+**2021-05-04: Version 4.2.0**
+
+* Add new change events API client class
+
 **2021-03-18: Version 4.1.4**
 
 * Fix regression in :attr:`EventsAPISession.post`

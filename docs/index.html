@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 4.1.4 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 4.2.0 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -669,10 +669,12 @@ in the commit message.</p>
 </div>
 <div class="section" id="developer-interface">
 <h2>Developer Interface<a class="headerlink" href="#developer-interface" title="Permalink to this headline">¶</a></h2>
+<p>API client classes supplied by this library are not intended as replacements
+for API documentation or wrappers of PagerDuty’s APIs, but rather wrappers of the
+HTTP client (<a class="reference external" href="https://2.python-requests.org/en/master/api/#request-sessions">requests.Session</a>) that make it easier to use PagerDuty’s APIs.</p>
 <div class="section" id="generic-api-client">
 <h3>Generic API Client<a class="headerlink" href="#generic-api-client" title="Permalink to this headline">¶</a></h3>
-<p>This base class implements features common to both <a class="reference internal" href="#pdpyras.APISession" title="pdpyras.APISession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.APISession</span></code></a>
-and <a class="reference internal" href="#pdpyras.EventsAPISession" title="pdpyras.EventsAPISession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.EventsAPISession</span></code></a>.</p>
+<p>This base class implements features common to all API client classes.</p>
 <dl class="py class">
 <dt id="pdpyras.PDSession">
 <em class="property">class </em><code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">PDSession</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">api_key</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession" title="Permalink to this definition">¶</a></dt>
@@ -892,15 +894,15 @@ for consistent behavior with previous versions.</p>
 </div>
 <div class="section" id="rest-api-client">
 <h3>REST API Client<a class="headerlink" href="#rest-api-client" title="Permalink to this headline">¶</a></h3>
-<p>The <code class="docutils literal notranslate"><span class="pre">APISession</span></code> class inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDSession</span></code></a> and
-implements features specific to usage of the REST API.</p>
 <dl class="py class">
 <dt id="pdpyras.APISession">
 <em class="property">class </em><code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">APISession</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">api_key</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">default_from</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">auth_type</span><span class="o">=</span><span class="default_value">'token'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reusable PagerDuty REST API session objects for making API requests.</p>
+<p>Implements features to facilitate usage of the REST API. For more details on
+how to use each resource type’s API, see the <a class="reference external" href="https://developer.pagerduty.com/api-reference/">REST API Reference</a>.</p>
 <p>Includes some convenience functions as well, i.e. <a class="reference internal" href="#pdpyras.APISession.rget" title="pdpyras.APISession.rget"><code class="xref py py-attr docutils literal notranslate"><span class="pre">rget</span></code></a>, <a class="reference internal" href="#pdpyras.APISession.find" title="pdpyras.APISession.find"><code class="xref py py-attr docutils literal notranslate"><span class="pre">find</span></code></a>
 and <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpyras.APISession.iter_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">iter_all</span></code></a>, to eliminate some repetitive tasks associated with
-making API calls.</p>
+API usage.</p>
 <p>Inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDSession</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1212,13 +1214,13 @@ colon, i.e. <code class="docutils literal notranslate"><span class="pre">get:esc
 </div>
 <div class="section" id="events-api-client">
 <h3>Events API Client<a class="headerlink" href="#events-api-client" title="Permalink to this headline">¶</a></h3>
-<p>Class <code class="docutils literal notranslate"><span class="pre">EventsAPISession</span></code> implements methods for submitting events to
-PagerDuty through the Events API and inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDSession</span></code></a>.</p>
 <dl class="py class">
 <dt id="pdpyras.EventsAPISession">
 <em class="property">class </em><code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">EventsAPISession</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">api_key</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession" title="Permalink to this definition">¶</a></dt>
 <dd><p>Session class for submitting events to the PagerDuty v2 Events API.</p>
-<p>Provides methods for submitting events to the Events API.</p>
+<p>Implements methods for submitting events to PagerDuty through the Events API
+and inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDSession</span></code></a>.  For more details on usage of
+this API, refer to the <a class="reference external" href="https://developer.pagerduty.com/docs/events-api-v2/overview/">Events API v2 documentation</a></p>
 <p>Inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDSession</span></code></a>.</p>
 <dl class="py method">
 <dt id="pdpyras.EventsAPISession.acknowledge">
@@ -1315,6 +1317,65 @@ override the property set in the <code class="docutils literal notranslate"><spa
 </dd></dl>
 
 </div>
+<div class="section" id="change-events-api-client">
+<h3>Change Events API Client<a class="headerlink" href="#change-events-api-client" title="Permalink to this headline">¶</a></h3>
+<dl class="py class">
+<dt id="pdpyras.ChangeEventsAPISession">
+<em class="property">class </em><code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">ChangeEventsAPISession</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">api_key</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.ChangeEventsAPISession" title="Permalink to this definition">¶</a></dt>
+<dd><p>Session class for submitting change events to the PagerDuty v2 Change Events API.</p>
+<p>Implements methods for submitting change events to PagerDuty’s change events
+API. See the <a class="reference external" href="https://developer.pagerduty.com/docs/events-api-v2/send-change-events/">Change Events API documentation</a>
+for more details.</p>
+<p>Inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDSession</span></code></a>.</p>
+<dl class="py method">
+<dt id="pdpyras.ChangeEventsAPISession.auth_header">
+<em class="property">property </em><code class="sig-name descname">auth_header</code><a class="headerlink" href="#pdpyras.ChangeEventsAPISession.auth_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates the header with the API credential used for authentication.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pdpyras.ChangeEventsAPISession.prepare_headers">
+<code class="sig-name descname">prepare_headers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.ChangeEventsAPISession.prepare_headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add user agent and content type headers for Change Events API requests.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pdpyras.ChangeEventsAPISession.send_change_event">
+<code class="sig-name descname">send_change_event</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">properties</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.ChangeEventsAPISession.send_change_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send a change event to the v2 Change Events API.</p>
+<p>See: <a class="reference external" href="https://developer.pagerduty.com/docs/events-api-v2/send-change-events/">https://developer.pagerduty.com/docs/events-api-v2/send-change-events/</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**properties</strong> – Properties to set, i.e. <code class="docutils literal notranslate"><span class="pre">payload</span></code> and <code class="docutils literal notranslate"><span class="pre">links</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The response ID</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pdpyras.ChangeEventsAPISession.submit">
+<code class="sig-name descname">submit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">summary</span></em>, <em class="sig-param"><span class="n">source</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">custom_details</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">links</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.ChangeEventsAPISession.submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit an incident change</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>summary</strong> (<em>str</em>) – Summary / brief description of the change.</p></li>
+<li><p><strong>source</strong> (<em>str</em>) – A human-readable name identifying the source of the change.</p></li>
+<li><p><strong>custom_details</strong> (<em>dict</em>) – The <code class="docutils literal notranslate"><span class="pre">payload.custom_details</span></code> property of the payload.</p></li>
+<li><p><strong>links</strong> (<em>list</em>) – Set the <code class="docutils literal notranslate"><span class="pre">links</span></code> property of the event.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 <div class="section" id="id2">
 <h3>Errors<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <dl class="py class">
@@ -1333,6 +1394,62 @@ override the property set in the <code class="docutils literal notranslate"><spa
 </div>
 <div class="section" id="module-pdpyras">
 <span id="functions"></span><h3>Functions<a class="headerlink" href="#module-pdpyras" title="Permalink to this headline">¶</a></h3>
+<dl class="py class">
+<dt id="id0">
+<em class="property">class </em><code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">ChangeEventsAPISession</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">api_key</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Session class for submitting change events to the PagerDuty v2 Change Events API.</p>
+<p>Implements methods for submitting change events to PagerDuty’s change events
+API. See the <a class="reference external" href="https://developer.pagerduty.com/docs/events-api-v2/send-change-events/">Change Events API documentation</a>
+for more details.</p>
+<p>Inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDSession</span></code></a>.</p>
+<dl class="py method">
+<dt id="id4">
+<em class="property">property </em><code class="sig-name descname">auth_header</code><a class="headerlink" href="#id4" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates the header with the API credential used for authentication.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="id5">
+<code class="sig-name descname">prepare_headers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add user agent and content type headers for Change Events API requests.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="id6">
+<code class="sig-name descname">send_change_event</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">properties</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id6" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send a change event to the v2 Change Events API.</p>
+<p>See: <a class="reference external" href="https://developer.pagerduty.com/docs/events-api-v2/send-change-events/">https://developer.pagerduty.com/docs/events-api-v2/send-change-events/</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**properties</strong> – Properties to set, i.e. <code class="docutils literal notranslate"><span class="pre">payload</span></code> and <code class="docutils literal notranslate"><span class="pre">links</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The response ID</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="id7">
+<code class="sig-name descname">submit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">summary</span></em>, <em class="sig-param"><span class="n">source</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">custom_details</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">links</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id7" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit an incident change</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>summary</strong> (<em>str</em>) – Summary / brief description of the change.</p></li>
+<li><p><strong>source</strong> (<em>str</em>) – A human-readable name identifying the source of the change.</p></li>
+<li><p><strong>custom_details</strong> (<em>dict</em>) – The <code class="docutils literal notranslate"><span class="pre">payload.custom_details</span></code> property of the payload.</p></li>
+<li><p><strong>links</strong> (<em>list</em>) – Set the <code class="docutils literal notranslate"><span class="pre">links</span></code> property of the event.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt id="pdpyras.auto_json">
 <code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">auto_json</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.auto_json" title="Permalink to this definition">¶</a></dt>
@@ -1488,6 +1605,10 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </div>
 <div class="section" id="changelog">
 <h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<p><strong>2021-05-04: Version 4.2.0</strong></p>
+<ul class="simple">
+<li><p>New change events API client class</p></li>
+</ul>
 <p><strong>2021-03-18: Version 4.1.4</strong></p>
 <ul class="simple">
 <li><dl class="simple">
@@ -1652,6 +1773,7 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 <li><a class="reference internal" href="#generic-api-client">Generic API Client</a></li>
 <li><a class="reference internal" href="#rest-api-client">REST API Client</a></li>
 <li><a class="reference internal" href="#events-api-client">Events API Client</a></li>
+<li><a class="reference internal" href="#change-events-api-client">Change Events API Client</a></li>
 <li><a class="reference internal" href="#id2">Errors</a></li>
 <li><a class="reference internal" href="#module-pdpyras">Functions</a></li>
 </ul>
