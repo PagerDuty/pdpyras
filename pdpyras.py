@@ -7,6 +7,7 @@ import sys
 import time
 import warnings
 from copy import deepcopy
+from datetime import datetime, timezone
 from random import random
 
 import requests
@@ -80,10 +81,11 @@ def raise_on_error(r):
         return r
     else:
         raise PDClientError("%s %s: API responded with non-success status "
-            "(%d)"%(
+            "(%d): %s" % (
                 r.request.method.upper(),
                 r.request.url.replace('https://api.pagerduty.com', ''),
-                r.status_code
+                r.status_code,
+                r.text[:99]
             ), response=r
         )
 
@@ -785,6 +787,92 @@ class EventsAPISession(PDSession):
         if links:
             event['links'] = links
         return self.send_event('trigger', dedup_key=dedup_key, **event)
+
+
+class ChangeEventsAPISession(PDSession):
+
+    """
+    Session class for submitting change events to the PagerDuty v2 Change Events API.
+
+    Provides methods for submitting change events to the Change Events API.
+
+    Inherits from :class:`PDSession`.
+    """
+
+    permitted_methods = ('POST',)
+
+    url = "https://events.pagerduty.com"
+
+    @property
+    def auth_header(self):
+        return {}
+
+    @property
+    def event_timestamp(self):
+        return datetime.now(timezone.utc).isoformat()
+
+    def prepare_headers(self, method):
+        """Add user agent and content type headers for Change Events API requests."""
+        headers = deepcopy(self.headers)
+        headers.update({
+            'Content-Type': 'application/json',
+            'User-Agent': self.user_agent,
+        })
+        return headers
+
+    def send_change_event(self, **properties):
+        """
+        Send a change event to the v2 Change Events API.
+
+        See: https://developer.pagerduty.com/docs/events-api-v2/send-change-events/
+
+        :param **properties:
+            Properties to set, i.e. ``payload`` and ``links``
+        :returns:
+            The response ID
+        """
+        event = deepcopy(properties)
+        response = self.post('/v2/change/enqueue', json=event)
+        raise_on_error(response)
+        response_body = try_decoding(response)
+        return response_body.get("id", None)
+
+    def submit(self, summary, source=None, custom_details=None, links=None):
+        """
+        Submit an incident change
+
+        :param summary:
+            Summary / brief description of the change.
+        :param source:
+            A human-readable name identifying the source of the change.
+        :param custom_details:
+            The ``payload.custom_details`` property of the payload.
+        :param links:
+            Set the ``links`` property of the event.
+        :type summary: str
+        :type source: str
+        :type custom_details: dict
+        :type links: list
+        :rtype: str
+        """
+        local_var = locals()['custom_details']
+        if not (local_var is None or isinstance(local_var, dict)):
+            raise ValueError("custom_details must be a dict")
+        event = {
+                'routing_key': self.api_key,
+                'payload': {
+                    'summary': summary,
+                    'timestamp': self.event_timestamp,
+                    }
+                }
+        if isinstance(source, str):
+            event['payload']['source'] = source
+        if isinstance(custom_details, dict):
+            event['payload']['custom_details'] = custom_details
+        if links:
+            event['links'] = links
+        return self.send_change_event(**event)
+
 
 class APISession(PDSession):
     """
