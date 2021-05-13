@@ -195,18 +195,19 @@ class APISessionTest(SessionTest):
     def test_iter_all(self, get):
         sess = pdpyras.APISession('token')
         sess.log = MagicMock() # Or go with self.debug(sess) to see output
-        page = lambda n, t: {
+        page = lambda n, t, l: {
             'users': [{'id':i} for i in range(10*n, 10*(n+1))],
             'total': t,
-            'more': n<(t/10)-1
+            'more': n<(t/10)-1,
+            'limit': l
         }
         iter_param = lambda p: json.dumps({
             'limit':10, 'total': True, 'offset': 0
         })
         get.side_effect = [
-            Response(200, json.dumps(page(0, 30))),
-            Response(200, json.dumps(page(1, 30))),
-            Response(200, json.dumps(page(2, 30))),
+            Response(200, json.dumps(page(0, 30, 10))),
+            Response(200, json.dumps(page(1, 30, 10))),
+            Response(200, json.dumps(page(2, 30, 10))),
         ]
         weirdurl='https://api.pagerduty.com/users?number=1'
         hook = MagicMock()
@@ -221,32 +222,49 @@ class APISessionTest(SessionTest):
             ],
         )
         hook.assert_any_call({'id':14}, 15, 30)
-        get.reset_mock()
 
         # Test stopping iteration on non-success status
+        get.reset_mock()
         error_encountered = [
-            Response(200, json.dumps(page(0, 50))),
-            Response(200, json.dumps(page(1, 50))),
-            Response(200, json.dumps(page(2, 50))),
-            Response(400, json.dumps(page(3, 50))), # break
-            Response(200, json.dumps(page(4, 50))),
+            Response(200, json.dumps(page(0, 50, 10))),
+            Response(200, json.dumps(page(1, 50, 10))),
+            Response(200, json.dumps(page(2, 50, 10))),
+            Response(400, json.dumps(page(3, 50, 10))), # break
+            Response(200, json.dumps(page(4, 50, 10))),
         ]
         get.side_effect = copy.deepcopy(error_encountered)
         sess.raise_if_http_error = False
         new_items = list(sess.iter_all(weirdurl))
         self.assertEqual(items, new_items)
-        get.reset_mock()
 
         # Now test raising an exception:
+        get.reset_mock()
         get.side_effect = copy.deepcopy(error_encountered)
         sess.raise_if_http_error = True
         self.assertRaises(pdpyras.PDClientError, list, sess.iter_all(weirdurl))
-        get.reset_mock()
 
         # Test reaching the iteration limit:
+        get.reset_mock()
         bigiter = sess.iter_all('log_entries', page_size=100,
             params={'offset': '9901'})
         self.assertRaises(StopIteration, next, bigiter)
+
+        # Test (temporary, until underlying issue in the API is resolved) using
+        # the result count to increment offset instead of `limit` reported in
+        # API response
+        get.reset_mock()
+        iter_param = lambda p: json.dumps({
+            'limit':10, 'total': True, 'offset': 0
+        })
+        get.side_effect = [
+            Response(200, json.dumps(page(0, 30, None))),
+            Response(200, json.dumps(page(1, 30, 42))),
+            Response(200, json.dumps(page(2, 30, 2020))),
+        ]
+        weirdurl='https://api.pagerduty.com/users?number=1'
+        hook = MagicMock()
+        items = list(sess.iter_all(weirdurl, item_hook=hook, total=True, page_size=10))
+        self.assertEqual(30, len(items))
 
     @patch.object(pdpyras.APISession, 'rpost')
     @patch.object(pdpyras.APISession, 'iter_all')

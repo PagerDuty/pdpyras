@@ -1138,8 +1138,9 @@ class APISession(PDSession):
                 self.log.debug("Stopping iteration on endpoint \"%s\"; API "
                     "responded with invalid JSON.", path)
                 break
-            if 'limit' in response:
-                data['limit'] = response['limit']
+            #if 'limit' in response:
+            #    data['limit'] = response['limit']
+            data['limit'] = len(response[r_name])
             more = False
             total_count = None
             if paginate:
