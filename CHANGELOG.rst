@@ -1,3 +1,7 @@
+**2021-05-13: Version 4.2.1**
+
+* Implement work-around for issue in response plays API (`#61 <https://github.com/PagerDuty/pdpyras/issues/61>`_)
+
 **2021-05-04: Version 4.2.0**
 
 * Add new change events API client class

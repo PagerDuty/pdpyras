@@ -21,7 +21,7 @@ else:
     warnings.warn('Module pdpyras will no longer support Python 2.7 as of '
         'June 21, 2021.')
 
-__version__ = '4.2.0'
+__version__ = '4.2.1'
 
 # These are API resource endpoints/methods for which multi-update is supported
 VALID_MULTI_UPDATE_PATHS = [
@@ -1138,8 +1138,9 @@ class APISession(PDSession):
                 self.log.debug("Stopping iteration on endpoint \"%s\"; API "
                     "responded with invalid JSON.", path)
                 break
-            if 'limit' in response:
-                data['limit'] = response['limit']
+            #if 'limit' in response:
+            #    data['limit'] = response['limit']
+            data['limit'] = len(response[r_name])
             more = False
             total_count = None
             if paginate:
