@@ -91,7 +91,7 @@ Installation
 ------------
 If ``pip`` is available, it can be installed via:
 
-::
+.. code-block:: shell
 
     pip install pdpyras
 
@@ -109,15 +109,18 @@ Some examples of usage:
 
 **Basic getting:** Obtain a user profile as a dict object:
 
-::
+.. code-block:: python
 
     from pdpyras import APISession
+
+
     api_token = 'your-token-here'
     session = APISession(api_token)
 
     # Using requests.Session.get:
     response = session.get('/users/PABC123')
     user = None
+
     if response.ok:
         user = response.json()['user']
 
@@ -126,32 +129,42 @@ Some examples of usage:
 
 **Iteration (1):** Iterate over all users and print their ID, email and name:
 
-::
+.. code-block:: python
 
     from pdpyras import APISession
+
+
     api_token = 'your-token-here'
     session = APISession(api_token)
+    
     for user in session.iter_all('users'):
         print(user['id'], user['email'], user['name'])
 
 **Iteration (2):** Compile a list of all services with "SN" in their name:
 
-::
+.. code-block:: python
 
     from pdpyras import APISession
+    
+    
     api_token = 'your-token-here'
+
     session = APISession(api_token)
     services = list(session.iter_all('services', params={'query': 'SN'}))
 
 **Querying and updating:** Find a user exactly matching email address ``jane@example35.com``
 and update their name to "Jane Doe":
 
-::
+.. code-block:: python
 
     from pdpyras import APISession
+
+
     api_token = 'your-token-here'
     session = APISession(api_token)
+
     user = session.find('users', 'jane@example35.com', attribute='email')
+
     if user is not None:
         # Update using put directly:
         updated_user = None
@@ -174,19 +187,24 @@ ID ``PHIJ789``. Note that to acknowledge, we need to set the ``From`` header.
 This example assumes that ``admin@example.com`` corresponds to a user in the
 PagerDuty account:
 
-::
+.. code-block:: python
 
     from pdpyras import APISession
+
+
     api_token = 'your-token-here'
     session = APISession(api_token, default_from='admin@example.com')
+
     # Query incidents
     incidents = session.list_all(
         'incidents',
         params={'user_ids[]':['PHIJ789'],'statuses[]':['triggered']}
     )
+
     # Change their state
     for i in incidents:
         i['status'] = 'acknowledged'
+
     # PUT the updated list back up to the API
     updated_incidents = session.rput('incidents', json=incidents)
 
@@ -200,9 +218,11 @@ credential.
 
 Example:
 
-::
+.. code-block:: python
 
     from pdpyras import APISession
+
+
     session = APISession(oauth_token_here, auth_type='oauth2')
 
 Note, obtaining an access token via the OAuth 2 flow is outside the purview of
@@ -326,7 +346,7 @@ construct the URL, i.e. append ``?key1=value1&key2=value2``.
 **Example:** Find all users with "Dav" in their name/email (i.e. Dave/David) in
 the PagerDuty account:
 
-::
+.. code-block:: python
 
     for dave in session.iter_all('users', params={'query':"Dav"}):
         print("%s <%s>"%(dave['name'], dave['email']))
@@ -338,7 +358,7 @@ which return a list or dictionary of all results, respectively.
 **Example:** Get a dictionary of all users, keyed by email, and use it to find
 the ID of the user whose email is ``bob@example.com``
 
-::
+.. code-block:: python
 
     users = session.dict_all('users', by='email')
     print(users['bob@example.com']['id'])
@@ -398,7 +418,7 @@ dictionary object, that object itself is directly returned.
 The ``rget`` method can be called with as little as one argument: the URL (or
 URL path) to request. Example:
 
-::
+.. code-block:: python
 
     service = session.rget('/services/PZYX321')
     print("Service PZYX321's name: "+service['name'])
@@ -413,7 +433,7 @@ The method also accepts other keyword arguments, which it will pass along to
 ``reqeusts.Session.get``, i.e. if requesting an index, ``params`` can be used
 to set a filter:
 
-::
+.. code-block:: python
 
     first_100_daves = session.rget(
         '/users',
@@ -435,7 +455,7 @@ For instance, instead of having to set the keyword argument ``json = {"user":
 user. The following function takes a PagerDuty user ID and gives the
 user the admin role and prints a message when done:
 
-::
+.. code-block:: python
 
     def promote_to_admin(session, uid):
         user = session.rput(
@@ -447,18 +467,20 @@ user the admin role and prints a message when done:
 
 Example of creating an incident:
 
-::
-
+.. code-block:: python
 
     from pdpyras import APISession
+
+
     api_token = 'your-token-here'
     session = APISession(api_token)
-      payload = {
-        "type": "incident",
-        "title": "This is a test 4",
-        "service": {"id": "service_id", "type": "service_reference"},
-        "assignments": [{"assignee": {"id": "user_id", "type": "user_reference"}}],
-        }
+    
+    payload = {
+      "type": "incident",
+      "title": "This is a test 4",
+      "service": {"id": "service_id", "type": "service_reference"},
+      "assignments": [{"assignee": {"id": "user_id", "type": "user_reference"}}],
+    }
     pd_incident = session.rpost("incidents", json=payload)
 
 
@@ -472,13 +494,14 @@ For instance, the following will create a user having email address
 ``user@organization.com`` if one does not already exist, and print that user's
 name:
 
-::
+.. code-block:: python
 
     user = session.persist('users', 'email', {
         "name": "User McUserson",
         "email": "user@organization.com",
         "type": "user"
     })
+
     print(user['name'])
 
 Deleting
@@ -490,9 +513,10 @@ the API responds with a non-success HTTP status.
 
 Example:
 
-::
+.. code-block:: python
 
     session.rdelete("/services/PI86NOW")
+
     print("Service deleted.")
 
 Managing, a.k.a. Multi-Updating
@@ -518,12 +542,14 @@ containing that list.
 
 For instance, to resolve two incidents with IDs ``PABC123`` and ``PDEF456``:
 
-::
+.. code-block:: python
 
     session.rput(
         "incidents",
-        json=[{'id':'PABC123','type':'incident_reference', 'status':'resolved'},
-              {'id':'PDEF456','type':'incident_reference', 'status':'resolved'}]
+        json=[
+          {'id':'PABC123','type':'incident_reference', 'status':'resolved'},
+          {'id':'PDEF456','type':'incident_reference', 'status':'resolved'},
+        ],
     )
 
 In this way, a single API request can more efficiently perform multiple update
@@ -547,7 +573,7 @@ temporary variable with the URL needed for accessing the object.
 For instance, to reload a service object previously fetched from the API, i.e.
 to ensure one has the latest data for that resource:
 
-::
+.. code-block:: python
 
     user = session.rget('users/PSOMEUSR')
 
@@ -561,7 +587,7 @@ to ensure one has the latest data for that resource:
 
 Another example: to delete a service:
 
-::
+.. code-block:: python
 
     session.rdelete(service)
     # as opposed to:
@@ -591,11 +617,12 @@ raises the underlying exception in the event of an incorrect API access token (4
 Unauthorized) or non-transient network error, prints out the user's email if
 the user exists, and does nothing otherwise:
 
-::
+.. code-block:: python
 
     try:
         user = session.rget("/users/PJKL678")
         print(user['email'])
+
     except PDClientError as e:
         if e.response:
             if e.response.status_code == 404:
@@ -607,7 +634,7 @@ the user exists, and does nothing otherwise:
 
 Just make sure to import `PDClientError` or reference it throught he namespace, i.e.
 
-::
+.. code-block:: python
 
     from pdpyras import APISession, PDClientError
 
@@ -615,7 +642,7 @@ Just make sure to import `PDClientError` or reference it throught he namespace, 
 
 Or:
 
-::
+.. code-block:: python
 
     import pdpyras
 
@@ -645,7 +672,7 @@ The following will take about 30 seconds plus API request time
 (carrying out four attempts, with 2, 4, 8 and 16 second pauses between them),
 before finally returning with the status 404 `requests.Response`_ object:
 
-::
+.. code-block:: python
 
     session.retry[404] = 5
     session.max_http_attempts = 4
@@ -689,16 +716,18 @@ To transmit alerts and perform actions through the events API, one would use:
 
 To instantiate a session object, pass the constructor the routing key:
 
-::
+.. code-block:: python
 
     import pdpyras
+    
+
     routing_key = '0123456789abcdef0123456789abcdef'
     session = pdpyras.EventsAPISession(routing_key)
 
 
 **Example 1:** Trigger an event and use the PagerDuty-supplied deduplication key to resolve it later:
 
-::
+.. code-block:: python
 
     dedup_key = session.trigger("Server is on fire", 'dusty.old.server.net')
     # ...
@@ -706,7 +735,7 @@ To instantiate a session object, pass the constructor the routing key:
 
 **Example 2:** Trigger an event, specifying a dedup key, and use it to later acknowledge the incident
 
-::
+.. code-block:: python
 
     session.trigger("Server is on fire", 'dusty.old.server.net', 
         dedup_key='abc123')
