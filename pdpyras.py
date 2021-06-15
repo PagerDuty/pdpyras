@@ -486,8 +486,7 @@ class PDSession(requests.Session):
             The path/URL to request. If it does not start with the base URL, the
             base URL will be prepended.
         :param \*\*kwargs:
-            Additional keyword arguments to pass to `requests.Session.request
-            <https://2.python-requests.org/en/master/api/#requests.Session.request>`_
+            Additional keyword arguments to pass to `requests.Session.request`_
         :type method: str
         :type url: str
         :returns: the HTTP response object

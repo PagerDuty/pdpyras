@@ -275,10 +275,9 @@ request and response bodies, while the API client takes care of everything else.
   - To send a JSON request body, pass a ``dict`` object (or ``list``, where
     applicable) in the ``json`` keyword argument.
 
-  - To get the response body as a ``dict`` (or ``list``, if applicable), call 
-    the `json
-    <https://2.python-requests.org/en/master/api/#requests.Response.json>`_
-    method of the response object.
+  - To get the response body as a ``dict`` (or ``list``, if applicable), call
+    the `requests.Response.json`_ object returned by any of the functions named
+    exactly after their respective lower-case HTTP methods.
 
   - If using the ``r{VERB}`` methods, i.e.  ``rget``, the return value will be
     the ``dict``/``list`` object decoded from the `wrapped entity
@@ -761,10 +760,11 @@ in the commit message.
 .. _make: https://www.gnu.org/software/make/
 .. _pagination: https://v2.developer.pagerduty.com/docs/pagination
 .. _pypd: https://github.com/PagerDuty/pagerduty-api-python-client/
-.. _Requests: https://2.python-requests.org/en/master/
-.. _requests.Response: https://2.python-requests.org/en/master/api/#requests.Response
-.. _requests.Session: https://2.python-requests.org/en/master/api/#request-sessions
-.. _requests.Session.request: https://2.python-requests.org/en/master/api/#requests.Session.request
+.. _Requests: https://docs.python-requests.org/en/master/
+.. _requests.Response: https://docs.python-requests.org/en/master/api/#requests.Response
+.. _requests.Response.json: https://docs.python-requests.org/en/master/api/#requests.Response.json
+.. _requests.Session: https://docs.python-requests.org/en/master/api/#request-sessions
+.. _requests.Session.request: https://docs.python-requests.org/en/master/api/#requests.Session.request
 .. _`resource index`: https://v2.developer.pagerduty.com/docs/endpoints#resources-index
 .. _`REST API Reference`: https://developer.pagerduty.com/api-reference/
 .. _`setuptools`: https://pypi.org/project/setuptools/
