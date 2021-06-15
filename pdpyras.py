@@ -370,6 +370,12 @@ class PDSession(requests.Session):
     and request will increase by a factor of this amount.
     """
 
+    timeout = TIMEOUT
+    """
+    This is the value sent to `requests.Session.request`_ as the ``timeout``
+    parameter that determines the TCP read timeout.
+    """
+
     url = ""
 
     def __init__(self, api_key, name=None):
@@ -500,7 +506,11 @@ class PDSession(requests.Session):
         # Merge, but do not replace, any headers specified in keyword arguments:
         if 'headers' in kwargs:
             my_headers.update(kwargs['headers'])
-        req_kw.update({'headers': my_headers, 'stream': False, 'timeout': TIMEOUT})
+        req_kw.update({
+            'headers': my_headers,
+            'stream': False,
+            'timeout': self.timeout
+        })
         # Compose/normalize URL whether or not path is already a complete URL
         if url.startswith(self.url) or not self.url:
             my_url = url
