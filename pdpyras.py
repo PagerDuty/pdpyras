@@ -14,13 +14,6 @@ import requests
 from urllib3.exceptions import HTTPError, PoolError
 from requests.exceptions import RequestException
 
-if sys.version_info[0] >= 3:
-    string_types = str
-else:
-    string_types = basestring
-    warnings.warn('Module pdpyras will no longer support Python 2.7 as of '
-        'June 21, 2021.')
-
 __version__ = '4.2.1'
 
 # These are API resource endpoints/methods for which multi-update is supported
@@ -390,7 +383,7 @@ class PDSession(requests.Session):
         self.parent = super(PDSession, self)
         self.parent.__init__()
         self.api_key = api_key
-        if isinstance(name, string_types) and name:
+        if isinstance(name, str) and name:
             my_name = name
         else:
             my_name = self.trunc_key
@@ -417,7 +410,7 @@ class PDSession(requests.Session):
 
     @api_key.setter
     def api_key(self, api_key):
-        if not (isinstance(api_key, string_types) and api_key):
+        if not (isinstance(api_key, str) and api_key):
             raise ValueError("API credential must be a non-empty string.")
         self._api_key = api_key
         self.headers.update(self.auth_header)
@@ -714,7 +707,7 @@ class EventsAPISession(PDSession):
         event = {'event_action':action}
 
         event.update(properties)
-        if isinstance(dedup_key, string_types):
+        if isinstance(dedup_key, str):
             event['dedup_key'] = dedup_key
         elif not action == 'trigger':
             raise ValueError("The dedup_key property is required for"
