@@ -1,10 +1,16 @@
+**2021-06-28: Version 4.3.0**
+
+* Make timeout configurable per-session as an instance variable (based on `a suggestion in pull #48 <https://github.com/PagerDuty/pdpyras/pull/48#discussion_r529711040>` made by @badnetmask)
+* Drop support for Python 2.7
+* Improve code samples formatting improvement (@jackton1 / `#65 <https://github.com/PagerDuty/pdpyras/pull/65>`_)
+
 **2021-05-13: Version 4.2.1**
 
-* Implement work-around for issue in response plays API (`#61 <https://github.com/PagerDuty/pdpyras/issues/61>`_)
+* Implement work-around for issue in response plays API (`#61 <https://github.com/PagerDuty/pdpyras/issues/61>`)
 
 **2021-05-04: Version 4.2.0**
 
-* Add new change events API client class
+* Add new change events API client class (by `@hunner <https://github.com/hunner>`)
 
 **2021-03-18: Version 4.1.4**
 
@@ -16,6 +22,7 @@
 
 * Use documented method for including the routing key in the request for API V2 (addresses `#53 <https://github.com/PagerDuty/pdpyras/issues/53>`_)
 * Add warning for Python 2.7
+* Configurable timeout: argument to `requests.Session.request`_ set in default args to backwards-compatible 5 second value that can be set at the module level (by `@ctrlaltdel <https://github.com/ctrlaltdel>`)
 
 **2020-09-15: Version 4.1.2**
 
