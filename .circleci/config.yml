@@ -93,6 +93,22 @@ jobs:
       - run:
           <<: *test
 
+  py3_9:
+    docker:
+      - image: circleci/python:3.9-buster
+    steps:
+      - checkout
+      - run:
+          <<: *pip
+      - run:
+          <<: *venv
+      - run:
+          <<: *getenv
+      - run:
+          <<: *depinst
+      - run:
+          <<: *test
+
 
 workflows: 
   version: 2.1
@@ -102,4 +118,5 @@ workflows:
       - py3_6
       - py3_7
       - py3_8
+      - py3_9
 
