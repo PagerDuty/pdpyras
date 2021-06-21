@@ -14,14 +14,7 @@ import requests
 from urllib3.exceptions import HTTPError, PoolError
 from requests.exceptions import RequestException
 
-if sys.version_info[0] >= 3:
-    string_types = str
-else:
-    string_types = basestring
-    warnings.warn('Module pdpyras will no longer support Python 2.7 as of '
-        'June 21, 2021.')
-
-__version__ = '4.2.1'
+__version__ = '4.3.0'
 
 # These are API resource endpoints/methods for which multi-update is supported
 VALID_MULTI_UPDATE_PATHS = [
@@ -370,6 +363,12 @@ class PDSession(requests.Session):
     and request will increase by a factor of this amount.
     """
 
+    timeout = TIMEOUT
+    """
+    This is the value sent to `requests.Session.request`_ as the ``timeout``
+    parameter that determines the TCP read timeout.
+    """
+
     url = ""
 
     def __init__(self, api_key, name=None):
@@ -384,7 +383,7 @@ class PDSession(requests.Session):
         self.parent = super(PDSession, self)
         self.parent.__init__()
         self.api_key = api_key
-        if isinstance(name, string_types) and name:
+        if isinstance(name, str) and name:
             my_name = name
         else:
             my_name = self.trunc_key
@@ -411,7 +410,7 @@ class PDSession(requests.Session):
 
     @api_key.setter
     def api_key(self, api_key):
-        if not (isinstance(api_key, string_types) and api_key):
+        if not (isinstance(api_key, str) and api_key):
             raise ValueError("API credential must be a non-empty string.")
         self._api_key = api_key
         self.headers.update(self.auth_header)
@@ -480,8 +479,7 @@ class PDSession(requests.Session):
             The path/URL to request. If it does not start with the base URL, the
             base URL will be prepended.
         :param \*\*kwargs:
-            Additional keyword arguments to pass to `requests.Session.request
-            <https://2.python-requests.org/en/master/api/#requests.Session.request>`_
+            Additional keyword arguments to pass to `requests.Session.request`_
         :type method: str
         :type url: str
         :returns: the HTTP response object
@@ -500,7 +498,11 @@ class PDSession(requests.Session):
         # Merge, but do not replace, any headers specified in keyword arguments:
         if 'headers' in kwargs:
             my_headers.update(kwargs['headers'])
-        req_kw.update({'headers': my_headers, 'stream': False, 'timeout': TIMEOUT})
+        req_kw.update({
+            'headers': my_headers,
+            'stream': False,
+            'timeout': self.timeout
+        })
         # Compose/normalize URL whether or not path is already a complete URL
         if url.startswith(self.url) or not self.url:
             my_url = url
@@ -705,7 +707,7 @@ class EventsAPISession(PDSession):
         event = {'event_action':action}
 
         event.update(properties)
-        if isinstance(dedup_key, string_types):
+        if isinstance(dedup_key, str):
             event['dedup_key'] = dedup_key
         elif not action == 'trigger':
             raise ValueError("The dedup_key property is required for"

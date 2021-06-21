@@ -29,22 +29,6 @@ test: &test
 
 jobs:
 
-  py2_7:
-    docker:
-      - image: circleci/python:2.7-buster
-    steps:
-      - checkout
-      - run:
-          <<: *pip
-      - run:
-          <<: *venv
-      - run:
-          <<: *getenv
-      - run:
-          <<: *depinst
-      - run:
-          <<: *test
-
   py3_5:
     docker:
       - image: circleci/python:3.5-buster
@@ -109,14 +93,30 @@ jobs:
       - run:
           <<: *test
 
+  py3_9:
+    docker:
+      - image: circleci/python:3.9-buster
+    steps:
+      - checkout
+      - run:
+          <<: *pip
+      - run:
+          <<: *venv
+      - run:
+          <<: *getenv
+      - run:
+          <<: *depinst
+      - run:
+          <<: *test
+
 
 workflows: 
   version: 2.1
   run_tests:
     jobs:
-      - py2_7
       - py3_5
       - py3_6
       - py3_7
       - py3_8
+      - py3_9
 
