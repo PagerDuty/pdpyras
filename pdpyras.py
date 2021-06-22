@@ -1251,10 +1251,9 @@ class APISession(PDSession):
         This method is called automatically by :func:`request` for all requests,
         and can be extended in child classes.
 
-        :param method:
-            Method of the request
         :param response:
-            Response object
+            The `requests.Response`_ object returned by
+            `requests.Session.request`_
         :param suffix:
             Optional suffix to append to the key
         :type method: str
