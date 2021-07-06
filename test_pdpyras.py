@@ -20,10 +20,6 @@ import requests
 import sys
 import unittest
 
-if sys.version_info.major < 3:
-    import backports.unittest_mock
-    backports.unittest_mock.install()
-
 from unittest.mock import MagicMock, patch, call
 
 import pdpyras
