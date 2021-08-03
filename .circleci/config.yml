@@ -18,10 +18,7 @@ getenv: &getenv
     pip -V
     echo $STOOGES
   environment:
-    STOOGES:
-      - harry
-      - curly
-      - moe
+    STOOGES: ["harry" "curly" "moe"]
 depinst: &depinst
   name: Install Dependencies
   command: |
