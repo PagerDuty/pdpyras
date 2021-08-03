@@ -16,7 +16,7 @@ getenv: &getenv
     python -V
     which pip
     pip -V
-    echo $STOOGES
+    for stooge in $STOOGES; do echo "his name is $stooge"; done
   environment:
     STOOGES: harry curly moe
 depinst: &depinst
