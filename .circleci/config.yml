@@ -16,6 +16,12 @@ getenv: &getenv
     python -V
     which pip
     pip -V
+    echo $STOOGES
+  environment:
+    STOOGES:
+      - harry
+      - curly
+      - moe
 depinst: &depinst
   name: Install Dependencies
   command: |
