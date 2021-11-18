@@ -3,6 +3,7 @@
 * Make timeout configurable per-session as an instance variable (based on `a suggestion in pull #48 <https://github.com/PagerDuty/pdpyras/pull/48#discussion_r529711040>` made by @badnetmask)
 * Drop support for Python 2.7
 * Improve code samples formatting improvement (@jackton1 / `#65 <https://github.com/PagerDuty/pdpyras/pull/65>`_)
+* Replace deprecated escape sequence for the double-splat operator in docstrings (@ashwin153 / `#68 <https://github.com/PagerDuty/pdpyras/pull/68>`_)
 
 **2021-05-13: Version 4.2.1**
 

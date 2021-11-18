@@ -481,7 +481,7 @@ class PDSession(requests.Session):
         :param url:
             The path/URL to request. If it does not start with the base URL, the
             base URL will be prepended.
-        :param \*\*kwargs:
+        :param \\*\\*kwargs:
             Additional keyword arguments to pass to `requests.Session.request`_
         :type method: str
         :type url: str
@@ -694,7 +694,7 @@ class EventsAPISession(PDSession):
         :param dedup_key:
             The deduplication key; used for determining event uniqueness and
             associating actions with existing incidents.
-        :param \*\*properties:
+        :param \\*\\*properties:
             Additional properties to set, i.e. if ``action`` is ``trigger``
             this would include ``payload``
         :type action: str
@@ -837,7 +837,7 @@ class ChangeEventsAPISession(PDSession):
 
         See: https://developer.pagerduty.com/docs/events-api-v2/send-change-events/
 
-        :param \*\*properties:
+        :param \\*\\*properties:
             Properties to set, i.e. ``payload`` and ``links``
         :returns:
             The response ID
@@ -1324,7 +1324,7 @@ class APISession(PDSession):
             The path/URL to which to send the request, or a dict object
             representing an API resource that contains an item with key ``self``
             whose value is the URL of the resource.
-        :param \*\*kw:
+        :param \\*\\*kw:
             Keyword arguments to pass to ``requests.Session.delete``
         :type path: str or dict
         """
@@ -1340,7 +1340,7 @@ class APISession(PDSession):
             The path/URL to which to send the request, or a dict object
             representing an API resource that contains an item with key ``self``
             whose value is the URL of the resource.
-        :param \*\*kw:
+        :param \\*\\*kw:
             Keyword arguments to pass to ``requests.Session.rget``
         :returns:
             Dictionary representation of the object.
@@ -1360,7 +1360,7 @@ class APISession(PDSession):
         :param path:
             The path/URL to which to send the POST request, which should be an
             index endpoint.
-        :param \*\*kw:
+        :param \\*\\*kw:
             Keyword arguments to pass to ``requests.Session.post``
         :returns:
             Dictionary representation of the created object
@@ -1379,7 +1379,7 @@ class APISession(PDSession):
             The path/URL to which to send the request, or a dict object
             representing an API resource that contains an item with key ``self``
             whose value is the URL of the resource.
-        :param \*\*kw:
+        :param \\*\\*kw:
             Keyword arguments to pass to ``requests.Session.put``
         :returns:
             Dictionary representation of the updated object
