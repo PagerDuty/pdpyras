@@ -1250,7 +1250,7 @@ class APISession(PDSession):
         """
         return list(self.iter_all(path, **kw))
 
-    def persist(self, resource, attr, values):
+    def persist(self, resource, attr, values, update=False):
         """
         Finds or creates and returns a resource matching an idempotency key.
 
@@ -1270,9 +1270,13 @@ class APISession(PDSession):
             The content of the resource to be created, if it does not already
             exist. This must contain an item with a key that is the same as the
             ``attr`` argument.
+        :param update:
+            If set to True, any existing resource will be updated with the
+            values supplied.
         :type resource: str
         :type attr: str
         :type values: dict
+        :type update: bool
         :rtype: dict
         """
         if attr not in values:
@@ -1280,8 +1284,12 @@ class APISession(PDSession):
                 "to the `attr` argument (expected idempotency key: '%s')."%attr)
         existing = self.find(resource, values[attr], attribute=attr)
         if existing:
+            if update:
+                existing.update(values)
+                existing = self.rput(existing['self'], json=existing)
             return existing
-        return self.rpost(resource, json=values)
+        else:
+            return self.rpost(resource, json=values)
 
     def postprocess(self, response, suffix=None):
         """
