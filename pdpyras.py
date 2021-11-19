@@ -456,20 +456,50 @@ class PDSession(requests.Session):
     def cooldown_factor(self):
         return self.sleep_timer_base*(1+self.stagger_cooldown*random())
 
+    def normalize_params(self, params):
+        """
+        Modify the user-supplied parameters.
+
+        Current behavior:
+        * If a parameter's value is of type list, and the parameter name does
+          not already end in "[]", then the square brackets are appended to keep
+          in line with the requirement that all set filters' parameter names end
+          in "[]".
+        """
+        updated_params = {}
+        for param, value in params.items():
+            if type(value) is list and not param.endswith('[]'):
+                updated_params[param+'[]'] = value
+            else:
+                updated_params[param] = value
+        return updated_params
+
+    def normalize_url(self, url):
+        """Compose the URL whether it is a path or an already-complete URL"""
+        if url.startswith(self.url) or not self.url:
+            return url
+        else:
+            return self.url + "/" + url.lstrip('/')
+
     def postprocess(self, response):
         """
         Perform supplemental actions immediately after receiving a response.
         """
         pass
 
-    def prepare_headers(self, method):
+    def prepare_headers(self, method, user_headers={}):
         """
         Append special additional per-request headers.
 
         :param method:
             The HTTP method, in upper case.
+        :param user_headers:
+            Headers that can be specified to override default values.
         """
-        return self.headers
+        headers = deepcopy(self.headers)
+        if user_headers:
+            headers.update(user_headers)
+        return headers
 
     def request(self, method, url, **kwargs):
         """
@@ -497,20 +527,22 @@ class PDSession(requests.Session):
                 "Method %s not supported by this API. Permitted methods: %s"%(
                     method, ', '.join(self.permitted_methods)))
         req_kw = deepcopy(kwargs)
-        my_headers = self.prepare_headers(method)
-        # Merge, but do not replace, any headers specified in keyword arguments:
-        if 'headers' in kwargs:
-            my_headers.update(kwargs['headers'])
+
+        # Add in any headers specified in keyword arguments:
+        headers = kwargs.get('headers', {})
         req_kw.update({
-            'headers': my_headers,
+            'headers': self.prepare_headers(method, user_headers=headers),
             'stream': False,
             'timeout': self.timeout
         })
-        # Compose/normalize URL whether or not path is already a complete URL
-        if url.startswith(self.url) or not self.url:
-            my_url = url
-        else:
-            my_url = self.url + "/" + url.lstrip('/')
+
+        # Special changes to user-supplied parameters, for convenience
+        if 'params' in kwargs:
+            req_kw['params'] = self.normalize_params(kwargs['params'])
+
+        # Compose the full URL:
+        my_url = self.normalize_url(url)
+
         # Make the request (and repeat w/cooldown if the rate limit is reached):
         while True:
             try:
@@ -542,13 +574,13 @@ class PDSession(requests.Session):
                             "status %d.", self.retry[status], status)
                         return response
                     http_attempts[status] = 1 + http_attempts.get(status, 0)
-                sleep_timer *= self.sleep_timer_base
+                sleep_timer *= self.cooldown_factor()
                 self.log.debug("HTTP error (%d); retrying in %g seconds.",
                     status, sleep_timer)
                 time.sleep(sleep_timer)
                 continue
             elif status == 429:
-                sleep_timer *= self.sleep_timer_base
+                sleep_timer *= self.cooldown_factor()
                 self.log.debug("Hit API rate limit (response status 429); "
                     "retrying in %g seconds", sleep_timer)
                 time.sleep(sleep_timer)
@@ -664,13 +696,18 @@ class EventsAPISession(PDSession):
         """
         return self.send_event('acknowledge', dedup_key=dedup_key)
 
-    def prepare_headers(self, method):
-        """Add user agent and content type headers for Events API requests."""
+    def prepare_headers(self, method, user_headers={}):
+        """Add user agent and content type headers for Events API requests.
+
+        :param user_headers: User-supplied headers that will override defaults
+        """
         headers = deepcopy(self.headers)
         headers.update({
             'Content-Type': 'application/json',
             'User-Agent': self.user_agent,
         })
+        if user_headers:
+            headers.update(user_headers)
         return headers
 
     def resolve(self, dedup_key):
@@ -822,13 +859,15 @@ class ChangeEventsAPISession(PDSession):
     def event_timestamp(self):
         return datetime.utcnow().isoformat()+'Z'
 
-    def prepare_headers(self, method):
+    def prepare_headers(self, method, user_headers={}):
         """Add user agent and content type headers for Change Events API requests."""
         headers = deepcopy(self.headers)
         headers.update({
             'Content-Type': 'application/json',
             'User-Agent': self.user_agent,
         })
+        if user_headers:
+            headers.update(user_headers)
         return headers
 
     def send_change_event(self, **properties):
@@ -1283,13 +1322,15 @@ class APISession(PDSession):
                 "and reference x_request_id=%s / date=%s",
                 status, request_id, request_date)
 
-    def prepare_headers(self, method):
+    def prepare_headers(self, method, user_headers={}):
         headers = deepcopy(self.headers)
         headers['User-Agent'] = self.user_agent
         if self.default_from is not None:
             headers['From'] = self.default_from
         if method in ('POST', 'PUT'):
             headers['Content-Type'] = 'application/json'
+        if user_headers:
+            headers.update(user_headers)
         return headers
 
     def profiler_key(self, method, path, suffix=None):
