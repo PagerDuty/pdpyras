@@ -1,3 +1,11 @@
+**(TBD): Version 4.4.0**
+
+* Added new error class :class:`PDHTTPError` for strictly application-level errors (i.e. HTTP responses vs. network errors), inherits from :class:`PDClientError`
+* Removed unnecessary dependencies that were hold-outs from Python 2.7 compatibility (deprecated)
+* Automatically add square brackets to query parameters that are of list type if the user forgets to do so, per the requirement of using `set filters <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU2-filtering#set-filters>`
+* Fix bug: the :attr:`PDSession.stagger_cooldown` feature added in version 3.2 only applied to network error/retry; it now applies to all forms of retrial
+* Add "update" keyword argument to :attr:`APISession.persist` that updates any existing resource with the provided values
+
 **2021-06-28: Version 4.3.0**
 
 * Make timeout configurable per-session as an instance variable (based on `a suggestion in pull #48 <https://github.com/PagerDuty/pdpyras/pull/48#discussion_r529711040>` made by @badnetmask)
