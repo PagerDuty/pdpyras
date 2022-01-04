@@ -262,21 +262,33 @@ class APISessionTest(SessionTest):
         items = list(sess.iter_all(weirdurl, item_hook=hook, total=True, page_size=10))
         self.assertEqual(30, len(items))
 
+    @patch.object(pdpyras.APISession, 'rput')
     @patch.object(pdpyras.APISession, 'rpost')
     @patch.object(pdpyras.APISession, 'iter_all')
-    def test_persist(self, iterator, creator):
+    def test_persist(self, iterator, creator, updater):
         user = {
             "name": "User McUserson",
             "email": "user@organization.com",
             "type": "user"
         }
+        # Do not create if the user exists already (default)
         iterator.return_value = iter([user])
         sess = pdpyras.APISession('apiKey')
         sess.persist('users', 'email', user)
         creator.assert_not_called()
+        # Call session.rpost to create if the user does not exist
         iterator.return_value = iter([])
         sess.persist('users', 'email', user)
         creator.assert_called_with('users', json=user)
+        # Call session.rput to update an existing user if update is True
+        iterator.return_value = iter([user])
+        new_user = dict(user)
+        new_user.update({
+            'job_title': 'Testing the app',
+            'self': 'https://api.pagerduty.com/users/PCWKOPZ'
+        })
+        sess.persist('users', 'email', new_user, update=True)
+        updater.assert_called_with(new_user['self'], json=new_user)
 
     def test_postprocess(self):
         logger = MagicMock()
