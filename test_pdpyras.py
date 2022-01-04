@@ -453,7 +453,7 @@ class APISessionTest(SessionTest):
                 '/services')
             request.reset_mock()
 
-            # Test retry logic;
+            # Test retry logic:
             with patch.object(pdpyras.time, 'sleep') as sleep:
                 # Test getting a connection error and succeeding the final time.
                 returns = [
@@ -461,11 +461,14 @@ class APISessionTest(SessionTest):
                 ]*sess.max_network_attempts
                 returns.append(Response(200, json.dumps({'user': user})))
                 request.side_effect = returns
-                r = sess.get('/users/P123456')
-                self.assertEqual(sess.max_network_attempts+1,
-                    request.call_count)
-                self.assertEqual(sess.max_network_attempts, sleep.call_count)
-                self.assertTrue(r.ok)
+                with patch.object(sess, 'cooldown_factor') as cdf:
+                    cdf.return_value = 2.0
+                    r = sess.get('/users/P123456')
+                    self.assertEqual(sess.max_network_attempts+1,
+                        request.call_count)
+                    self.assertEqual(sess.max_network_attempts, sleep.call_count)
+                    self.assertEqual(sess.max_network_attempts, cdf.call_count)
+                    self.assertTrue(r.ok)
                 request.reset_mock()
                 sleep.reset_mock()
 
@@ -488,8 +491,11 @@ class APISessionTest(SessionTest):
                     Response(404, json.dumps({})),
                     Response(200, json.dumps({'user': user})),
                 ]
-                r = sess.get('/users/P123456')
-                self.assertEqual(200, r.status_code)
+                with patch.object(sess, 'cooldown_factor') as cdf:
+                    cdf.return_value = 2.0
+                    r = sess.get('/users/P123456')
+                    self.assertEqual(200, r.status_code)
+                    self.assertEqual(2, cdf.call_count)
                 # Test retry logic with too many 404s
                 sess.retry[404] = 1
                 request.side_effect = [
