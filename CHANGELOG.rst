@@ -2,24 +2,24 @@
 
 * Added new error class :class:`PDHTTPError` for strictly application-level errors (i.e. HTTP responses vs. network errors), inherits from :class:`PDClientError`
 * Removed unnecessary dependencies that were hold-outs from Python 2.7 compatibility (deprecated)
-* Automatically add square brackets to query parameters that are of list type if the user forgets to do so, per the requirement of using `set filters <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU2-filtering#set-filters>`
+* Automatically add square brackets to query parameters that are of list type if the user forgets to do so, per the requirement of using `set filters <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU2-filtering#set-filters>`_
 * Fix bug: the :attr:`PDSession.stagger_cooldown` feature added in version 3.2 only applied to network error/retry; it now applies to all forms of retrial
 * Add "update" keyword argument to :attr:`APISession.persist` that updates any existing resource with the provided values
 
 **2021-06-28: Version 4.3.0**
 
-* Make timeout configurable per-session as an instance variable (based on `a suggestion in pull #48 <https://github.com/PagerDuty/pdpyras/pull/48#discussion_r529711040>` made by @badnetmask)
+* Make timeout configurable per-session as an instance variable (based on `a suggestion in pull #48 <https://github.com/PagerDuty/pdpyras/pull/48#discussion_r529711040>`_ made by @badnetmask)
 * Drop support for Python 2.7
 * Improve code samples formatting improvement (@jackton1 / `#65 <https://github.com/PagerDuty/pdpyras/pull/65>`_)
 * Replace deprecated escape sequence for the double-splat operator in docstrings (@ashwin153 / `#68 <https://github.com/PagerDuty/pdpyras/pull/68>`_)
 
 **2021-05-13: Version 4.2.1**
 
-* Implement work-around for issue in response plays API (`#61 <https://github.com/PagerDuty/pdpyras/issues/61>`)
+* Implement work-around for issue in response plays API (`#61 <https://github.com/PagerDuty/pdpyras/issues/61>`_)
 
 **2021-05-04: Version 4.2.0**
 
-* Add new change events API client class (by `@hunner <https://github.com/hunner>`)
+* Add new change events API client class (by `@hunner <https://github.com/hunner>`_)
 
 **2021-03-18: Version 4.1.4**
 
@@ -31,7 +31,7 @@
 
 * Use documented method for including the routing key in the request for API V2 (addresses `#53 <https://github.com/PagerDuty/pdpyras/issues/53>`_)
 * Add warning for Python 2.7
-* Configurable timeout: argument to `requests.Session.request`_ set in default args to backwards-compatible 5 second value that can be set at the module level (by `@ctrlaltdel <https://github.com/ctrlaltdel>`)
+* Configurable timeout: argument to `requests.Session.request`_ set in default args to backwards-compatible 5 second value that can be set at the module level (by @ctrlaltdel)
 
 **2020-09-15: Version 4.1.2**
 
