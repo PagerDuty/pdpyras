@@ -402,6 +402,19 @@ class APISessionTest(SessionTest):
                 allow_redirects=True, timeout=pdpyras.TIMEOUT)
             request.reset_mock()
 
+            # Test GET with one array-type parameter not suffixed with []
+            request.return_value = Response(200, json.dumps({'users': [user]}))
+            user_query = {'query': 'user@example.com', 'team_ids':['PCWKOPZ']}
+            modified_user_query = copy.deepcopy(user_query)
+            modified_user_query['team_ids[]'] = user_query['team_ids']
+            del(modified_user_query['team_ids'])
+            r = sess.get('/users', params=user_query)
+            request.assert_called_once_with(
+                'GET', 'https://api.pagerduty.com/users',
+                headers=headers_get, params=modified_user_query, stream=False,
+                allow_redirects=True, timeout=pdpyras.TIMEOUT)
+            request.reset_mock()
+
             # Test a POST request with additional headers
             request.return_value = Response(201, json.dumps({'user': user}),
                 method='POST')
