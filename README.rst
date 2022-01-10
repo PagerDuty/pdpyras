@@ -7,6 +7,7 @@ A minimal, practical Python client for the PagerDuty REST API.
 
 * `GitHub repository <https://github.com/PagerDuty/pdpyras>`_ 
 * `Documentation <https://pagerduty.github.io/pdpyras>`_
+* `Changelog <https://github.com/PagerDuty/pdpyras/tree/master/CHANGELOG.rst>`_
 
 About
 -----
