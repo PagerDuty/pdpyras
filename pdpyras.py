@@ -1271,8 +1271,8 @@ class APISession(PDSession):
             exist. This must contain an item with a key that is the same as the
             ``attr`` argument.
         :param update:
-            If set to True, any existing resource will be updated with the
-            values supplied.
+            (New in 4.4.0) If set to True, any existing resource will be updated
+            with the values supplied.
         :type resource: str
         :type attr: str
         :type values: dict

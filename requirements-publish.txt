@@ -1,0 +1,4 @@
+sphinx
+sphinxcontrib-websupport
+setuptools
+twine
