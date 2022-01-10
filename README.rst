@@ -770,11 +770,6 @@ Next, install Python dependencies for building and publishing:
 .. code-block:: sh
     pip install -r requirements-publish.txt 
 
-The new version can be released to via:
-
-.. code-block:: sh
-    make dist && make publish
-
 Before publishing
 *****************
 
