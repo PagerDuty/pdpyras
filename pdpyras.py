@@ -1173,13 +1173,13 @@ class APISession(PDSession):
                     raise PDClientError("Encountered HTTP error status (%d) "
                         "response while iterating through index endpoint %s."%(
                             r.status_code, path), response=r)
-                self.log.debug("Stopping iteration on endpoint \"%s\"; API "
+                self.log.warn("Stopping iteration on endpoint \"%s\"; API "
                     "responded with non-success status %d", path, r.status_code)
                 break
             try:
                 response = r.json()
             except ValueError:
-                self.log.debug("Stopping iteration on endpoint \"%s\"; API "
+                self.log.warn("Stopping iteration on endpoint \"%s\"; API "
                     "responded with invalid JSON.", path)
                 break
             #if 'limit' in response:
@@ -1191,14 +1191,14 @@ class APISession(PDSession):
                 if 'more' in response:
                     more = response['more']
                 else:
-                    self.log.debug("Pagination is enabled in iteration, but the"
+                    self.log.warn("Pagination is enabled in iteration, but the"
                         " index endpoint %s responded with no \"more\" property"
                         " in the response. Only the first page of results, "
                         "however many can be gotten, will be included.", path)
                 if 'total' in response:
                     total_count = response['total']
                 else:
-                    self.log.debug("Pagination and the \"total\" parameter "
+                    self.log.warn("Pagination and the \"total\" parameter "
                         "are enabled in iteration, but the index endpoint %s "
                         "responded with no \"total\" property in the response. "
                         "Cannot display a total count of this resource without "
