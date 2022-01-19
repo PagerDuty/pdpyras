@@ -826,8 +826,6 @@ a clean local file tree) run:
 .. _`setuptools`: https://pypi.org/project/setuptools/
 .. _`pdpyras.py`: https://raw.githubusercontent.com/PagerDuty/pdpyras/master/pdpyras.py
 
-.. codeauthor:: Demitri Morgan <demitri@pagerduty.com>
-
 .. |travis-build| image:: https://travis-ci.com/Deconstrained/pdpyras.svg?branch=master
     :target: https://travis-ci.com/Deconstrained/pdpyras
 .. |circleci-build| image:: https://circleci.com/gh/PagerDuty/pdpyras.svg?style=svg
