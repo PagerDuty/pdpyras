@@ -1,4 +1,4 @@
-**(TBD): Version 4.4.0**
+**2022-01-18: Version 4.4.0**
 
 * Added new error class :class:`PDHTTPError` for strictly application-level errors (i.e. HTTP responses vs. network errors), inherits from :class:`PDClientError`
 * Removed unnecessary dependencies that were hold-outs from Python 2.7 compatibility (deprecated)

@@ -461,6 +461,7 @@ class PDSession(requests.Session):
         Modify the user-supplied parameters.
 
         Current behavior:
+
         * If a parameter's value is of type list, and the parameter name does
           not already end in "[]", then the square brackets are appended to keep
           in line with the requirement that all set filters' parameter names end

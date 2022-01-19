@@ -767,7 +767,8 @@ make sure you have `make <https://www.gnu.org/software/make/>`_ and `pip
 
 Next, install Python dependencies for building and publishing:
 
-.. code-block:: sh
+.. code-block:: shell
+
     pip install -r requirements-publish.txt 
 
 Before publishing
@@ -783,22 +784,23 @@ documentation. This is because it adds many file changes that are not meant
 to be reviewed manually, as they are generated. Documentation can be built
 locally for review and proofreading via:
 
-.. code-block:: sh
+.. code-block:: shell
+
     make docs
 
+The documentation can then be viewed in the file ``docs/index.html``. 
 
 Publishing a new version
 ************************
 Once the pull request is approved, rebuild the documentation, commit/push
 the changes, and merge.
 
-The documentation can then be viewed in the file ``docs/index.html``. 
-
 Once the changes are merged, tag the merge onto the main branch as
 ``v{version}``, i.e. ``v4.4.0``, and with that as the current git head (and
 a clean local file tree) run:
 
-.. code-block:: sh
+.. code-block:: shell
+
     make publish
 
 .. References:
