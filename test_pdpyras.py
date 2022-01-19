@@ -20,10 +20,6 @@ import requests
 import sys
 import unittest
 
-if sys.version_info.major < 3:
-    import backports.unittest_mock
-    backports.unittest_mock.install()
-
 from unittest.mock import MagicMock, patch, call
 
 import pdpyras
@@ -266,21 +262,33 @@ class APISessionTest(SessionTest):
         items = list(sess.iter_all(weirdurl, item_hook=hook, total=True, page_size=10))
         self.assertEqual(30, len(items))
 
+    @patch.object(pdpyras.APISession, 'rput')
     @patch.object(pdpyras.APISession, 'rpost')
     @patch.object(pdpyras.APISession, 'iter_all')
-    def test_persist(self, iterator, creator):
+    def test_persist(self, iterator, creator, updater):
         user = {
             "name": "User McUserson",
             "email": "user@organization.com",
             "type": "user"
         }
+        # Do not create if the user exists already (default)
         iterator.return_value = iter([user])
         sess = pdpyras.APISession('apiKey')
         sess.persist('users', 'email', user)
         creator.assert_not_called()
+        # Call session.rpost to create if the user does not exist
         iterator.return_value = iter([])
         sess.persist('users', 'email', user)
         creator.assert_called_with('users', json=user)
+        # Call session.rput to update an existing user if update is True
+        iterator.return_value = iter([user])
+        new_user = dict(user)
+        new_user.update({
+            'job_title': 'Testing the app',
+            'self': 'https://api.pagerduty.com/users/PCWKOPZ'
+        })
+        sess.persist('users', 'email', new_user, update=True)
+        updater.assert_called_with(new_user['self'], json=new_user)
 
     def test_postprocess(self):
         logger = MagicMock()
@@ -394,6 +402,19 @@ class APISessionTest(SessionTest):
                 allow_redirects=True, timeout=pdpyras.TIMEOUT)
             request.reset_mock()
 
+            # Test GET with one array-type parameter not suffixed with []
+            request.return_value = Response(200, json.dumps({'users': [user]}))
+            user_query = {'query': 'user@example.com', 'team_ids':['PCWKOPZ']}
+            modified_user_query = copy.deepcopy(user_query)
+            modified_user_query['team_ids[]'] = user_query['team_ids']
+            del(modified_user_query['team_ids'])
+            r = sess.get('/users', params=user_query)
+            request.assert_called_once_with(
+                'GET', 'https://api.pagerduty.com/users',
+                headers=headers_get, params=modified_user_query, stream=False,
+                allow_redirects=True, timeout=pdpyras.TIMEOUT)
+            request.reset_mock()
+
             # Test a POST request with additional headers
             request.return_value = Response(201, json.dumps({'user': user}),
                 method='POST')
@@ -432,7 +453,7 @@ class APISessionTest(SessionTest):
                 '/services')
             request.reset_mock()
 
-            # Test retry logic;
+            # Test retry logic:
             with patch.object(pdpyras.time, 'sleep') as sleep:
                 # Test getting a connection error and succeeding the final time.
                 returns = [
@@ -440,11 +461,14 @@ class APISessionTest(SessionTest):
                 ]*sess.max_network_attempts
                 returns.append(Response(200, json.dumps({'user': user})))
                 request.side_effect = returns
-                r = sess.get('/users/P123456')
-                self.assertEqual(sess.max_network_attempts+1,
-                    request.call_count)
-                self.assertEqual(sess.max_network_attempts, sleep.call_count)
-                self.assertTrue(r.ok)
+                with patch.object(sess, 'cooldown_factor') as cdf:
+                    cdf.return_value = 2.0
+                    r = sess.get('/users/P123456')
+                    self.assertEqual(sess.max_network_attempts+1,
+                        request.call_count)
+                    self.assertEqual(sess.max_network_attempts, sleep.call_count)
+                    self.assertEqual(sess.max_network_attempts, cdf.call_count)
+                    self.assertTrue(r.ok)
                 request.reset_mock()
                 sleep.reset_mock()
 
@@ -467,8 +491,11 @@ class APISessionTest(SessionTest):
                     Response(404, json.dumps({})),
                     Response(200, json.dumps({'user': user})),
                 ]
-                r = sess.get('/users/P123456')
-                self.assertEqual(200, r.status_code)
+                with patch.object(sess, 'cooldown_factor') as cdf:
+                    cdf.return_value = 2.0
+                    r = sess.get('/users/P123456')
+                    self.assertEqual(200, r.status_code)
+                    self.assertEqual(2, cdf.call_count)
                 # Test retry logic with too many 404s
                 sess.retry[404] = 1
                 request.side_effect = [

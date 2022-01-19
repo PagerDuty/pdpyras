@@ -1,6 +1,5 @@
 .. include:: ../../README.rst
 
-
 Developer Interface
 -------------------
 API client classes supplied by this library are not intended as replacements
@@ -16,7 +15,6 @@ This base class implements features common to all API client classes.
 
 REST API Client
 ***************
-
 .. autoclass:: pdpyras.APISession
     :members:
 
@@ -27,13 +25,11 @@ REST API Client
 
 Events API Client
 *****************
-
 .. autoclass:: pdpyras.EventsAPISession
     :members:
 
 Change Events API Client
 ************************
-
 .. autoclass:: pdpyras.ChangeEventsAPISession
     :members:
 
@@ -41,13 +37,14 @@ Errors
 ******
 .. autoclass:: pdpyras.PDClientError
     :members:
+.. autoclass:: pdpyras.PDHTTPError
+    :members:
 
 Functions
 *********
-
 .. automodule:: pdpyras
     :members:
-    :exclude-members: APISession, EventsAPISession, PDClientError, PDSession
+    :exclude-members: APISession, EventsAPISession, ChangeEventsAPISession, PDClientError, PDHTTPError, PDSession
 
 Changelog
 ---------

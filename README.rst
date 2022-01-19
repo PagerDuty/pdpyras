@@ -7,6 +7,7 @@ A minimal, practical Python client for the PagerDuty REST API.
 
 * `GitHub repository <https://github.com/PagerDuty/pdpyras>`_ 
 * `Documentation <https://pagerduty.github.io/pdpyras>`_
+* `Changelog <https://github.com/PagerDuty/pdpyras/tree/master/CHANGELOG.rst>`_
 
 About
 -----
@@ -744,13 +745,63 @@ To instantiate a session object, pass the constructor the routing key:
 
 Contributing
 ------------
-Bug reports and pull requests to fix issues are always welcome. 
+Bug reports and pull requests to fix issues are always welcome, as are
+contributions to the built-in documentation.
 
 If adding features, or making changes, it is recommended to update or add tests
 and assertions to the appropriate test case class in ``test_pdpyras.py`` to ensure
 code coverage. If the change(s) fix a bug, please add assertions that reproduce
 the bug along with code changes themselves, and include the GitHub issue number
 in the commit message.
+
+Releasing
+---------
+(Target audience: package maintainers)
+
+Initial Setup
+*************
+
+To be able to rebuild the documentation and release a new version, first
+make sure you have `make <https://www.gnu.org/software/make/>`_ and `pip
+<https://pip.pypa.io/en/stable/installation/>`_ installed.
+
+Next, install Python dependencies for building and publishing:
+
+.. code-block:: shell
+
+    pip install -r requirements-publish.txt 
+
+Before publishing
+*****************
+
+A pull request for releasing a new version should be created, which should include at least:
+
+* An update to CHANGELOG.rst, where all lines corresponding to community contributions end with (in parentheses) the GitHub user handle of the contributor, a slash, and a link to the pull request.
+* A change in the version number in both setup.py and pdpyras.py, to a new version that follows `Semantic Versioning <https://semver.org/>`_.
+
+The pull request should then be reviewed before committing a rebuild of the
+documentation. This is because it adds many file changes that are not meant
+to be reviewed manually, as they are generated. Documentation can be built
+locally for review and proofreading via:
+
+.. code-block:: shell
+
+    make docs
+
+The documentation can then be viewed in the file ``docs/index.html``. 
+
+Publishing a new version
+************************
+Once the pull request is approved, rebuild the documentation, commit/push
+the changes, and merge.
+
+Once the changes are merged, tag the merge onto the main branch as
+``v{version}``, i.e. ``v4.4.0``, and with that as the current git head (and
+a clean local file tree) run:
+
+.. code-block:: shell
+
+    make publish
 
 .. References:
 .. -----------

@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 4.3.0 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 4.4.0 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -38,6 +38,7 @@
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/PagerDuty/pdpyras">GitHub repository</a></p></li>
 <li><p><a class="reference external" href="https://pagerduty.github.io/pdpyras">Documentation</a></p></li>
+<li><p><a class="reference external" href="https://github.com/PagerDuty/pdpyras/tree/master/CHANGELOG.rst">Changelog</a></p></li>
 </ul>
 <div class="section" id="about">
 <h2>About<a class="headerlink" href="#about" title="Permalink to this headline">¶</a></h2>
@@ -689,13 +690,54 @@ alert data to the Events API and triggering incidents asynchronously:
 </div>
 <div class="section" id="contributing">
 <h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h2>
-<p>Bug reports and pull requests to fix issues are always welcome.</p>
+<p>Bug reports and pull requests to fix issues are always welcome, as are
+contributions to the built-in documentation.</p>
 <p>If adding features, or making changes, it is recommended to update or add tests
 and assertions to the appropriate test case class in <code class="docutils literal notranslate"><span class="pre">test_pdpyras.py</span></code> to ensure
 code coverage. If the change(s) fix a bug, please add assertions that reproduce
 the bug along with code changes themselves, and include the GitHub issue number
 in the commit message.</p>
+</div>
+<div class="section" id="releasing">
+<h2>Releasing<a class="headerlink" href="#releasing" title="Permalink to this headline">¶</a></h2>
+<p>(Target audience: package maintainers)</p>
+<div class="section" id="initial-setup">
+<h3>Initial Setup<a class="headerlink" href="#initial-setup" title="Permalink to this headline">¶</a></h3>
+<p>To be able to rebuild the documentation and release a new version, first
+make sure you have <a class="reference external" href="https://www.gnu.org/software/make/">make</a> and <a class="reference external" href="https://pip.pypa.io/en/stable/installation/">pip</a> installed.</p>
+<p>Next, install Python dependencies for building and publishing:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip install -r requirements-publish.txt
+</pre></div>
+</div>
+</div>
+<div class="section" id="before-publishing">
+<h3>Before publishing<a class="headerlink" href="#before-publishing" title="Permalink to this headline">¶</a></h3>
+<p>A pull request for releasing a new version should be created, which should include at least:</p>
+<ul class="simple">
+<li><p>An update to CHANGELOG.rst, where all lines corresponding to community contributions end with (in parentheses) the GitHub user handle of the contributor, a slash, and a link to the pull request.</p></li>
+<li><p>A change in the version number in both setup.py and pdpyras.py, to a new version that follows <a class="reference external" href="https://semver.org/">Semantic Versioning</a>.</p></li>
+</ul>
+<p>The pull request should then be reviewed before committing a rebuild of the
+documentation. This is because it adds many file changes that are not meant
+to be reviewed manually, as they are generated. Documentation can be built
+locally for review and proofreading via:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>make docs
+</pre></div>
+</div>
+<p>The documentation can then be viewed in the file <code class="docutils literal notranslate"><span class="pre">docs/index.html</span></code>.</p>
+</div>
+<div class="section" id="publishing-a-new-version">
+<h3>Publishing a new version<a class="headerlink" href="#publishing-a-new-version" title="Permalink to this headline">¶</a></h3>
+<p>Once the pull request is approved, rebuild the documentation, commit/push
+the changes, and merge.</p>
+<p>Once the changes are merged, tag the merge onto the main branch as
+<code class="docutils literal notranslate"><span class="pre">v{version}</span></code>, i.e. <code class="docutils literal notranslate"><span class="pre">v4.4.0</span></code>, and with that as the current git head (and
+a clean local file tree) run:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>make publish
+</pre></div>
+</div>
 <p><em>Code author: Demitri Morgan &lt;<a class="reference external" href="mailto:demitri&#37;&#52;&#48;pagerduty&#46;com">demitri<span>&#64;</span>pagerduty<span>&#46;</span>com</a>&gt;</em></p>
+</div>
 </div>
 <div class="section" id="developer-interface">
 <h2>Developer Interface<a class="headerlink" href="#developer-interface" title="Permalink to this headline">¶</a></h2>
@@ -774,6 +816,25 @@ treating the failure as non-transient; a <a class="reference internal" href="#pd
 will be raised if this happens.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt id="pdpyras.PDSession.normalize_params">
+<code class="sig-name descname">normalize_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.normalize_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modify the user-supplied parameters.</p>
+<p>Current behavior:</p>
+<ul class="simple">
+<li><p>If a parameter’s value is of type list, and the parameter name does
+not already end in “[]”, then the square brackets are appended to keep
+in line with the requirement that all set filters’ parameter names end
+in “[]”.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pdpyras.PDSession.normalize_url">
+<code class="sig-name descname">normalize_url</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">url</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.normalize_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compose the URL whether it is a path or an already-complete URL</p>
+</dd></dl>
+
 <dl class="py attribute">
 <dt id="pdpyras.PDSession.parent">
 <code class="sig-name descname">parent</code><em class="property"> = None</em><a class="headerlink" href="#pdpyras.PDSession.parent" title="Permalink to this definition">¶</a></dt>
@@ -788,11 +849,14 @@ will be raised if this happens.</p>
 
 <dl class="py method">
 <dt id="pdpyras.PDSession.prepare_headers">
-<code class="sig-name descname">prepare_headers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.prepare_headers" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">prepare_headers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em>, <em class="sig-param"><span class="n">user_headers</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.prepare_headers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Append special additional per-request headers.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>method</strong> – The HTTP method, in upper case.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> – The HTTP method, in upper case.</p></li>
+<li><p><strong>user_headers</strong> – Headers that can be specified to override default values.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -1136,7 +1200,7 @@ to <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpy
 
 <dl class="py method">
 <dt id="pdpyras.APISession.persist">
-<code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span></em>, <em class="sig-param"><span class="n">attr</span></em>, <em class="sig-param"><span class="n">values</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.persist" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span></em>, <em class="sig-param"><span class="n">attr</span></em>, <em class="sig-param"><span class="n">values</span></em>, <em class="sig-param"><span class="n">update</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.persist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Finds or creates and returns a resource matching an idempotency key.</p>
 <p>Given a resource name, an attribute to use as an idempotency key and a
 set of attribute:value pairs as a dict, create a resource with the
@@ -1153,6 +1217,8 @@ user with the email address given in <code class="docutils literal notranslate">
 <li><p><strong>values</strong> (<em>dict</em>) – The content of the resource to be created, if it does not already
 exist. This must contain an item with a key that is the same as the
 <code class="docutils literal notranslate"><span class="pre">attr</span></code> argument.</p></li>
+<li><p><strong>update</strong> (<em>bool</em>) – (New in 4.4.0) If set to True, any existing resource will be updated
+with the values supplied.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1170,8 +1236,8 @@ and can be extended in child classes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>method</strong> (<em>str</em>) – Method of the request</p></li>
-<li><p><strong>response</strong> (<a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a>) – Response object</p></li>
+<li><p><strong>response</strong> (<a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a>) – The <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object returned by
+<a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Session.request">requests.Session.request</a></p></li>
 <li><p><strong>suffix</strong> (<em>str</em><em> or </em><em>None</em>) – Optional suffix to append to the key</p></li>
 </ul>
 </dd>
@@ -1180,11 +1246,14 @@ and can be extended in child classes.</p>
 
 <dl class="py method">
 <dt id="pdpyras.APISession.prepare_headers">
-<code class="sig-name descname">prepare_headers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.prepare_headers" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">prepare_headers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em>, <em class="sig-param"><span class="n">user_headers</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.prepare_headers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Append special additional per-request headers.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>method</strong> – The HTTP method, in upper case.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> – The HTTP method, in upper case.</p></li>
+<li><p><strong>user_headers</strong> – Headers that can be specified to override default values.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -1284,8 +1353,13 @@ this API, refer to the <a class="reference external" href="https://developer.pag
 
 <dl class="py method">
 <dt id="pdpyras.EventsAPISession.prepare_headers">
-<code class="sig-name descname">prepare_headers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.prepare_headers" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">prepare_headers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em>, <em class="sig-param"><span class="n">user_headers</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.prepare_headers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add user agent and content type headers for Events API requests.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>user_headers</strong> – User-supplied headers that will override defaults</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -1371,7 +1445,7 @@ for more details.</p>
 
 <dl class="py method">
 <dt id="pdpyras.ChangeEventsAPISession.prepare_headers">
-<code class="sig-name descname">prepare_headers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.ChangeEventsAPISession.prepare_headers" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">prepare_headers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em>, <em class="sig-param"><span class="n">user_headers</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.ChangeEventsAPISession.prepare_headers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add user agent and content type headers for Change Events API requests.</p>
 </dd></dl>
 
@@ -1412,8 +1486,8 @@ for more details.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="id1">
-<h3>Errors<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id2">
+<h3>Errors<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <dl class="py class">
 <dt id="pdpyras.PDClientError">
 <em class="property">class </em><code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">PDClientError</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="n">response</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDClientError" title="Permalink to this definition">¶</a></dt>
@@ -1427,65 +1501,40 @@ for more details.</p>
 
 </dd></dl>
 
+<dl class="py class">
+<dt id="pdpyras.PDHTTPError">
+<em class="property">class </em><code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">PDHTTPError</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="n">response</span><span class="p">:</span> <span class="n">requests.models.Response</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDHTTPError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Error class representing errors strictly associated with HTTP responses.</p>
+<p>This class was created to make it easier to more cleanly handle errors by
+way of a class that is guaranteed to have its <code class="docutils literal notranslate"><span class="pre">response</span></code> be a valid
+<a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object.</p>
+<p>Whereas, the more generic <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> could also be used
+to denote such things as non-transient network errors wherein no response
+was recevied from the API.</p>
+<p>For instance, instead of this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s1">&#39;/users/PABC123&#39;</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;HTTP error: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>one could write this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s1">&#39;/users/PABC123&#39;</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDHTTPErrror</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;HTTP error: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+<span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
 </div>
 <div class="section" id="module-pdpyras">
 <span id="functions"></span><h3>Functions<a class="headerlink" href="#module-pdpyras" title="Permalink to this headline">¶</a></h3>
-<dl class="py class">
-<dt id="id0">
-<em class="property">class </em><code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">ChangeEventsAPISession</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">api_key</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
-<dd><p>Session class for submitting change events to the PagerDuty v2 Change Events API.</p>
-<p>Implements methods for submitting change events to PagerDuty’s change events
-API. See the <a class="reference external" href="https://developer.pagerduty.com/docs/events-api-v2/send-change-events/">Change Events API documentation</a>
-for more details.</p>
-<p>Inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDSession</span></code></a>.</p>
-<dl class="py method">
-<dt id="id3">
-<em class="property">property </em><code class="sig-name descname">auth_header</code><a class="headerlink" href="#id3" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generates the header with the API credential used for authentication.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="id4">
-<code class="sig-name descname">prepare_headers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id4" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add user agent and content type headers for Change Events API requests.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="id5">
-<code class="sig-name descname">send_change_event</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">properties</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id5" title="Permalink to this definition">¶</a></dt>
-<dd><p>Send a change event to the v2 Change Events API.</p>
-<p>See: <a class="reference external" href="https://developer.pagerduty.com/docs/events-api-v2/send-change-events/">https://developer.pagerduty.com/docs/events-api-v2/send-change-events/</a></p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>**properties</strong> – Properties to set, i.e. <code class="docutils literal notranslate"><span class="pre">payload</span></code> and <code class="docutils literal notranslate"><span class="pre">links</span></code></p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The response ID</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="id6">
-<code class="sig-name descname">submit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">summary</span></em>, <em class="sig-param"><span class="n">source</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">custom_details</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">links</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id6" title="Permalink to this definition">¶</a></dt>
-<dd><p>Submit an incident change</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>summary</strong> (<em>str</em>) – Summary / brief description of the change.</p></li>
-<li><p><strong>source</strong> (<em>str</em>) – A human-readable name identifying the source of the change.</p></li>
-<li><p><strong>custom_details</strong> (<em>dict</em>) – The <code class="docutils literal notranslate"><span class="pre">payload.custom_details</span></code> property of the payload.</p></li>
-<li><p><strong>links</strong> (<em>list</em>) – Set the <code class="docutils literal notranslate"><span class="pre">links</span></code> property of the event.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
 <dl class="py function">
 <dt id="pdpyras.auto_json">
 <code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">auto_json</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.auto_json" title="Permalink to this definition">¶</a></dt>
@@ -1549,7 +1598,8 @@ the <code class="docutils literal notranslate"><span class="pre">{...}</span></c
 an escalation policy)  rather than a <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object.</p>
 <p>Methods using this decorator will raise a <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> with its
 <code class="docutils literal notranslate"><span class="pre">response</span></code> property being being the <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object in the
-case of any error, so that the implementer can access it by catching the
+case of any error (as of version 4.2 this is subclassed as
+<a class="reference internal" href="#pdpyras.PDHTTPError" title="pdpyras.PDHTTPError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDHTTPError</span></code></a>), so that the implementer can access it by catching the
 exception, and thus design their own custom logic around different types of
 error responses.</p>
 <p>It allows creation of methods that can provide more succinct ways of making
@@ -1639,21 +1689,30 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 
 </div>
 </div>
-<div class="section" id="changelog">
-<h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id3">
+<h2>Changelog<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p><strong>2022-01-18: Version 4.4.0</strong></p>
+<ul class="simple">
+<li><p>Added new error class <a class="reference internal" href="#pdpyras.PDHTTPError" title="pdpyras.PDHTTPError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDHTTPError</span></code></a> for strictly application-level errors (i.e. HTTP responses vs. network errors), inherits from <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a></p></li>
+<li><p>Removed unnecessary dependencies that were hold-outs from Python 2.7 compatibility (deprecated)</p></li>
+<li><p>Automatically add square brackets to query parameters that are of list type if the user forgets to do so, per the requirement of using <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU2-filtering#set-filters">set filters</a></p></li>
+<li><p>Fix bug: the <a class="reference internal" href="#pdpyras.PDSession.stagger_cooldown" title="pdpyras.PDSession.stagger_cooldown"><code class="xref py py-attr docutils literal notranslate"><span class="pre">PDSession.stagger_cooldown</span></code></a> feature added in version 3.2 only applied to network error/retry; it now applies to all forms of retrial</p></li>
+<li><p>Add “update” keyword argument to <a class="reference internal" href="#pdpyras.APISession.persist" title="pdpyras.APISession.persist"><code class="xref py py-attr docutils literal notranslate"><span class="pre">APISession.persist</span></code></a> that updates any existing resource with the provided values</p></li>
+</ul>
 <p><strong>2021-06-28: Version 4.3.0</strong></p>
 <ul class="simple">
-<li><p>Make timeout configurable per-session as an instance variable (based on <cite>a suggestion in pull #48 &lt;https://github.com/PagerDuty/pdpyras/pull/48#discussion_r529711040&gt;</cite> made by &#64;badnetmask)</p></li>
+<li><p>Make timeout configurable per-session as an instance variable (based on <a class="reference external" href="https://github.com/PagerDuty/pdpyras/pull/48#discussion_r529711040">a suggestion in pull #48</a> made by &#64;badnetmask)</p></li>
 <li><p>Drop support for Python 2.7</p></li>
 <li><p>Improve code samples formatting improvement (&#64;jackton1 / <a class="reference external" href="https://github.com/PagerDuty/pdpyras/pull/65">#65</a>)</p></li>
+<li><p>Replace deprecated escape sequence for the double-splat operator in docstrings (&#64;ashwin153 / <a class="reference external" href="https://github.com/PagerDuty/pdpyras/pull/68">#68</a>)</p></li>
 </ul>
 <p><strong>2021-05-13: Version 4.2.1</strong></p>
 <ul class="simple">
-<li><p>Implement work-around for issue in response plays API (<cite>#61 &lt;https://github.com/PagerDuty/pdpyras/issues/61&gt;</cite>)</p></li>
+<li><p>Implement work-around for issue in response plays API (issue <a class="reference external" href="https://github.com/PagerDuty/pdpyras/issues/61">#61</a>)</p></li>
 </ul>
 <p><strong>2021-05-04: Version 4.2.0</strong></p>
 <ul class="simple">
-<li><p>Add new change events API client class (by <cite>&#64;hunner &lt;https://github.com/hunner&gt;</cite>)</p></li>
+<li><p>Add new change events API client class (&#64;hunner / <a class="reference external" href="https://github.com/PagerDuty/pdpyras/pull/56">#56</a>)</p></li>
 </ul>
 <p><strong>2021-03-18: Version 4.1.4</strong></p>
 <ul class="simple">
@@ -1670,7 +1729,7 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 <ul class="simple">
 <li><p>Use documented method for including the routing key in the request for API V2 (addresses <a class="reference external" href="https://github.com/PagerDuty/pdpyras/issues/53">#53</a>)</p></li>
 <li><p>Add warning for Python 2.7</p></li>
-<li><p>Configurable timeout: argument to <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Session.request">requests.Session.request</a> set in default args to backwards-compatible 5 second value that can be set at the module level (by <cite>&#64;ctrlaltdel &lt;https://github.com/ctrlaltdel&gt;</cite>)</p></li>
+<li><p>Configurable timeout: argument to <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Session.request">requests.Session.request</a> set in default args to backwards-compatible 5 second value that can be set at the module level (&#64;ctrlaltdel / <cite>#48 &lt;https://github.com/PagerDuty/pdpyras/pull/48&gt;</cite>)</p></li>
 </ul>
 <p><strong>2020-09-15: Version 4.1.2</strong></p>
 <ul class="simple">
@@ -1816,16 +1875,22 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </ul>
 </li>
 <li><a class="reference internal" href="#contributing">Contributing</a></li>
+<li><a class="reference internal" href="#releasing">Releasing</a><ul>
+<li><a class="reference internal" href="#initial-setup">Initial Setup</a></li>
+<li><a class="reference internal" href="#before-publishing">Before publishing</a></li>
+<li><a class="reference internal" href="#publishing-a-new-version">Publishing a new version</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#developer-interface">Developer Interface</a><ul>
 <li><a class="reference internal" href="#generic-api-client">Generic API Client</a></li>
 <li><a class="reference internal" href="#rest-api-client">REST API Client</a></li>
 <li><a class="reference internal" href="#events-api-client">Events API Client</a></li>
 <li><a class="reference internal" href="#change-events-api-client">Change Events API Client</a></li>
-<li><a class="reference internal" href="#id1">Errors</a></li>
+<li><a class="reference internal" href="#id2">Errors</a></li>
 <li><a class="reference internal" href="#module-pdpyras">Functions</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#changelog">Changelog</a></li>
+<li><a class="reference internal" href="#id3">Changelog</a></li>
 </ul>
 </li>
 </ul>

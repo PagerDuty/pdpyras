@@ -14,7 +14,7 @@ import requests
 from urllib3.exceptions import HTTPError, PoolError
 from requests.exceptions import RequestException
 
-__version__ = '4.3.0'
+__version__ = '4.4.0'
 
 # These are API resource endpoints/methods for which multi-update is supported
 VALID_MULTI_UPDATE_PATHS = [
@@ -70,17 +70,20 @@ def raise_on_error(r):
     :returns: The response object, if its status was success
     :rtype: `requests.Response`_
     """
-    if r.ok:
-        return r
+    received_http_response = bool(r.status_code)
+    if received_http_response:
+        if r.ok:
+            return r
+        else:
+            raise PDHTTPError("%s %s: API responded with non-success status "
+                "(%d): %s" % (
+                    r.request.method.upper(),
+                    r.request.url.replace('https://api.pagerduty.com', ''),
+                    r.status_code,
+                    r.text[:99]
+                ), r)
     else:
-        raise PDClientError("%s %s: API responded with non-success status "
-            "(%d): %s" % (
-                r.request.method.upper(),
-                r.request.url.replace('https://api.pagerduty.com', ''),
-                r.status_code,
-                r.text[:99]
-            ), response=r
-        )
+        raise PDClientError("Network or unknown error: "+str(r))
 
 def resource_envelope(method):
     """
@@ -93,7 +96,8 @@ def resource_envelope(method):
 
     Methods using this decorator will raise a :class:`PDClientError` with its
     ``response`` property being being the `requests.Response`_ object in the
-    case of any error, so that the implementer can access it by catching the
+    case of any error (as of version 4.2 this is subclassed as
+    :class:`PDHTTPError`), so that the implementer can access it by catching the
     exception, and thus design their own custom logic around different types of
     error responses.
 
@@ -261,8 +265,7 @@ def try_decoding(r):
     try:
         return r.json()
     except ValueError as e:
-        raise PDClientError("API responded with invalid JSON: "+r.text[:99],
-            response=r)
+        raise PDHTTPError("API responded with invalid JSON: "+r.text[:99], r)
 
 ###############
 ### CLASSES ###
@@ -453,20 +456,51 @@ class PDSession(requests.Session):
     def cooldown_factor(self):
         return self.sleep_timer_base*(1+self.stagger_cooldown*random())
 
+    def normalize_params(self, params):
+        """
+        Modify the user-supplied parameters.
+
+        Current behavior:
+
+        * If a parameter's value is of type list, and the parameter name does
+          not already end in "[]", then the square brackets are appended to keep
+          in line with the requirement that all set filters' parameter names end
+          in "[]".
+        """
+        updated_params = {}
+        for param, value in params.items():
+            if type(value) is list and not param.endswith('[]'):
+                updated_params[param+'[]'] = value
+            else:
+                updated_params[param] = value
+        return updated_params
+
+    def normalize_url(self, url):
+        """Compose the URL whether it is a path or an already-complete URL"""
+        if url.startswith(self.url) or not self.url:
+            return url
+        else:
+            return self.url + "/" + url.lstrip('/')
+
     def postprocess(self, response):
         """
         Perform supplemental actions immediately after receiving a response.
         """
         pass
 
-    def prepare_headers(self, method):
+    def prepare_headers(self, method, user_headers={}):
         """
         Append special additional per-request headers.
 
         :param method:
             The HTTP method, in upper case.
+        :param user_headers:
+            Headers that can be specified to override default values.
         """
-        return self.headers
+        headers = deepcopy(self.headers)
+        if user_headers:
+            headers.update(user_headers)
+        return headers
 
     def request(self, method, url, **kwargs):
         """
@@ -494,20 +528,22 @@ class PDSession(requests.Session):
                 "Method %s not supported by this API. Permitted methods: %s"%(
                     method, ', '.join(self.permitted_methods)))
         req_kw = deepcopy(kwargs)
-        my_headers = self.prepare_headers(method)
-        # Merge, but do not replace, any headers specified in keyword arguments:
-        if 'headers' in kwargs:
-            my_headers.update(kwargs['headers'])
+
+        # Add in any headers specified in keyword arguments:
+        headers = kwargs.get('headers', {})
         req_kw.update({
-            'headers': my_headers,
+            'headers': self.prepare_headers(method, user_headers=headers),
             'stream': False,
             'timeout': self.timeout
         })
-        # Compose/normalize URL whether or not path is already a complete URL
-        if url.startswith(self.url) or not self.url:
-            my_url = url
-        else:
-            my_url = self.url + "/" + url.lstrip('/')
+
+        # Special changes to user-supplied parameters, for convenience
+        if 'params' in kwargs:
+            req_kw['params'] = self.normalize_params(kwargs['params'])
+
+        # Compose the full URL:
+        my_url = self.normalize_url(url)
+
         # Make the request (and repeat w/cooldown if the rate limit is reached):
         while True:
             try:
@@ -518,7 +554,7 @@ class PDSession(requests.Session):
                 if network_attempts > self.max_network_attempts:
                     raise PDClientError("Non-transient network error; exceeded "
                         "maximum number of attempts (%d) to connect to the "
-                        "API"%self.max_network_attempts)
+                        "API."%self.max_network_attempts)
                 sleep_timer *= self.cooldown_factor()
                 self.log.debug("HTTP or network error: %s: %s; retrying in %g "
                     "seconds.", e.__class__.__name__, e, sleep_timer)
@@ -539,13 +575,13 @@ class PDSession(requests.Session):
                             "status %d.", self.retry[status], status)
                         return response
                     http_attempts[status] = 1 + http_attempts.get(status, 0)
-                sleep_timer *= self.sleep_timer_base
+                sleep_timer *= self.cooldown_factor()
                 self.log.debug("HTTP error (%d); retrying in %g seconds.",
                     status, sleep_timer)
                 time.sleep(sleep_timer)
                 continue
             elif status == 429:
-                sleep_timer *= self.sleep_timer_base
+                sleep_timer *= self.cooldown_factor()
                 self.log.debug("Hit API rate limit (response status 429); "
                     "retrying in %g seconds", sleep_timer)
                 time.sleep(sleep_timer)
@@ -553,10 +589,10 @@ class PDSession(requests.Session):
             elif status == 401:
                 # Stop. Authentication failed. We shouldn't try doing any more,
                 # because we'll run into problems later anyway.
-                raise PDClientError(
+                raise PDHTTPError(
                     "Received 401 Unauthorized response from the API. The "
-                    "access key (%s) might not be valid."%self.trunc_key,
-                    response=response)
+                    "access key (...%s) might not be valid."%self.trunc_key,
+                    response)
             else:
                 # All went according to plan.
                 return response
@@ -661,13 +697,18 @@ class EventsAPISession(PDSession):
         """
         return self.send_event('acknowledge', dedup_key=dedup_key)
 
-    def prepare_headers(self, method):
-        """Add user agent and content type headers for Events API requests."""
+    def prepare_headers(self, method, user_headers={}):
+        """Add user agent and content type headers for Events API requests.
+
+        :param user_headers: User-supplied headers that will override defaults
+        """
         headers = deepcopy(self.headers)
         headers.update({
             'Content-Type': 'application/json',
             'User-Agent': self.user_agent,
         })
+        if user_headers:
+            headers.update(user_headers)
         return headers
 
     def resolve(self, dedup_key):
@@ -819,13 +860,15 @@ class ChangeEventsAPISession(PDSession):
     def event_timestamp(self):
         return datetime.utcnow().isoformat()+'Z'
 
-    def prepare_headers(self, method):
+    def prepare_headers(self, method, user_headers={}):
         """Add user agent and content type headers for Change Events API requests."""
         headers = deepcopy(self.headers)
         headers.update({
             'Content-Type': 'application/json',
             'User-Agent': self.user_agent,
         })
+        if user_headers:
+            headers.update(user_headers)
         return headers
 
     def send_change_event(self, **properties):
@@ -1131,13 +1174,13 @@ class APISession(PDSession):
                     raise PDClientError("Encountered HTTP error status (%d) "
                         "response while iterating through index endpoint %s."%(
                             r.status_code, path), response=r)
-                self.log.debug("Stopping iteration on endpoint \"%s\"; API "
+                self.log.warn("Stopping iteration on endpoint \"%s\"; API "
                     "responded with non-success status %d", path, r.status_code)
                 break
             try:
                 response = r.json()
             except ValueError:
-                self.log.debug("Stopping iteration on endpoint \"%s\"; API "
+                self.log.warn("Stopping iteration on endpoint \"%s\"; API "
                     "responded with invalid JSON.", path)
                 break
             #if 'limit' in response:
@@ -1149,14 +1192,14 @@ class APISession(PDSession):
                 if 'more' in response:
                     more = response['more']
                 else:
-                    self.log.debug("Pagination is enabled in iteration, but the"
+                    self.log.warn("Pagination is enabled in iteration, but the"
                         " index endpoint %s responded with no \"more\" property"
                         " in the response. Only the first page of results, "
                         "however many can be gotten, will be included.", path)
                 if 'total' in response:
                     total_count = response['total']
                 else:
-                    self.log.debug("Pagination and the \"total\" parameter "
+                    self.log.warn("Pagination and the \"total\" parameter "
                         "are enabled in iteration, but the index endpoint %s "
                         "responded with no \"total\" property in the response. "
                         "Cannot display a total count of this resource without "
@@ -1208,7 +1251,7 @@ class APISession(PDSession):
         """
         return list(self.iter_all(path, **kw))
 
-    def persist(self, resource, attr, values):
+    def persist(self, resource, attr, values, update=False):
         """
         Finds or creates and returns a resource matching an idempotency key.
 
@@ -1228,9 +1271,13 @@ class APISession(PDSession):
             The content of the resource to be created, if it does not already
             exist. This must contain an item with a key that is the same as the
             ``attr`` argument.
+        :param update:
+            (New in 4.4.0) If set to True, any existing resource will be updated
+            with the values supplied.
         :type resource: str
         :type attr: str
         :type values: dict
+        :type update: bool
         :rtype: dict
         """
         if attr not in values:
@@ -1238,8 +1285,12 @@ class APISession(PDSession):
                 "to the `attr` argument (expected idempotency key: '%s')."%attr)
         existing = self.find(resource, values[attr], attribute=attr)
         if existing:
+            if update:
+                existing.update(values)
+                existing = self.rput(existing['self'], json=existing)
             return existing
-        return self.rpost(resource, json=values)
+        else:
+            return self.rpost(resource, json=values)
 
     def postprocess(self, response, suffix=None):
         """
@@ -1248,10 +1299,9 @@ class APISession(PDSession):
         This method is called automatically by :func:`request` for all requests,
         and can be extended in child classes.
 
-        :param method:
-            Method of the request
         :param response:
-            Response object
+            The `requests.Response`_ object returned by
+            `requests.Session.request`_
         :param suffix:
             Optional suffix to append to the key
         :type method: str
@@ -1281,13 +1331,15 @@ class APISession(PDSession):
                 "and reference x_request_id=%s / date=%s",
                 status, request_id, request_date)
 
-    def prepare_headers(self, method):
+    def prepare_headers(self, method, user_headers={}):
         headers = deepcopy(self.headers)
         headers['User-Agent'] = self.user_agent
         if self.default_from is not None:
             headers['From'] = self.default_from
         if method in ('POST', 'PUT'):
             headers['Content-Type'] = 'application/json'
+        if user_headers:
+            headers.update(user_headers)
         return headers
 
     def profiler_key(self, method, path, suffix=None):
@@ -1432,3 +1484,42 @@ class PDClientError(Exception):
         self.msg = message
         self.response = response
         super(PDClientError, self).__init__(message)
+
+class PDHTTPError(PDClientError):
+    """
+    Error class representing errors strictly associated with HTTP responses.
+
+    This class was created to make it easier to more cleanly handle errors by
+    way of a class that is guaranteed to have its ``response`` be a valid
+    `requests.Response`_ object.
+
+    Whereas, the more generic :class:`PDClientError` could also be used
+    to denote such things as non-transient network errors wherein no response
+    was recevied from the API.
+
+    For instance, instead of this:
+
+    ::
+
+        try:
+            user = session.rget('/users/PABC123')
+        except pdpyras.PDClientError as e:
+            if e.response is not None:
+                print("HTTP error: "+str(e))
+            else:
+                print(e)
+
+    one could write this:
+
+    ::
+
+        try:
+            user = session.rget('/users/PABC123')
+        except pdpyras.PDHTTPErrror as e:
+            print("HTTP error: "+str(e))
+        except pdpyras.PDClientError as e:
+            print(e)
+    """
+
+    def __init__(self, message, response: requests.Response):
+        super(PDHTTPError, self).__init__(message, response)

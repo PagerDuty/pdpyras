@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-__version__ = '4.3.0'
+__version__ = '4.4.0'
 
 if __name__ == '__main__':
     setup(
@@ -15,5 +15,5 @@ if __name__ == '__main__':
         install_requires=['requests', 'urllib3'],
         author='Demitri Morgan',
         author_email='demitri@pagerduty.com',
-        python_requires='!=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, >=3.5'
+        python_requires='>=3.5'
     )
