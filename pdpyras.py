@@ -36,7 +36,7 @@ def auto_json(method):
     Function decorator that makes methods return the full response JSON
     """
     def call(self, path, **kw):
-        response = raise_on_error(method(self, path, **pass_kw))
+        response = raise_on_error(method(self, path, **kw))
         return try_decoding(response)
     return call
 
@@ -538,7 +538,7 @@ class PDSession(requests.Session):
         })
 
         # Special changes to user-supplied parameters, for convenience
-        if 'params' in kwargs:
+        if 'params' in kwargs and kwargs['params']:
             req_kw['params'] = self.normalize_params(kwargs['params'])
 
         # Compose the full URL:
@@ -702,13 +702,13 @@ class EventsAPISession(PDSession):
 
         :param user_headers: User-supplied headers that will override defaults
         """
-        headers = deepcopy(self.headers)
+        headers = {}
+        headers.update(self.headers)
         headers.update({
             'Content-Type': 'application/json',
             'User-Agent': self.user_agent,
         })
-        if user_headers:
-            headers.update(user_headers)
+        headers.update(user_headers)
         return headers
 
     def resolve(self, dedup_key):
@@ -1211,6 +1211,50 @@ class APISession(PDSession):
                 if hasattr(item_hook, '__call__'):
                     item_hook(result, n, total_count)
                 yield result
+
+    def iter_cursor(self, path, attribute=None, params=None):
+        """
+        Iterator for results from an endpoint supporting cursor-based pagination
+
+        :param path:
+            The index endpoint URL to use.
+        :param attribute:
+            The property in the JSON body, i.e. ``records`` for
+            ``/audit/records``, in which to find results. If None is specified,
+            a guess will be made as to the envelope name (that it is the same as
+            the last node in the URI path).
+        :param params:
+            Query parameters to include in the request.
+        """
+
+        if attribute:
+            assumed_attribute = attribute
+        else:
+            assumed_attribute = path.split('/')[-1]
+
+        user_params = {}
+        if params:
+            user_params.update(params)
+
+        more = True
+        next_cursor = None
+        while more:
+            if next_cursor:
+                user_params.update({'cursor': next_cursor})
+            page = self.jget(path, params=user_params)
+            if assumed_attribute not in page:
+                raise ValueError("No attribute \"{attribute}\" at the root "
+                    "level of the response body from {path}. Attributes "
+                    "include: {examples}".format(
+                        attribute = assumed_attribute,
+                        path = path,
+                        examples = (', '.join(page.keys()))[:99]
+                    )
+                )
+            for result in page[assumed_attribute]:
+                yield result
+            next_cursor = page.get('next_cursor', None)
+            more = bool(next_cursor)
 
     @auto_json
     def jget(self, path, **kw):

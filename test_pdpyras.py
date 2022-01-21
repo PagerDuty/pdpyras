@@ -262,6 +262,50 @@ class APISessionTest(SessionTest):
         items = list(sess.iter_all(weirdurl, item_hook=hook, total=True, page_size=10))
         self.assertEqual(30, len(items))
 
+
+    @patch.object(pdpyras.APISession, 'get')
+    def test_iter_cursor(self, get):
+        sess = pdpyras.APISession('token')
+        sess.log = MagicMock() # Or go with self.debug(sess) to see output
+        page = lambda e, r, c: json.dumps({
+            e: r,
+            'next_cursor': c
+        })
+        wrong_envelope_name = [
+            Response(200, page('stuffs', [1, 2, 3], None))
+        ]
+        get.side_effect = wrong_envelope_name
+        # Note, for this next test and the one after it, we must send a lambda
+        # to assertRaises because the method returns a generator
+        #
+        # Test: guessing the envelope name, incorrect
+        self.assertRaises(ValueError, lambda p: list(sess.iter_cursor(p)), 
+            '/things/stuff')
+        get.reset_mock()
+        # Test: taking user's input for the envelope name, incorrect
+        get.side_effect = wrong_envelope_name
+        self.assertRaises(
+            ValueError,
+            lambda p: list(sess.iter_cursor(p, attribute="thing")),
+            '/stuff/things'
+        )
+        get.reset_mock()
+        # Test: guessing the envelope name, correct guess, cursor parameter
+        # exchange, stop iteration when records run out, etc.
+        get.side_effect = [
+            Response(200, page('numbers', [1, 2, 3], 2)),
+            Response(200, page('numbers', [4, 5, 6], 5)),
+            Response(200, page('numbers', [7, 8, 9], None))
+        ]
+        self.assertEqual(
+            list(sess.iter_cursor('/sequence/numbers')),
+            list(range(1,10))
+        )
+        # It should send the next_cursor body parameter from the second to
+        # last response as the cursor query parameter in the final request
+        self.assertEqual(get.mock_calls[-1][2]['params']['cursor'], 5)
+
+
     @patch.object(pdpyras.APISession, 'rput')
     @patch.object(pdpyras.APISession, 'rpost')
     @patch.object(pdpyras.APISession, 'iter_all')
