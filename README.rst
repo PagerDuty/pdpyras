@@ -5,7 +5,7 @@ A minimal, practical Python client for the PagerDuty REST API.
 
 |circleci-build|
 
-* `GitHub repository <https://github.com/PagerDuty/pdpyras>`_ 
+* `GitHub repository <https://github.com/PagerDuty/pdpyras>`_
 * `Documentation <https://pagerduty.github.io/pdpyras>`_
 * `Changelog <https://github.com/PagerDuty/pdpyras/tree/master/CHANGELOG.rst>`_
 
@@ -24,7 +24,7 @@ and response body schemas of each particular resource (as documented in our
 Features
 ********
 - Efficient API access through automatic HTTP connection pooling and
-  persistence 
+  persistence
 - Tested in / support for Python 2.7 through 3.8
 - Configurable cooldown/reattempt logic for rate limiting and transient network
   problems
@@ -40,7 +40,7 @@ History
 This module was borne of necessity for a basic, reusable API client to
 eliminate code duplication in some of PagerDuty Support's internal Python-based
 API tools. We needed something that could get the job done without reinventing
-the wheel or getting in the way. 
+the wheel or getting in the way.
 
 We also frequently found ourselves performing REST API requests using beta or
 non-documented API endpoints for one reason or another, so we also needed a
@@ -58,7 +58,7 @@ Copyright
 *********
 All the code in this distribution is Copyright (c) 2018 PagerDuty.
 
-``pdpyras`` is made available under the MIT License: 
+``pdpyras`` is made available under the MIT License:
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -137,7 +137,7 @@ Some examples of usage:
 
     api_token = 'your-token-here'
     session = APISession(api_token)
-    
+
     for user in session.iter_all('users'):
         print(user['id'], user['email'], user['name'])
 
@@ -146,8 +146,8 @@ Some examples of usage:
 .. code-block:: python
 
     from pdpyras import APISession
-    
-    
+
+
     api_token = 'your-token-here'
 
     session = APISession(api_token)
@@ -248,7 +248,7 @@ URLs
   constructing an API request, i.e. one can specify ``users/PABC123`` or
   ``/users/PABC123`` instead of ``https://api.pagerduty.com/users/PABC123``.
 
-* One can also pass the full URL of an API endpoint and it will still work, i.e. 
+* One can also pass the full URL of an API endpoint and it will still work, i.e.
   the ``self`` property of any object can be used, and there is no need to strip
   out the API base URL.
 
@@ -283,7 +283,7 @@ request and response bodies, while the API client takes care of everything else.
   - If using the ``r{VERB}`` methods, i.e.  ``rget``, the return value will be
     the ``dict``/``list`` object decoded from the `wrapped entity
     <https://v2.developer.pagerduty.com/docs/wrapped-entities>`_  and there is
-    no need to call ``response.json()``. 
+    no need to call ``response.json()``.
 
   - Similarly, the ``j{VERB}`` methods, i.e.  ``jget``, return the object
     decoded from the JSON string in the response body (but without attempting
@@ -340,7 +340,7 @@ Note, one can perform `filtering
 <https://v2.developer.pagerduty.com/docs/filtering>`_ with iteration to constrain
 constrain the range of results, by passing in a dictionary object as the ``params``
 keyword argument. Any parameters will be automatically merged with the pagination
-parameters and serialized into the final URL, so there is no need to manually 
+parameters and serialized into the final URL, so there is no need to manually
 construct the URL, i.e. append ``?key1=value1&key2=value2``.
 
 **Example:** Find all users with "Dav" in their name/email (i.e. Dave/David) in
@@ -413,7 +413,7 @@ The method :attr:`pdpyras.APISession.rget` gets a resource, returning the object
 within the resource name envelope after JSON-decoding the response body. In
 other words, if retrieving an individual user (for instance), where one would
 have to JSON-decode and then access the ``user`` key in the resulting
-dictionary object, that object itself is directly returned. 
+dictionary object, that object itself is directly returned.
 
 The ``rget`` method can be called with as little as one argument: the URL (or
 URL path) to request. Example:
@@ -463,7 +463,7 @@ user the admin role and prints a message when done:
             json={'role':'admin'}
         )
         print("%s now has admin superpowers"%user['name'])
-        
+
 
 Example of creating an incident:
 
@@ -473,13 +473,18 @@ Example of creating an incident:
 
 
     api_token = 'your-token-here'
-    session = APISession(api_token)
-    
+    sender = 'user@example.com'
+    session = APISession(api_token, default_sender=sender)
+
     payload = {
       "type": "incident",
       "title": "This is a test 4",
       "service": {"id": "service_id", "type": "service_reference"},
       "assignments": [{"assignee": {"id": "user_id", "type": "user_reference"}}],
+      "body": {
+          "type": "incident_body",
+          "details": "utf8 data displayed the more details section of the alert"
+      }
     }
     pd_incident = session.rpost("incidents", json=payload)
 
@@ -664,7 +669,7 @@ regard, so that the client can be made to retry on other statuses (i.e.
 that the client will tolerate before returning the response object is defined
 in :attr:`pdpyras.PDSession.max_http_attempts`, and this will supersede the
 maximum number of retries defined in
-:attr:`pdpyras.PDSession.retry`. 
+:attr:`pdpyras.PDSession.retry`.
 
 **Example:**
 
@@ -679,14 +684,14 @@ before finally returning with the status 404 `requests.Response`_ object:
     session.sleep_timer = 1
     session.sleep_timer_base = 2
     # isinstance(session, pdpyras.APISession)
-    response = session.get('/users/PNOEXST') 
+    response = session.get('/users/PNOEXST')
 
 **Default Behavior:**
 
 Note that without specifying any retry behavior for status 429 (rate limiting),
 it will retry indefinitely. This is a sane approach; if it is ever responding
 with 429, this means that the REST API is receiving (for the given REST API
-key) too many requests, and the issue should by nature be transient. 
+key) too many requests, and the issue should by nature be transient.
 
 Similarly, there is hard-coded default behavior for status 401 (unauthorized):
 immediately raise :class:`pdpyras.PDClientError` (as this can be considered in
@@ -719,7 +724,7 @@ To instantiate a session object, pass the constructor the routing key:
 .. code-block:: python
 
     import pdpyras
-    
+
 
     routing_key = '0123456789abcdef0123456789abcdef'
     session = pdpyras.EventsAPISession(routing_key)
@@ -737,7 +742,7 @@ To instantiate a session object, pass the constructor the routing key:
 
 .. code-block:: python
 
-    session.trigger("Server is on fire", 'dusty.old.server.net', 
+    session.trigger("Server is on fire", 'dusty.old.server.net',
         dedup_key='abc123')
     # ...
     session.acknowledge('abc123')
@@ -788,7 +793,7 @@ locally for review and proofreading via:
 
     make docs
 
-The documentation can then be viewed in the file ``docs/index.html``. 
+The documentation can then be viewed in the file ``docs/index.html``.
 
 Publishing a new version
 ************************
