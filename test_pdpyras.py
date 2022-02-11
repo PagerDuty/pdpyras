@@ -645,8 +645,6 @@ class APISessionTest(SessionTest):
 
         reset_mocks()
         # Test auto-envelope functionality for multi-update
-        # TODO: This test is loosely coupled but somewhat naive. Tighten if need
-        # be.
         incidents = [{'id':'PABC123'}, {'id':'PDEF456'}]
         do_http_things.__name__ = 'rput'
         response.ok = True
@@ -657,7 +655,12 @@ class APISessionTest(SessionTest):
             pdpyras.resource_envelope(do_http_things)(dummy_session,
                 '/incidents', json=incidents)
         )
-
+        # The final value of the json parameter passed to the method (which goes
+        # straight to put) should be the plural resource name
+        self.assertEqual(
+            do_http_things.mock_calls[0][2]['json'],
+            {'incidents': incidents}
+        )
 
     @patch.object(pdpyras.APISession, 'put')
     def test_resource_path(self, put_method):
