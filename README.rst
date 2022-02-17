@@ -112,10 +112,10 @@ Some examples of usage:
 
 .. code-block:: python
 
+    import os
     from pdpyras import APISession
 
-
-    api_token = 'your-token-here'
+    api_token = os.environ['PD_API_KEY']
     session = APISession(api_token)
 
     # Using requests.Session.get:
@@ -132,10 +132,10 @@ Some examples of usage:
 
 .. code-block:: python
 
+    import os
     from pdpyras import APISession
 
-
-    api_token = 'your-token-here'
+    api_token = os.environ['PD_API_KEY']
     session = APISession(api_token)
 
     for user in session.iter_all('users'):
@@ -145,10 +145,10 @@ Some examples of usage:
 
 .. code-block:: python
 
+    import os
     from pdpyras import APISession
 
-
-    api_token = 'your-token-here'
+    api_token = os.environ['PD_API_KEY']
 
     session = APISession(api_token)
     services = list(session.iter_all('services', params={'query': 'SN'}))
@@ -158,10 +158,10 @@ and update their name to "Jane Doe":
 
 .. code-block:: python
 
+    import os
     from pdpyras import APISession
 
-
-    api_token = 'your-token-here'
+    api_token = os.environ['PD_API_KEY']
     session = APISession(api_token)
 
     user = session.find('users', 'jane@example35.com', attribute='email')
@@ -190,10 +190,10 @@ PagerDuty account:
 
 .. code-block:: python
 
+    import os
     from pdpyras import APISession
 
-
-    api_token = 'your-token-here'
+    api_token = os.environ['PD_API_KEY']
     session = APISession(api_token, default_from='admin@example.com')
 
     # Query incidents
@@ -469,10 +469,10 @@ Example of creating an incident:
 
 .. code-block:: python
 
+    import os
     from pdpyras import APISession
 
-
-    api_token = 'your-token-here'
+    api_token = os.environ['PD_API_KEY']
     sender = 'user@example.com'
     session = APISession(api_token, default_sender=sender)
 
