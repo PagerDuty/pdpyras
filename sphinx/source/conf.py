@@ -143,4 +143,4 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-show_authors = True
+show_authors = False

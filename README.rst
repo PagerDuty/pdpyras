@@ -25,7 +25,7 @@ Features
 ********
 - Efficient API access through automatic HTTP connection pooling and
   persistence
-- Tested in / support for Python 2.7 through 3.8
+- Tested in / support for Python 3.5 through 3.9
 - Configurable cooldown/reattempt logic for rate limiting and transient network
   problems
 - Inclusion of required `HTTP Request Headers`_ for PagerDuty REST API requests
@@ -112,10 +112,10 @@ Some examples of usage:
 
 .. code-block:: python
 
+    import os
     from pdpyras import APISession
 
-
-    api_token = 'your-token-here'
+    api_token = os.environ['PD_API_KEY']
     session = APISession(api_token)
 
     # Using requests.Session.get:
@@ -132,10 +132,10 @@ Some examples of usage:
 
 .. code-block:: python
 
+    import os
     from pdpyras import APISession
 
-
-    api_token = 'your-token-here'
+    api_token = os.environ['PD_API_KEY']
     session = APISession(api_token)
 
     for user in session.iter_all('users'):
@@ -145,10 +145,10 @@ Some examples of usage:
 
 .. code-block:: python
 
+    import os
     from pdpyras import APISession
 
-
-    api_token = 'your-token-here'
+    api_token = os.environ['PD_API_KEY']
 
     session = APISession(api_token)
     services = list(session.iter_all('services', params={'query': 'SN'}))
@@ -158,10 +158,10 @@ and update their name to "Jane Doe":
 
 .. code-block:: python
 
+    import os
     from pdpyras import APISession
 
-
-    api_token = 'your-token-here'
+    api_token = os.environ['PD_API_KEY']
     session = APISession(api_token)
 
     user = session.find('users', 'jane@example35.com', attribute='email')
@@ -190,10 +190,10 @@ PagerDuty account:
 
 .. code-block:: python
 
+    import os
     from pdpyras import APISession
 
-
-    api_token = 'your-token-here'
+    api_token = os.environ['PD_API_KEY']
     session = APISession(api_token, default_from='admin@example.com')
 
     # Query incidents
@@ -469,10 +469,10 @@ Example of creating an incident:
 
 .. code-block:: python
 
+    import os
     from pdpyras import APISession
 
-
-    api_token = 'your-token-here'
+    api_token = os.environ['PD_API_KEY']
     sender = 'user@example.com'
     session = APISession(api_token, default_sender=sender)
 
@@ -825,8 +825,6 @@ a clean local file tree) run:
 .. _`REST API Reference`: https://developer.pagerduty.com/api-reference/
 .. _`setuptools`: https://pypi.org/project/setuptools/
 .. _`pdpyras.py`: https://raw.githubusercontent.com/PagerDuty/pdpyras/master/pdpyras.py
-
-.. codeauthor:: Demitri Morgan <demitri@pagerduty.com>
 
 .. |travis-build| image:: https://travis-ci.com/Deconstrained/pdpyras.svg?branch=master
     :target: https://travis-ci.com/Deconstrained/pdpyras

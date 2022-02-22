@@ -1,3 +1,7 @@
+**2022-02-22: Version 4.5.0**
+
+* Add a new API generator ``iter_cursor`` to :class:`APISession` that yields results from API endpoints that support cursor-based pagination, requesting the next page of results whenever needed.
+
 **2022-01-18: Version 4.4.0**
 
 * Added new error class :class:`PDHTTPError` for strictly application-level errors (i.e. HTTP responses vs. network errors), inherits from :class:`PDClientError`
