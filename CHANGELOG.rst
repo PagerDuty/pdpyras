@@ -1,4 +1,4 @@
-**2022-02-17: Version 4.5.0**
+**2022-02-22: Version 4.5.0**
 
 * Add a new API generator ``iter_cursor`` to :class:`APISession` that yields results from API endpoints that support cursor-based pagination, requesting the next page of results whenever needed.
 
