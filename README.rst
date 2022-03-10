@@ -1,7 +1,9 @@
 ===========================================
 PDPYRAS: PagerDuty Python REST API Sessions
 ===========================================
-A minimal, practical Python client for the PagerDuty REST API.
+A lightweight Python client for the PagerDuty REST API.
+
+Also includes clients for the Events and Change Events APIs.
 
 |circleci-build|
 
@@ -23,33 +25,26 @@ and response body schemas of each particular resource (as documented in our
 
 Features
 ********
-- Efficient API access through automatic HTTP connection pooling and
-  persistence
+- Uses Requests' automatic HTTP connection pooling and persistence
 - Tested in / support for Python 3.5 through 3.9
-- Configurable cooldown/reattempt logic for rate limiting and transient network
-  problems
-- Inclusion of required `HTTP Request Headers`_ for PagerDuty REST API requests
-- Bulk data retrieval and iteration over `resource index`_ endpoints with
-  pagination
-- Individual object retrieval by name
-- API request profiling
-- Bonus Events API client
+- Configurable cooldown/reattempt logic for handling rate limiting and
+  transient HTTP or network issues
+- Abstraction for `pagination`_, `wrapped entities`_, `API authentication`_ and
+  more
 
 History
 *******
-This module was borne of necessity for a basic, reusable API client to
-eliminate code duplication in some of PagerDuty Support's internal Python-based
-API tools. We needed something that could get the job done without reinventing
-the wheel or getting in the way.
+This module was borne of necessity for a basic API client to eliminate code
+duplication in some of PagerDuty Support's internal Python-based API tooling.
 
-We also frequently found ourselves performing REST API requests using beta or
-non-documented API endpoints for one reason or another, so we also needed a
-client that provided easy access to features of the underlying HTTP library
-(i.e. to obtain the response headers, or set special request headers). We
-needed something that eliminated tedious tasks like querying, `pagination`_ and
-header-setting commonly associated with REST API usage. Finally, we discovered
-that the way we were using `requests`_ wasn't making use of connection re-use,
-and wanted a way to easily enforce this as a standard practice.
+We found ourselves frequently performing REST API requests using beta or
+non-documented API endpoints for one reason or another, so we needed the client
+that provided easy access to features of the underlying HTTP library (i.e. to
+obtain the response headers, or set special request headers). We also needed
+something that eliminated tedious tasks like querying objects by name,
+pagination and authentication. Finally, we discovered that the way we were
+using `Requests`_ wasn't making use of its connection pooling feature, and
+wanted a way to easily enforce this as a standard practice.
 
 Ultimately, we deemed most other libraries to be both overkill for this task
 and also not very conducive to use for experimental API calls.
@@ -811,22 +806,22 @@ a clean local file tree) run:
 .. References:
 .. -----------
 
-.. _`Errors`: https://v2.developer.pagerduty.com/docs/errors
-.. _`HTTP Request Headers`: https://v2.developer.pagerduty.com/docs/rest-api#http-request-headers
-.. _make: https://www.gnu.org/software/make/
-.. _pagination: https://v2.developer.pagerduty.com/docs/pagination
-.. _pypd: https://github.com/PagerDuty/pagerduty-api-python-client/
 .. _Requests: https://docs.python-requests.org/en/master/
-.. _requests.Response: https://docs.python-requests.org/en/master/api/#requests.Response
-.. _requests.Response.json: https://docs.python-requests.org/en/master/api/#requests.Response.json
-.. _requests.Session: https://docs.python-requests.org/en/master/api/#request-sessions
-.. _requests.Session.request: https://docs.python-requests.org/en/master/api/#requests.Session.request
-.. _`resource index`: https://v2.developer.pagerduty.com/docs/endpoints#resources-index
+.. _`API authentication`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUx-authentication
+.. _`Errors`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors
+.. _`HTTP Request Headers`: https://v2.developer.pagerduty.com/docs/rest-api#http-request-headers
 .. _`REST API Reference`: https://developer.pagerduty.com/api-reference/
-.. _`setuptools`: https://pypi.org/project/setuptools/
 .. _`pdpyras.py`: https://raw.githubusercontent.com/PagerDuty/pdpyras/master/pdpyras.py
+.. _`resource index`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU0-endpoints#resources-index
+.. _`setuptools`: https://pypi.org/project/setuptools/
+.. _`wrapped entities`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYx-wrapped-entities
+.. _make: https://www.gnu.org/software/make/
+.. _pagination: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination
+.. _pypd: https://github.com/PagerDuty/pagerduty-api-python-client/
+.. _requests.Response.json: https://docs.python-requests.org/en/master/api/#requests.Response.json
+.. _requests.Response: https://docs.python-requests.org/en/master/api/#requests.Response
+.. _requests.Session.request: https://docs.python-requests.org/en/master/api/#requests.Session.request
+.. _requests.Session: https://docs.python-requests.org/en/master/api/#request-sessions
 
-.. |travis-build| image:: https://travis-ci.com/Deconstrained/pdpyras.svg?branch=master
-    :target: https://travis-ci.com/Deconstrained/pdpyras
 .. |circleci-build| image:: https://circleci.com/gh/PagerDuty/pdpyras.svg?style=svg
     :target: https://circleci.com/gh/PagerDuty/pdpyras
