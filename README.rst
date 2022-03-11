@@ -98,6 +98,65 @@ will be used.
 Usage Guide
 -----------
 
+Authentication
+**************
+
+All REST API examples included in this documentation assume that the variable
+``session`` is an instance of :class:`APISession`. When constructing an
+instance, the first argument, required, is always the API key used for `API
+authentication`_.
+
+If the session will be used for API endpoints that require a ``From`` header,
+such as taking actions on incidents, and if using an account-level API key
+(created by an administrator via the "API Access Keys" page in the
+"Integrations" menu), it is recommended to also include the ``default_from``
+keyword argument, or HTTP 400 responses will result when attempting to
+use such endpoints.
+
+Otherwise, if using a user's API key (created under "API Access" in the "User
+Settings" tab of the user's profile), the user will be derived from the key
+itself and ``default_from`` is not necessary.
+
+Using a basic REST API key
+++++++++++++++++++++++++++
+
+For example, given an environment variable ``PD_API_KEY`` set to an
+account-wide REST API key, and a dummy user in the PagerDuty account with email
+address "api@example-company.com":
+
+.. code-block:: python
+
+    import os
+    from pdpyras import APISession
+
+    api_key = os.environ['PD_API_KEY']
+    session = APISession(api_key, default_from="api@example-company.com")
+
+Using an OAuth2 token
++++++++++++++++++++++
+
+When using an OAuth2 token, pass the keyword argument ``auth_type='oauth2'``
+or ``auth_type='bearer'`` to the constructor. This tells the client to set the
+``Authorization`` header appropriately in order to use this type of API
+credential.
+
+Example:
+
+.. code-block:: python
+
+    session = APISession(oauth_token_here, auth_type='oauth2')
+
+Note, obtaining an access token via the OAuth 2 flow is outside the purview of
+an API client, and should be performed separately by your application.
+
+For further information on OAuth 2 authentication with PagerDuty, refer to the
+official documentation:
+
+* `OAuth 2 Functionality <https://v2.developer.pagerduty.com/docs/oauth-2-functionality>`_
+* `OAuth 2: PKCE Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-pkce>`_
+* `OAuth 2: Authorization Code Grant Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-client-secret>`_
+
+
 Basic Usage
 ***********
 
@@ -107,31 +166,19 @@ Some examples of usage:
 
 .. code-block:: python
 
-    import os
-    from pdpyras import APISession
-
-    api_token = os.environ['PD_API_KEY']
-    session = APISession(api_token)
-
-    # Using requests.Session.get:
+    # Using get:
     response = session.get('/users/PABC123')
     user = None
 
     if response.ok:
         user = response.json()['user']
 
-    # Or, more succinctly:
+    # Using rget:
     user = session.rget('/users/PABC123')
 
 **Iteration (1):** Iterate over all users and print their ID, email and name:
 
 .. code-block:: python
-
-    import os
-    from pdpyras import APISession
-
-    api_token = os.environ['PD_API_KEY']
-    session = APISession(api_token)
 
     for user in session.iter_all('users'):
         print(user['id'], user['email'], user['name'])
@@ -139,11 +186,6 @@ Some examples of usage:
 **Iteration (2):** Compile a list of all services with "SN" in their name:
 
 .. code-block:: python
-
-    import os
-    from pdpyras import APISession
-
-    api_token = os.environ['PD_API_KEY']
 
     session = APISession(api_token)
     services = list(session.iter_all('services', params={'query': 'SN'}))
@@ -153,24 +195,18 @@ and update their name to "Jane Doe":
 
 .. code-block:: python
 
-    import os
-    from pdpyras import APISession
-
-    api_token = os.environ['PD_API_KEY']
-    session = APISession(api_token)
-
     user = session.find('users', 'jane@example35.com', attribute='email')
 
     if user is not None:
-        # Update using put directly:
         updated_user = None
+        # using put directly:
         response = session.put(user['self'], json={
             'user':{'type':'user', 'name': 'Jane Doe'}
         })
         if response.ok:
             updated_user = response.json()['user']
 
-        # Alternately / more succinctly:
+        # using rput:
         try:
             updated_user = session.rput(user['self'], json={
                 'type':'user', 'name': 'Jane Doe'
@@ -185,12 +221,6 @@ PagerDuty account:
 
 .. code-block:: python
 
-    import os
-    from pdpyras import APISession
-
-    api_token = os.environ['PD_API_KEY']
-    session = APISession(api_token, default_from='admin@example.com')
-
     # Query incidents
     incidents = session.list_all(
         'incidents',
@@ -203,33 +233,6 @@ PagerDuty account:
 
     # PUT the updated list back up to the API
     updated_incidents = session.rput('incidents', json=incidents)
-
-Using an OAuth 2 Access Token to Authenticate
-*********************************************
-
-When using an OAuth2 token, include the keyword argument ``auth_type='oauth2'``
-or ``auth_type='bearer'`` to the constructor. This tells the client to set the
-``Authorization`` header appropriately in order to use this type of API
-credential.
-
-Example:
-
-.. code-block:: python
-
-    from pdpyras import APISession
-
-
-    session = APISession(oauth_token_here, auth_type='oauth2')
-
-Note, obtaining an access token via the OAuth 2 flow is outside the purview of
-an API client, and should be performed separately by your application.
-
-For further information on OAuth 2 authentication with PagerDuty, refer to the
-official documentation:
-
-* `OAuth 2 Functionality <https://v2.developer.pagerduty.com/docs/oauth-2-functionality>`_
-* `OAuth 2: PKCE Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-pkce>`_
-* `OAuth 2: Authorization Code Grant Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-client-secret>`_
 
 General Concepts
 ****************

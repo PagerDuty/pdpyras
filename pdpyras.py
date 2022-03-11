@@ -145,7 +145,7 @@ def resource_envelope(method):
         r = raise_on_error(method(self, path, **pass_kw))
         # Now let's try to unpack...
         response_obj = try_decoding(r)
-        # Get the encapsulated object
+        # Get the wrapped entity
         if envelope_name not in response_obj:
             raise PDClientError("Cannot extract object; expected top-level "
                 "property \"%s\", but could not find it in the response "
@@ -1095,8 +1095,7 @@ class APISession(PDSession):
         Each yielded value is a dict object representing a result returned from
         the index. For example, if requesting the ``/users`` endpoint, each
         yielded value will be an entry of the ``users`` array property in the
-        response; see: `List Users
-        <https://v2.developer.pagerduty.com/v2/page/api-reference#!/Users/get_users>`_
+        response.
 
         :param path:
             The index endpoint URL to use.
@@ -1297,7 +1296,7 @@ class APISession(PDSession):
 
     def persist(self, resource, attr, values, update=False):
         """
-        Finds or creates and returns a resource matching an idempotency key.
+        Finds or creates and returns a resource with a matching attribute
 
         Given a resource name, an attribute to use as an idempotency key and a
         set of attribute:value pairs as a dict, create a resource with the
@@ -1428,7 +1427,7 @@ class APISession(PDSession):
     @resource_envelope
     def rget(self, resource, **kw):
         """
-        Retrieve a resource and return the encapsulated object in the response
+        Retrieve a resource and return the wrapped entity in the response
 
         :param resource:
             The path/URL to which to send the request, or a dict object
@@ -1467,7 +1466,7 @@ class APISession(PDSession):
     @resource_envelope
     def rput(self, resource, **kw):
         """
-        Update an individual resource, returning the encapsulated object.
+        Update an individual resource, returning the wrapped entity as a dict
 
         :param resource:
             The path/URL to which to send the request, or a dict object
