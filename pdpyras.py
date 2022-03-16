@@ -1242,7 +1242,7 @@ class APISession(PDSession):
                 user_params.update({'cursor': next_cursor})
             page = self.jget(path, params=user_params)
             if assumed_attribute not in page:
-                raise ValueError("No attribute \"{attribute}\" at the root "
+                raise PDClientError("No attribute \"{attribute}\" at the root "
                     "level of the response body from {path}. Attributes "
                     "include: {examples}".format(
                         attribute = assumed_attribute,

@@ -279,13 +279,16 @@ class APISessionTest(SessionTest):
         # to assertRaises because the method returns a generator
         #
         # Test: guessing the envelope name, incorrect
-        self.assertRaises(ValueError, lambda p: list(sess.iter_cursor(p)), 
-            '/things/stuff')
+        self.assertRaises(
+            pdpyras.PDClientError,
+            lambda p: list(sess.iter_cursor(p)),
+            '/things/stuff'
+        )
         get.reset_mock()
         # Test: taking user's input for the envelope name, incorrect
         get.side_effect = wrong_envelope_name
         self.assertRaises(
-            ValueError,
+            pdpyras.PDClientError,
             lambda p: list(sess.iter_cursor(p, attribute="thing")),
             '/stuff/things'
         )
