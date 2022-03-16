@@ -588,10 +588,10 @@ class PDSession(requests.Session):
                 continue
             elif status == 401:
                 # Stop. Authentication failed. We shouldn't try doing any more,
-                # because we'll run into problems later anyway.
+                # because we'll run into the same problem later anyway.
                 raise PDHTTPError(
-                    "Received 401 Unauthorized response from the API. The "
-                    "access key (...%s) might not be valid."%self.trunc_key,
+                    "Received 401 Unauthorized response from the API. The key "
+                    "(...%s) may be invalid or deactivated."%self.trunc_key,
                     response)
             else:
                 # All went according to plan.

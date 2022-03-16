@@ -46,8 +46,9 @@ pagination and authentication. Finally, we discovered that the way we were
 using `Requests`_ wasn't making use of its connection pooling feature, and
 wanted a way to easily enforce this as a standard practice.
 
-Ultimately, we deemed most other libraries to be both overkill for this task
-and also not very conducive to use for experimental API calls.
+We evaluated at the time a few other open-source API libraries and deemed them
+to be either overkill for our purposes or not giving the implementer enough
+control over how API calls were made.
 
 Copyright
 *********
@@ -117,6 +118,10 @@ Otherwise, if using a user's API key (created under "API Access" in the "User
 Settings" tab of the user's profile), the user will be derived from the key
 itself and ``default_from`` is not necessary.
 
+When encountering status 401 (unauthorized), the client will immediately raise
+:class:`pdpyras.PDClientError`, as this can be considered a non-transient error
+under any circumstance.
+
 Using a basic REST API key
 ++++++++++++++++++++++++++
 
@@ -157,7 +162,7 @@ official documentation:
 * `OAuth 2: Authorization Code Grant Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-client-secret>`_
 
 
-Basic Usage
+Basic usage
 ***********
 
 Some examples of usage:
@@ -201,7 +206,7 @@ Some examples of usage:
 
     user = session.find('users', 'jane@example35.com', attribute='email')
 
-**Updating using ``put`` / ``rput``**: assuming there is a variable ``user``
+**Updating using put / rput**: assuming there is a variable ``user``
 defined that is a dictionary representation of a PagerDuty user,
 
 .. code-block:: python
@@ -259,14 +264,13 @@ PagerDuty account:
     # PUT the updated list back up to the API
     updated_incidents = session.rput('incidents', json=incidents)
 
-General Concepts
+General concepts
 ****************
 In all cases, when sending or receiving data through the REST API using
-``pdpyras.APISession``, note the following:
+:class:`pdpyras.APISession`, the following will apply.
 
 URLs
 ++++
-
 * **There is no need to include the API base URL.** Any path relative to the web
   root, leading slash or no, is automatically appended to the base URL when
   constructing an API request, i.e. one can specify ``users/PABC123`` or
@@ -278,7 +282,7 @@ URLs
   representing an API resource in place of a URL (in which case the value at
   the ``self`` key will be used as the URL).
 
-Request and Response Bodies
+Request and response bodies
 +++++++++++++++++++++++++++
 To set the request body in a post or put request, pass a ``json`` keyword
 argument that will be JSON-encoded and sent as the body to the HTTP verb
@@ -287,58 +291,132 @@ method. To obtain the response from the API:
 * If using ``request``, ``get``, ``post`` (etc) directly, a `requests.Response`_ 
   object is returned. That object's ``json()`` method will return the response
   body decoded from JSON as a Python dict object.
-* If using the ``j*`` methods (``jget``, ``jpost`` etc) or the ``r*`` methods
+* If using the ``j*`` methods (``jget``, ``jpost`` etc.) or the ``r*`` methods
   (``rget``, ``rpost`` etc), or any other method that makes API calls: objects
   returned will be from JSON-decoding the body of the API response if successful;
   otherwise :class:`PDClientError` will be raised.
 
-Note, implementers are not insulated from having to work directly with the
-schemas of resources in requests and responses. Rather, they must follow the
-`REST API Reference`_ when working with objects representing the request and
-response bodies. Generally speaking, the body should have a structure that
-reflects the API schema, where:
+Resource schemas
+++++++++++++++++
+Main article: `Resource Schemas <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU5-resource-schemas>`_
+
+Concerning the structure of objects in response and request bodies: this
+library does not contain abstraction of PagerDuty API schemas. Rather, it
+provides abstraction for the basics of API access. The details of any interface
+between API schema and application are left to the implementer's judgment. The
+intent of not insulating the implementer from schemas is to avoid the client
+becoming "an API for the API".
+
+The details of any given resource's schema can be found in the request and
+response examples from the `REST API Reference`_ pages for the resource's
+respective API, as well as the page documenting the resource type itself.
+
+Data types
+++++++++++
+Main article: `Types <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types>`_
+
+Note these analogues in structure between the JSON schema and the object
+in Python:
 
 * If the data type documented in the schema is
   `object <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#object>`_,
-  then the corresponding type in Python will be ``dict``.
+  then the corresponding type of the Python object will be ``dict``.
 * If the data type documented in the schema is
   `array <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#array>`_,
-  then the corresponding type in Python will be ``list``.
+  then the corresponding type of the Python object will be ``list``.
+* Generally speaking, the data type in the decoded object is according to the
+  design of the `json <https://docs.python.org/3/library/json.html>`_ Python library.
 
-Using Special Features of Requests
+For example, consider the example structure of an escalation policy as given in the
+`GET /escalation_policies/{id} <https://developer.pagerduty.com/api-reference/b3A6Mjc0ODEyNg-get-an-escalation-policy>`_
+API reference page. To access the name of the second target in level 1,
+assuming the variable ``ep`` represents the unwrapped escalation policy object:
+
+.. code-block:: python
+
+    ep['escalation_rules'][0]['targets'][1]['summary']
+    # "Daily Engineering Rotation"
+
+To add a new level, one would need to create a new 
+`escalation rule <https://developer.pagerduty.com/api-reference/c2NoOjI3NDgwMjI-escalation-rule>`_
+and then append it to the ``escalation rules`` property. Using the example
+given in the above API reference page:
+
+.. code-block:: python
+
+    new_rule = {
+      "escalation_delay_in_minutes": 30,
+      "targets": [
+        {
+          "id": "PAM4FGS",
+          "type": "user_reference"
+        },
+        {
+          "id": "PI7DH85",
+          "type": "schedule_reference"
+        }
+      ]
+    }
+    ep['escalation_rules'].append(new_rule)
+    # Save changes:
+    session.rput(ep, json=ep)
+
+Using HTTP client library features
 ++++++++++++++++++++++++++++++++++
-Keyword arguments to the HTTP methods get passed through to the similarly-
-named functions in `requests.Session`_. For additional options, please refer
-to the documentation provided by the Requests project.
+Keyword arguments to the HTTP verb methods and their ``r*`` / ``j*``
+equivalents get passed through to the similarly- named functions in
+`requests.Session`_.
 
-Wrapped Entities
+Furthermore, the methods ``get``, ``post``, ``put``, ``delete`` and ``request``
+return `requests.Response`_ objects, whose properties contain information about
+the request and response.
+
+For additional options, please refer to the documentation provided by the
+Requests project.
+
+Wrapped entities
 ****************
 Main article: `wrapped entities <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYx-wrapped-entities>`_
 (formerly the term "resource envelope" was used).
 
 Most of PagerDuty's endpoints respond with their data inside of a key at the
 root level of the JSON-encoded object in the response. The key is named after
-the resource, whether singular or plural.
+the resource, whether singular or plural. All endpoints that follow this
+convention are supported by methods that eliminate the need for the implementer
+to wrap and unwrap resource entities.
 
-The "``r*`` methods" ``rput``, ``rpost`` and ``rget`` will perform the same
-HTTP actions as ``put``, ``post`` and ``get``, although they will not return a
-`requests.Response`_ object. Instead, they will return the contents of the
-wrapped entity in the response, if the request was successful, and raise
-:class:`pdpyras.PDClientError` otherwise. Furthermore, when sending a body via
-the ``json`` keyword argument (for ``rpost``/``rput``), the value can be the
-wrapped entity itself, as opposed to needing to be the full contents to be
-JSON-encoded in the body including the wrapping.
+Functions that assume entity wrapping
++++++++++++++++++++++++++++++++++++++
+Generally, instead of returning a `requests.Response`_ object or requiring
+entity wrapping in the object to be JSON-encoded as the request body, some
+functions can accept an unwrapped entity to be sent in the request body, and
+will return the contents of the wrapped entity in the response from the API. If
+the request's status was not success, or a wrapped entity could not be found in
+the response, :class:`pdpyras.PDClientError` will be raised otherwise (if the
+request's status was not success, or no entity wrapping could be deduced).
 
-The functions ``iter_all`` and ``iter_cursor`` will likewise yield results from
-wrapped lists of entities, rather than lists in wrapping (the structure of the
-API response).
+* The "``r*`` methods" ``rput``, ``rpost`` and ``rget``. They will perform the
+  same HTTP actions as ``put``, ``post`` and ``get`` and similarly accept the
+  same keyword arguments as ``requests.Session.request``. the ``json`` keyword
+  argument (for ``rpost``/``rput``), the value can be the
+* :attr:`pdpyras.APISession.find`, :attr:`pdpyras.APISession.iter_all`,
+  :attr:`pdpyras.APISession.list_all` and :attr:`pdpyras.APISession.dict_all`
+  each assume that the API index endpoint being queried follows the classic
+  entity wrapping conventions.
+* :attr:`pdpyras.APISession.persist` uses ``rput``, ``rpost`` and ``find``
+* ``iter_cursor``, although it assumes a much looser definition of entity
+  wrapping: the root level key in the response body can be set using the
+  ``attribute`` keyword argument, and if unspecified it will guess that it is
+  the same as the last node in the URL path. This is according to the design of
+  all current Audit record APIs, which as of this writing are the only APIs that
+  support cursor-based pagination.
 
-Supported Endpoints
+Supported endpoints
 +++++++++++++++++++
 The general rules are that the name of the wrapped resource key must follow
-from the innermost resource name for the API path in question, and that the
-"nodes" in the URL path (between forward slashes) must alternate between
-resource type and ID.
+predictably from the innermost resource name for the API path in question
+whether singular or plural, and that the "nodes" in the URL path (between
+forward slashes) must alternate between resource type and ID.
 
 **Supported endpoint example:** for ``/escalation_policies/{id}`` the wrapper
 name for singular post/put is ``escalation_policy``, and for ``GET
@@ -347,20 +425,21 @@ name for singular post/put is ``escalation_policy``, and for ``GET
 for singular post/put and ``notification_rules`` for the index, ``GET
 /users/{id}/notification_rules``.
 
-**Unsupported endpoint example:** in the `user sessions <https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1users~1%7Bid%7D~1sessions/get>`_ API,
-URLs are formatted as ``/users/{id}/sessions/{type}/{session_id}`` the wrapped
-resource property name is ``user_sessions`` / ``user_session`` rather than
-simply ``sessions`` / ``session``.
+**Unsupported endpoint example:** in the
+`user sessions <https://developer.pagerduty.com/api-reference/b3A6Mjc0ODI0OQ-list-a-user-s-active-sessions>`_
+API endpoints, URLs are formatted as
+``/users/{id}/sessions/{type}/{session_id}`` whereas the wrapped resource
+property name is ``user_sessions`` / ``user_session`` rather than simply
+``sessions`` / ``session``.
 
-List of Non-conformal Endpoints
+List of non-conformal endpoints
 ++++++++++++++++++++++++++++++++
 The following list of APIs and endpoints (last updated: 2022-03-15) are
 unsupported by methods ``rget``, ``rpost``, ``rput``, ``persist``, ``find``,
 ``iter_all``, ``list_all`` and ``dict_all`` because they do not follow the
-classic schema conventions on which the functions are based. They can still be
-used with the basic ``get``, ``post``, ``put`` and ``delete`` methods, as well
-as the ``j*`` methods, which return the body of the response after
-JSON-decoding.
+classic entity wrapping  conventions on which the functions are based. They can
+still be used with the basic ``get``, ``post``, ``put`` and ``delete`` methods,
+as well as the ``j*`` methods:
 
 * Analytics
 * All Audit endpoints (:attr:`pdpyras.APISession.iter_cursor` should be used instead, as they feature cursor-based pagination)
@@ -374,6 +453,7 @@ JSON-decoding.
     * ``[GET|PUT] /business_services/priority_thresholds``
 * The following Incident API endpoints:
     * ``[GET|PUT] /incidents/{id}/business_services/impacts```: list or manually change any of an incident's impacts on business services
+    * ``PUT /incidents/{id}/merge``: merge incidents
     * ``POST /incidents/{id}/responder_requests``: create a responder request for an incident
     * ``POST /incidents/{id}/snooze``: snooze an incident
 * Event Orchestrations
@@ -381,11 +461,10 @@ JSON-decoding.
 * Service Dependencies
 * ``POST /{entity_type}/{id}/change_tags`` (assign tags)
 * Updating team membership (adding or removing users or escalation policies)
-* Team notification subscriptions
 * User sessions
 
 Pagination
-++++++++++
+**********
 The method :attr:`pdpyras.APISession.iter_all` returns an iterator that yields
 results from a resource index, automatically incrementing the ``offset``
 parameter to advance through each page of data and make API requests on-demand.
@@ -420,19 +499,16 @@ the ID of the user whose email is ``bob@example.com``:
     users = session.dict_all('users', by='email')
     print(users['bob@example.com']['id'])
 
-Pagination Disclaimers
-++++++++++++++++++++++
+Performance
++++++++++++
+Because HTTP requests are made synchronously and not in multiple threads,
+requesting all pages of data will happen one page at a time and the functions
+``list_all`` and ``dict_all`` will not return until after the final HTTP
+response. Simply put, the functions will take longer to return if the total
+number of results is higher.
 
-**Regarding performance:**
-
-Because HTTP requests are made synchronously and not in multiple threads, the
-data will be retrieved one page at a time and the functions ``list_all`` and
-``dict_all`` will not return until after the HTTP response from the final API
-call is received. Simply put, the functions will take longer to return if the
-total number of results is higher.
-
-**On updating, creating or deleting records while iterating through them:**
-
+Updating, creating or deleting while paginating
++++++++++++++++++++++++++++++++++++++++++++++++
 If performing page-wise operations, i.e. making changes immediately after
 fetching each page of results, rather than pre-fetching all objects and then
 operating on them (i.e. with :attr:`pdpyras.APISession.list_all`), one must be
@@ -457,20 +533,14 @@ the second hundred pages will be skipped over, and similarly for pages 401-500,
 601-700 and so on. If attaching pages, the opposite happens: some results will be
 returned more than once, because they get bumped to the next group of 100 pages.
 
-Multi-Updating
-++++++++++++++
-Introduced in version 2.1 is support for automatic entity wrapping and unwrapping
-in multi-update actions.
-
-As of this writing, multi-update support includes the following actions:
+Multi-updating
+**************
+Introduced in version 2.1 is support for multi-update actions using ``rput``.
+As of this writing, multi-update support includes the following endpoints:
 
 * `PUT /incidents <https://developer.pagerduty.com/api-reference/b3A6Mjc0ODEzOQ-manage-incidents>`_
 * `PUT /incidents/{id}/alerts <https://developer.pagerduty.com/api-reference/b3A6Mjc0ODE0NA-manage-alerts>`_
 * PUT /priorities (documentation not yet published as of 2022-03-15, but the endpoint is functional)
-
-**Please note:** as of yet, merging incidents is not supported by ``rput``.
-For this and other unsupported endpoints, you will need to call ``put`` directly,
-or ``jput`` to get the response body as a dictionary object.
 
 To use, simply pass in a list of objects or references (dictionaries having a
 structure according to the API schema reference for that object type) to the
@@ -500,58 +570,110 @@ keyword argument, or set the :attr:`pdpyras.APISession.default_from` property,
 or pass the email address as the ``default_from`` keyword argument when
 constructing the session initially.
 
-Error Handling
+Error handling
 **************
-What happens when, for any of the ``r*`` methods, the API responds with a
-non-success HTTP status? Obviously in this case, they cannot return the
-JSON-decoded response, because the response would not be the sought-after data
-but a different schema altogether (see: `Errors`_), and this would put the onus
-on the end user to distinguish between success and error based on the structure
-of the returned dictionary object.
+What happens when, for any of the methods that do not return
+`requests.Response`_, the API response is a non-success HTTP status, is that it
+will not return the decoded body. Instead, when this happens, a
+:class:`pdpyras.PDClientError` exception is raised. This way, methods can
+always be expected to return the same structure of data based on the API being
+used. If there is a break in this expectation, the flow is appropriately
+interrupted. 
 
-Instead, when this happens, a :class:`pdpyras.PDClientError` exception is
-raised. The advantage of this design lies in how the methods can always be
-expected to return the same sort of data, and if they can't, the program flow
-that depends on getting this specific structure of data is appropriately
-interrupted. Moreover, because (as of version 2) this exception class will have
-the `requests.Response`_ object as its ``response`` property (whenever the
-exception pertains to a HTTP error), the end user can define specialized error
-handling logic in which the REST API response data (i.e. headers, code and body)
-are directly available.
+As of version 2, this exception class has the `requests.Response`_ object as
+its ``response`` property (whenever the exception pertains to a HTTP error).
+The implementer can thus define specialized error handling logic in which the
+REST API response data (i.e. headers, code and body) are directly available.
 
 For instance, the following code prints "User not found" in the event of a 404,
-raises the underlying exception in the event of an incorrect API access token (401
-Unauthorized) or non-transient network error, prints out the user's email if
-the user exists, and does nothing otherwise:
+prints out the user's email if the user exists, raises the underlying
+exception if it's any other HTTP error code, and prints an error otherwise:
 
 .. code-block:: python
 
     try:
-        user = session.rget("/users/PJKL678")
-        print(user['email'])
+      user = session.rget("/users/PJKL678")
+      print(user['email'])
 
     except pdpyras.PDClientError as e:
-        if e.response:
-            if e.response.status_code == 404:
-                print("User not found")
-            elif e.response.status_code == 401:
-                raise e
+      if e.response:
+        if e.response.status_code == 404:
+          print("User not found")
         else:
-            raise e
+          raise e
+      else:
+        print("Non-transient network or client error")
 
-HTTP Retry Logic
+Version 4.4.0 introduced a new error subclass, PDHTTPError, in which it can be
+assumed that the error pertains to a HTTP request:
+
+.. code-block:: python
+
+    try:
+      user = session.rget("/users/PJKL678")
+      print(user['email'])
+
+    except pdpyras.PDHTTPError as e:
+      if e.response.status_code == 404:
+        print("User not found")
+      else:
+        raise e
+    except pdpyras.PDClientError as e:
+      print("Non-transient network or client error")
+
+HTTP retry logic
 ****************
-By default, after receiving a response, :attr:`pdpyras.PDSession.request` will
-return the `requests.Response`_ object unless its status is ``429`` (rate
-limiting), in which case it will retry until it gets a status other than ``429``.
+Session objects support retrying API requests if they receive a non-success
+response or if they encounter a network error. This behavior is configurable
+through the following properties, which are each documented with further
+implementation details:
 
-The property :attr:`pdpyras.PDSession.retry` allows customization in this
-regard, so that the client can be made to retry on other statuses (i.e.
+* :attr:`pdpyras.PDSession.max_http_attempts`
+* :attr:`pdpyras.PDSession.max_network_attempts`
+* :attr:`pdpyras.PDSession.sleep_timer`
+* :attr:`pdpyras.PDSession.sleep_timer_base`
+* :attr:`pdpyras.PDSession.stagger_cooldown`
+
+Cooldown
+++++++++
+After each unsuccessful attempt, if retry logic is active for the given HTTP
+status, the client will sleep for a short period that increases exponentially
+with each retry. 
+
+Let:
+
+* a = ``sleep_timer_base``
+* t\ :sub:`0` = ``sleep_timer``
+* t\ :sub:`n` = Sleep time after n attempts
+* ρ = ``stagger_cooldown``
+* r = a random real number between 0 and 1
+
+
+Assuming ρ = 0:
+
+t\ :sub:`n` = t\ :sub:`0` a\ :sup:`n`
+
+If ρ is nonzero:
+
+t\ :sub:`n` = a (1 + ρ r) t\ :sub:`n-1`
+
+Rate Limiting
++++++++++++++
+By default, after receiving a status 429 response, sessions will retry the
+request indefinitely until it receives a status other than 429. This is a sane
+approach; if it is ever responding with 429, the REST API is receiving (for the
+given REST API key) too many requests, and the issue should by nature be
+transient unless there is a rogue process using the key and saturating its rate
+limit.
+
+HTTP retry configuration
+++++++++++++++++++++++++
+The property :attr:`pdpyras.PDSession.retry` allows customization of HTTP retry
+logic, so that the client can be made to retry on other statuses (i.e.
 502/400), up to a set number of times. The total number of HTTP error responses
 that the client will tolerate before returning the response object is defined
 in :attr:`pdpyras.PDSession.max_http_attempts`, and this will supersede the
-maximum number of retries defined in
-:attr:`pdpyras.PDSession.retry`.
+maximum number of retries defined in :attr:`pdpyras.PDSession.retry`.
 
 **Example:**
 
@@ -565,23 +687,8 @@ before finally returning with the status 404 `requests.Response`_ object:
     session.max_http_attempts = 4
     session.sleep_timer = 1
     session.sleep_timer_base = 2
-    # isinstance(session, pdpyras.APISession)
     response = session.get('/users/PNOEXST')
 
-**Default Behavior:**
-
-Note that without specifying any retry behavior:
-
-* When encountering status 429 (rate limiting), the client will retry
-  indefinitely. This is a sane approach; if it is ever responding
-  with 429, this means that the REST API is receiving (for the given REST API
-  key) too many requests, and the issue should by nature be transient.
-* When encountering status 401 (unauthorized), the client will immediately
-  raise :class:`pdpyras.PDClientError`, as this can be considered a
-  non-transient error under any circumstance.
-
-It is still possible to override these behaviors by updating
-:attr:`pdpyras.PDSession.retry`, but it is not recommended.
 
 Events API
 **********
