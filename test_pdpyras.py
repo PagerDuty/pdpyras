@@ -332,7 +332,13 @@ class APISessionTest(SessionTest):
             'self': 'https://api.pagerduty.com/users/PCWKOPZ'
         })
         sess.persist('users', 'email', new_user, update=True)
-        updater.assert_called_with(new_user['self'], json=new_user)
+        updater.assert_called_with(new_user, json=new_user)
+        # Call session.rput to update but w/no change so no API PUT request:
+        updater.reset_mock()
+        existing_user = dict(new_user)
+        iterator.return_value = iter([existing_user])
+        sess.persist('users', 'email', new_user, update=True)
+        updater.assert_not_called()
 
     def test_postprocess(self):
         logger = MagicMock()

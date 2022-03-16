@@ -1329,8 +1329,11 @@ class APISession(PDSession):
         existing = self.find(resource, values[attr], attribute=attr)
         if existing:
             if update:
+                original = {}
+                original.update(existing)
                 existing.update(values)
-                existing = self.rput(existing['self'], json=existing)
+                if original != existing:
+                    existing = self.rput(existing, json=existing)
             return existing
         else:
             return self.rpost(resource, json=values)
