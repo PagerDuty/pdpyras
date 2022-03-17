@@ -33,7 +33,8 @@
             
   <div class="section" id="pdpyras-pagerduty-python-rest-api-sessions">
 <h1>PDPYRAS: PagerDuty Python REST API Sessions<a class="headerlink" href="#pdpyras-pagerduty-python-rest-api-sessions" title="Permalink to this headline">¶</a></h1>
-<p>A minimal, practical Python client for the PagerDuty REST API.</p>
+<p>A lightweight Python client for the PagerDuty REST API.</p>
+<p>Also includes clients for the Events and Change Events APIs.</p>
 <p><a class="reference external" href="https://circleci.com/gh/PagerDuty/pdpyras"><img alt="circleci-build" src="https://circleci.com/gh/PagerDuty/pdpyras.svg?style=svg" /></a></p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/PagerDuty/pdpyras">GitHub repository</a></p></li>
@@ -53,35 +54,29 @@ and response body schemas of each particular resource (as documented in our
 <div class="section" id="features">
 <h3>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>Efficient API access through automatic HTTP connection pooling and
-persistence</p></li>
+<li><p>Uses Requests’ automatic HTTP connection pooling and persistence</p></li>
 <li><p>Tested in / support for Python 3.5 through 3.9</p></li>
-<li><p>Configurable cooldown/reattempt logic for rate limiting and transient network
-problems</p></li>
-<li><p>Inclusion of required <a class="reference external" href="https://v2.developer.pagerduty.com/docs/rest-api#http-request-headers">HTTP Request Headers</a> for PagerDuty REST API requests</p></li>
-<li><p>Bulk data retrieval and iteration over <a class="reference external" href="https://v2.developer.pagerduty.com/docs/endpoints#resources-index">resource index</a> endpoints with
-pagination</p></li>
-<li><p>Individual object retrieval by name</p></li>
-<li><p>API request profiling</p></li>
-<li><p>Bonus Events API client</p></li>
+<li><p>Configurable cooldown/reattempt logic for handling rate limiting and
+transient HTTP or network issues</p></li>
+<li><p>Abstraction for <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination">pagination</a>, <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYx-wrapped-entities">wrapped entities</a>, <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUx-authentication">API authentication</a> and
+more</p></li>
 </ul>
 </div>
 <div class="section" id="history">
 <h3>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h3>
-<p>This module was borne of necessity for a basic, reusable API client to
-eliminate code duplication in some of PagerDuty Support’s internal Python-based
-API tools. We needed something that could get the job done without reinventing
-the wheel or getting in the way.</p>
-<p>We also frequently found ourselves performing REST API requests using beta or
-non-documented API endpoints for one reason or another, so we also needed a
-client that provided easy access to features of the underlying HTTP library
-(i.e. to obtain the response headers, or set special request headers). We
-needed something that eliminated tedious tasks like querying, <a class="reference external" href="https://v2.developer.pagerduty.com/docs/pagination">pagination</a> and
-header-setting commonly associated with REST API usage. Finally, we discovered
-that the way we were using <a class="reference external" href="https://docs.python-requests.org/en/master/">requests</a> wasn’t making use of connection re-use,
-and wanted a way to easily enforce this as a standard practice.</p>
-<p>Ultimately, we deemed most other libraries to be both overkill for this task
-and also not very conducive to use for experimental API calls.</p>
+<p>This module was borne of necessity for a basic API client to eliminate code
+duplication in some of PagerDuty Support’s internal Python-based API tooling.</p>
+<p>We found ourselves frequently performing REST API requests using beta or
+non-documented API endpoints for one reason or another, so we needed the client
+that provided easy access to features of the underlying HTTP library (i.e. to
+obtain the response headers, or set special request headers). We also needed
+something that eliminated tedious tasks like querying objects by name,
+pagination and authentication. Finally, we discovered that the way we were
+using <a class="reference external" href="https://docs.python-requests.org/en/master/">Requests</a> wasn’t making use of its connection pooling feature, and
+wanted a way to easily enforce this as a standard practice.</p>
+<p>We evaluated at the time a few other open-source API libraries and deemed them
+to be either overkill for our purposes or not giving the implementer enough
+control over how API calls were made.</p>
 </div>
 <div class="section" id="copyright">
 <h3>Copyright<a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h3>
@@ -130,87 +125,129 @@ will be used.</p>
 </div>
 <div class="section" id="usage-guide">
 <h2>Usage Guide<a class="headerlink" href="#usage-guide" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="basic-usage">
-<h3>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h3>
-<p>Some examples of usage:</p>
-<p><strong>Basic getting:</strong> Obtain a user profile as a dict object:</p>
+<div class="section" id="authentication">
+<h3>Authentication<a class="headerlink" href="#authentication" title="Permalink to this headline">¶</a></h3>
+<p>All REST API examples included in this documentation assume that the variable
+<code class="docutils literal notranslate"><span class="pre">session</span></code> is an instance of <code class="xref py py-class docutils literal notranslate"><span class="pre">APISession</span></code>. When constructing an
+instance, the first argument, required, is always the API key used for <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUx-authentication">API
+authentication</a>.</p>
+<p>If the session will be used for API endpoints that require a <code class="docutils literal notranslate"><span class="pre">From</span></code> header,
+such as taking actions on incidents, and if using an account-level API key
+(created by an administrator via the “API Access Keys” page in the
+“Integrations” menu), it is recommended to also include the <code class="docutils literal notranslate"><span class="pre">default_from</span></code>
+keyword argument, or HTTP 400 responses will result when attempting to
+use such endpoints.</p>
+<p>Otherwise, if using a user’s API key (created under “API Access” in the “User
+Settings” tab of the user’s profile), the user will be derived from the key
+itself and <code class="docutils literal notranslate"><span class="pre">default_from</span></code> is not necessary.</p>
+<p>When encountering status 401 (unauthorized), the client will immediately raise
+<a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code></a>, as this can be considered a non-transient error
+under any circumstance.</p>
+<div class="section" id="using-a-basic-rest-api-key">
+<h4>Using a basic REST API key<a class="headerlink" href="#using-a-basic-rest-api-key" title="Permalink to this headline">¶</a></h4>
+<p>For example, given an environment variable <code class="docutils literal notranslate"><span class="pre">PD_API_KEY</span></code> set to an
+account-wide REST API key, and a dummy user in the PagerDuty account with email
+address “<a class="reference external" href="mailto:api&#37;&#52;&#48;example-company&#46;com">api<span>&#64;</span>example-company<span>&#46;</span>com</a>”:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">pdpyras</span> <span class="kn">import</span> <span class="n">APISession</span>
 
-<span class="n">api_token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PD_API_KEY&#39;</span><span class="p">]</span>
-<span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">)</span>
-
-<span class="c1"># Using requests.Session.get:</span>
+<span class="n">api_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PD_API_KEY&#39;</span><span class="p">]</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">default_from</span><span class="o">=</span><span class="s2">&quot;api@example-company.com&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-an-oauth2-token">
+<h4>Using an OAuth2 token<a class="headerlink" href="#using-an-oauth2-token" title="Permalink to this headline">¶</a></h4>
+<p>When using an OAuth2 token, pass the keyword argument <code class="docutils literal notranslate"><span class="pre">auth_type='oauth2'</span></code>
+or <code class="docutils literal notranslate"><span class="pre">auth_type='bearer'</span></code> to the constructor. This tells the client to set the
+<code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header appropriately in order to use this type of API
+credential.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">oauth_token_here</span><span class="p">,</span> <span class="n">auth_type</span><span class="o">=</span><span class="s1">&#39;oauth2&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note, obtaining an access token via the OAuth 2 flow is outside the purview of
+an API client, and should be performed separately by your application.</p>
+<p>For further information on OAuth 2 authentication with PagerDuty, refer to the
+official documentation:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://v2.developer.pagerduty.com/docs/oauth-2-functionality">OAuth 2 Functionality</a></p></li>
+<li><p><a class="reference external" href="https://v2.developer.pagerduty.com/docs/oauth-2-functionality-pkce">OAuth 2: PKCE Flow</a></p></li>
+<li><p><a class="reference external" href="https://v2.developer.pagerduty.com/docs/oauth-2-functionality-client-secret">OAuth 2: Authorization Code Grant Flow</a></p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="basic-usage">
+<h3>Basic usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h3>
+<p>Some examples of usage:</p>
+<p><strong>Basic getting:</strong> Obtain a user profile as a dict object:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Using get:</span>
 <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;/users/PABC123&#39;</span><span class="p">)</span>
 <span class="n">user</span> <span class="o">=</span> <span class="kc">None</span>
 
 <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>
+  <span class="n">user</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>
 
-<span class="c1"># Or, more succinctly:</span>
+<span class="c1"># Using rget:</span>
 <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s1">&#39;/users/PABC123&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><strong>Iteration (1):</strong> Iterate over all users and print their ID, email and name:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">pdpyras</span> <span class="kn">import</span> <span class="n">APISession</span>
-
-<span class="n">api_token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PD_API_KEY&#39;</span><span class="p">]</span>
-<span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">)</span>
-
-<span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">iter_all</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">):</span>
+<p><strong>Pagination (1):</strong> Iterate over all users and print their ID, email and name:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">iter_all</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">],</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
-<p><strong>Iteration (2):</strong> Compile a list of all services with “SN” in their name:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">pdpyras</span> <span class="kn">import</span> <span class="n">APISession</span>
-
-<span class="n">api_token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PD_API_KEY&#39;</span><span class="p">]</span>
-
-<span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">)</span>
-<span class="n">services</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">iter_all</span><span class="p">(</span><span class="s1">&#39;services&#39;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;query&#39;</span><span class="p">:</span> <span class="s1">&#39;SN&#39;</span><span class="p">}))</span>
+<p><strong>Pagination (2):</strong> Compile a list of all services with “SN” in their name:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">services</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">list_all</span><span class="p">(</span><span class="s1">&#39;services&#39;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;query&#39;</span><span class="p">:</span> <span class="s1">&#39;SN&#39;</span><span class="p">})</span>
 </pre></div>
 </div>
-<p><strong>Querying and updating:</strong> Find a user exactly matching email address <code class="docutils literal notranslate"><span class="pre">jane&#64;example35.com</span></code>
-and update their name to “Jane Doe”:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">pdpyras</span> <span class="kn">import</span> <span class="n">APISession</span>
+<p><strong>Cursor-based pagination:</strong> look up audit trail records for all PagerDuty objects going back 24 hours:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">audit_records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">iter_cursor</span><span class="p">(</span><span class="s1">&#39;/audit/records&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p><strong>Querying:</strong> Find a user exactly matching email address <code class="docutils literal notranslate"><span class="pre">jane&#64;example35.com</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="s1">&#39;jane@example35.com&#39;</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s1">&#39;email&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Updating using put / rput</strong>: assuming there is a variable <code class="docutils literal notranslate"><span class="pre">user</span></code>
+defined that is a dictionary representation of a PagerDuty user,</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+  <span class="n">updated_user</span> <span class="o">=</span> <span class="kc">None</span>
 
-<span class="n">api_token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PD_API_KEY&#39;</span><span class="p">]</span>
-<span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">)</span>
+  <span class="c1"># (1) using put directly:</span>
+  <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;self&#39;</span><span class="p">],</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+    <span class="s1">&#39;user&#39;</span><span class="p">:{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;user&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Jane Doe&#39;</span><span class="p">}</span>
+  <span class="p">})</span>
+  <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
+    <span class="n">updated_user</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>
 
-<span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="s1">&#39;jane@example35.com&#39;</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s1">&#39;email&#39;</span><span class="p">)</span>
-
-<span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="c1"># Update using put directly:</span>
-    <span class="n">updated_user</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;self&#39;</span><span class="p">],</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span>
-        <span class="s1">&#39;user&#39;</span><span class="p">:{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;user&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Jane Doe&#39;</span><span class="p">}</span>
+  <span class="c1"># (2) using rput (no entity wrapping required):</span>
+  <span class="k">try</span><span class="p">:</span>
+    <span class="n">updated_user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rput</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;self&#39;</span><span class="p">],</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;user&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Jane Doe&#39;</span>
     <span class="p">})</span>
-    <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
-        <span class="n">updated_user</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>
-
-    <span class="c1"># Alternately / more succinctly:</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">updated_user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rput</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;self&#39;</span><span class="p">],</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span>
-            <span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;user&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Jane Doe&#39;</span>
-        <span class="p">})</span>
-    <span class="k">except</span> <span class="n">PDClientError</span><span class="p">:</span>
-        <span class="n">updated_user</span> <span class="o">=</span> <span class="kc">None</span>
+  <span class="k">except</span> <span class="n">PDClientError</span><span class="p">:</span>
+    <span class="n">updated_user</span> <span class="o">=</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<p><strong>Updating/creating using persist (idempotent create/update function)</strong>:
+assuming a dict object <code class="docutils literal notranslate"><span class="pre">user_data</span></code> is defined, and it is structured like a
+PagerDuty user object, containing at least the name and email address fields,
+this will look for a user with its <code class="docutils literal notranslate"><span class="pre">email</span></code> field equal to the <code class="docutils literal notranslate"><span class="pre">email</span></code> value
+in <code class="docutils literal notranslate"><span class="pre">user_data</span></code>, and update that user according to the contents of
+<code class="docutils literal notranslate"><span class="pre">user_data</span></code> (or create one with attributes according to <code class="docutils literal notranslate"><span class="pre">user_data</span></code> if it
+doesn’t already exist):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+  <span class="n">updated_user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">persist</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="s1">&#39;email&#39;</span><span class="p">,</span> <span class="n">user_data</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">PDClientError</span><span class="p">:</span>
+  <span class="n">updated_user</span> <span class="o">=</span> <span class="kc">None</span>
 </pre></div>
 </div>
 <p><strong>Multiple update:</strong> acknowledge all triggered incidents assigned to user with
 ID <code class="docutils literal notranslate"><span class="pre">PHIJ789</span></code>. Note that to acknowledge, we need to set the <code class="docutils literal notranslate"><span class="pre">From</span></code> header.
 This example assumes that <code class="docutils literal notranslate"><span class="pre">admin&#64;example.com</span></code> corresponds to a user in the
 PagerDuty account:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">pdpyras</span> <span class="kn">import</span> <span class="n">APISession</span>
-
-<span class="n">api_token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PD_API_KEY&#39;</span><span class="p">]</span>
-<span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">,</span> <span class="n">default_from</span><span class="o">=</span><span class="s1">&#39;admin@example.com&#39;</span><span class="p">)</span>
-
-<span class="c1"># Query incidents</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Query incidents</span>
 <span class="n">incidents</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">list_all</span><span class="p">(</span>
     <span class="s1">&#39;incidents&#39;</span><span class="p">,</span>
     <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;user_ids[]&#39;</span><span class="p">:[</span><span class="s1">&#39;PHIJ789&#39;</span><span class="p">],</span><span class="s1">&#39;statuses[]&#39;</span><span class="p">:[</span><span class="s1">&#39;triggered&#39;</span><span class="p">]}</span>
@@ -225,33 +262,10 @@ PagerDuty account:</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="using-an-oauth-2-access-token-to-authenticate">
-<h3>Using an OAuth 2 Access Token to Authenticate<a class="headerlink" href="#using-an-oauth-2-access-token-to-authenticate" title="Permalink to this headline">¶</a></h3>
-<p>When using an OAuth2 token, include the keyword argument <code class="docutils literal notranslate"><span class="pre">auth_type='oauth2'</span></code>
-or <code class="docutils literal notranslate"><span class="pre">auth_type='bearer'</span></code> to the constructor. This tells the client to set the
-<code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header appropriately in order to use this type of API
-credential.</p>
-<p>Example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pdpyras</span> <span class="kn">import</span> <span class="n">APISession</span>
-
-
-<span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">oauth_token_here</span><span class="p">,</span> <span class="n">auth_type</span><span class="o">=</span><span class="s1">&#39;oauth2&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Note, obtaining an access token via the OAuth 2 flow is outside the purview of
-an API client, and should be performed separately by your application.</p>
-<p>For further information on OAuth 2 authentication with PagerDuty, refer to the
-official documentation:</p>
-<ul class="simple">
-<li><p><a class="reference external" href="https://v2.developer.pagerduty.com/docs/oauth-2-functionality">OAuth 2 Functionality</a></p></li>
-<li><p><a class="reference external" href="https://v2.developer.pagerduty.com/docs/oauth-2-functionality-pkce">OAuth 2: PKCE Flow</a></p></li>
-<li><p><a class="reference external" href="https://v2.developer.pagerduty.com/docs/oauth-2-functionality-client-secret">OAuth 2: Authorization Code Grant Flow</a></p></li>
-</ul>
-</div>
 <div class="section" id="general-concepts">
-<h3>General Concepts<a class="headerlink" href="#general-concepts" title="Permalink to this headline">¶</a></h3>
+<h3>General concepts<a class="headerlink" href="#general-concepts" title="Permalink to this headline">¶</a></h3>
 <p>In all cases, when sending or receiving data through the REST API using
-<code class="docutils literal notranslate"><span class="pre">pdpyras.APISession</span></code>, note the following:</p>
+<a class="reference internal" href="#pdpyras.APISession" title="pdpyras.APISession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.APISession</span></code></a>, the following will apply.</p>
 <div class="section" id="urls">
 <h4>URLs<a class="headerlink" href="#urls" title="Permalink to this headline">¶</a></h4>
 <ul class="simple">
@@ -262,92 +276,207 @@ constructing an API request, i.e. one can specify <code class="docutils literal 
 <li><p>One can also pass the full URL of an API endpoint and it will still work, i.e.
 the <code class="docutils literal notranslate"><span class="pre">self</span></code> property of any object can be used, and there is no need to strip
 out the API base URL.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">r*</span></code> methods, i.e. <code class="docutils literal notranslate"><span class="pre">rget</span></code>, can accept a dictionary object
+representing an API resource in place of a URL (in which case the value at
+the <code class="docutils literal notranslate"><span class="pre">self</span></code> key will be used as the URL).</p></li>
 </ul>
 </div>
 <div class="section" id="request-and-response-bodies">
-<h4>Request and Response Bodies<a class="headerlink" href="#request-and-response-bodies" title="Permalink to this headline">¶</a></h4>
-<p>Note that when working with the REST API using <code class="docutils literal notranslate"><span class="pre">pdpyras.APISession</span></code>, the
-implementer is not insulated from having to work directly with the schemas of
-requests and responses. Rather, one must follow the <a class="reference external" href="https://developer.pagerduty.com/api-reference/">REST API Reference</a> which
-documents the schemas at length, and construct/access objects representing the
-request and response bodies, while the API client takes care of everything else.</p>
+<h4>Request and response bodies<a class="headerlink" href="#request-and-response-bodies" title="Permalink to this headline">¶</a></h4>
+<p>To set the request body in a post or put request, pass a <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword
+argument that will be JSON-encoded and sent as the body to the HTTP verb
+method. To obtain the response from the API:</p>
 <ul class="simple">
-<li><p>Data is represented as dictionary or list  objects, and should have a
-structure that mirrors that of the API schema:</p>
-<ul>
+<li><p>If using <code class="docutils literal notranslate"><span class="pre">request</span></code>, <code class="docutils literal notranslate"><span class="pre">get</span></code>, <code class="docutils literal notranslate"><span class="pre">post</span></code> (etc) directly, a <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a>
+object is returned. That object’s <code class="docutils literal notranslate"><span class="pre">json()</span></code> method will return the response
+body decoded from JSON as a Python dict object.</p></li>
+<li><p>If using the <code class="docutils literal notranslate"><span class="pre">j*</span></code> methods (<code class="docutils literal notranslate"><span class="pre">jget</span></code>, <code class="docutils literal notranslate"><span class="pre">jpost</span></code> etc.) or the <code class="docutils literal notranslate"><span class="pre">r*</span></code> methods
+(<code class="docutils literal notranslate"><span class="pre">rget</span></code>, <code class="docutils literal notranslate"><span class="pre">rpost</span></code> etc), or any other method that makes API calls: objects
+returned will be from JSON-decoding the body of the API response if successful;
+otherwise <code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code> will be raised.</p></li>
+</ul>
+</div>
+<div class="section" id="resource-schemas">
+<h4>Resource schemas<a class="headerlink" href="#resource-schemas" title="Permalink to this headline">¶</a></h4>
+<p>Main article: <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU5-resource-schemas">Resource Schemas</a></p>
+<p>Concerning the structure of objects in response and request bodies: this
+library does not contain abstraction of PagerDuty API schemas. Rather, it
+provides abstraction for the basics of API access. The details of any interface
+between API schema and application are left to the implementer’s judgment. The
+intent of not insulating the implementer from schemas is to avoid the client
+becoming “an API for the API”.</p>
+<p>The details of any given resource’s schema can be found in the request and
+response examples from the <a class="reference external" href="https://developer.pagerduty.com/api-reference/">REST API Reference</a> pages for the resource’s
+respective API, as well as the page documenting the resource type itself.</p>
+</div>
+<div class="section" id="data-types">
+<h4>Data types<a class="headerlink" href="#data-types" title="Permalink to this headline">¶</a></h4>
+<p>Main article: <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types">Types</a></p>
+<p>Note these analogues in structure between the JSON schema and the object
+in Python:</p>
+<ul class="simple">
 <li><p>If the data type documented in the schema is
-<a class="reference external" href="https://v2.developer.pagerduty.com/docs/types#object">object</a>, then the
-corresponding type in Python will be <code class="docutils literal notranslate"><span class="pre">dict</span></code>.</p></li>
+<a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#object">object</a>,
+then the corresponding type of the Python object will be <code class="docutils literal notranslate"><span class="pre">dict</span></code>.</p></li>
 <li><p>If the data type documented in the schema is
-<a class="reference external" href="https://v2.developer.pagerduty.com/docs/types#array">array</a>, then the
-corresponding type in Python will be <code class="docutils literal notranslate"><span class="pre">list</span></code>.</p></li>
+<a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#array">array</a>,
+then the corresponding type of the Python object will be <code class="docutils literal notranslate"><span class="pre">list</span></code>.</p></li>
+<li><p>Generally speaking, the data type in the decoded object is according to the
+design of the <a class="reference external" href="https://docs.python.org/3/library/json.html">json</a> Python library.</p></li>
 </ul>
-</li>
-<li><p>Everything is automatically JSON-encoded and decoded, using it as follows:</p>
-<ul>
-<li><p>To send a JSON request body, pass a <code class="docutils literal notranslate"><span class="pre">dict</span></code> object (or <code class="docutils literal notranslate"><span class="pre">list</span></code>, where
-applicable) in the <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument.</p></li>
-<li><p>To get the response body as a <code class="docutils literal notranslate"><span class="pre">dict</span></code> (or <code class="docutils literal notranslate"><span class="pre">list</span></code>, if applicable), call
-the <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response.json">requests.Response.json</a> object returned by any of the functions named
-exactly after their respective lower-case HTTP methods.</p></li>
-<li><p>If using the <code class="docutils literal notranslate"><span class="pre">r{VERB}</span></code> methods, i.e.  <code class="docutils literal notranslate"><span class="pre">rget</span></code>, the return value will be
-the <code class="docutils literal notranslate"><span class="pre">dict</span></code>/<code class="docutils literal notranslate"><span class="pre">list</span></code> object decoded from the <a class="reference external" href="https://v2.developer.pagerduty.com/docs/wrapped-entities">wrapped entity</a>  and there is
-no need to call <code class="docutils literal notranslate"><span class="pre">response.json()</span></code>.</p></li>
-<li><p>Similarly, the <code class="docutils literal notranslate"><span class="pre">j{VERB}</span></code> methods, i.e.  <code class="docutils literal notranslate"><span class="pre">jget</span></code>, return the object
-decoded from the JSON string in the response body (but without attempting
-to unwrap any wrapped entities it may contain).</p></li>
-</ul>
-</li>
+<p>For example, consider the example structure of an escalation policy as given in the
+<a class="reference external" href="https://developer.pagerduty.com/api-reference/b3A6Mjc0ODEyNg-get-an-escalation-policy">GET /escalation_policies/{id}</a>
+API reference page. To access the name of the second target in level 1,
+assuming the variable <code class="docutils literal notranslate"><span class="pre">ep</span></code> represents the unwrapped escalation policy object:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ep</span><span class="p">[</span><span class="s1">&#39;escalation_rules&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;targets&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;summary&#39;</span><span class="p">]</span>
+<span class="c1"># &quot;Daily Engineering Rotation&quot;</span>
+</pre></div>
+</div>
+<p>To add a new level, one would need to create a new
+<a class="reference external" href="https://developer.pagerduty.com/api-reference/c2NoOjI3NDgwMjI-escalation-rule">escalation rule</a>
+and then append it to the <code class="docutils literal notranslate"><span class="pre">escalation</span> <span class="pre">rules</span></code> property. Using the example
+given in the above API reference page:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">new_rule</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="s2">&quot;escalation_delay_in_minutes&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>
+  <span class="s2">&quot;targets&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;PAM4FGS&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;user_reference&quot;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;PI7DH85&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;schedule_reference&quot;</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+<span class="n">ep</span><span class="p">[</span><span class="s1">&#39;escalation_rules&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_rule</span><span class="p">)</span>
+<span class="c1"># Save changes:</span>
+<span class="n">session</span><span class="o">.</span><span class="n">rput</span><span class="p">(</span><span class="n">ep</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">ep</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-http-client-library-features">
+<h4>Using HTTP client library features<a class="headerlink" href="#using-http-client-library-features" title="Permalink to this headline">¶</a></h4>
+<p>Keyword arguments to the HTTP verb methods and their <code class="docutils literal notranslate"><span class="pre">r*</span></code> / <code class="docutils literal notranslate"><span class="pre">j*</span></code>
+equivalents get passed through to the similarly- named functions in
+<a class="reference external" href="https://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>.</p>
+<p>Furthermore, the methods <code class="docutils literal notranslate"><span class="pre">get</span></code>, <code class="docutils literal notranslate"><span class="pre">post</span></code>, <code class="docutils literal notranslate"><span class="pre">put</span></code>, <code class="docutils literal notranslate"><span class="pre">delete</span></code> and <code class="docutils literal notranslate"><span class="pre">request</span></code>
+return <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> objects, whose properties contain information about
+the request and response.</p>
+<p>For additional options, please refer to the documentation provided by the
+Requests project.</p>
+</div>
+</div>
+<div class="section" id="wrapped-entities">
+<h3>Wrapped entities<a class="headerlink" href="#wrapped-entities" title="Permalink to this headline">¶</a></h3>
+<p>Main article: <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYx-wrapped-entities">wrapped entities</a>
+(formerly the term “resource envelope” was used).</p>
+<p>Most of PagerDuty’s endpoints respond with their data inside of a key at the
+root level of the JSON-encoded object in the response. The key is named after
+the resource, whether singular or plural. All endpoints that follow this
+convention are supported by methods that eliminate the need for the implementer
+to wrap and unwrap resource entities.</p>
+<div class="section" id="functions-that-assume-entity-wrapping">
+<h4>Functions that assume entity wrapping<a class="headerlink" href="#functions-that-assume-entity-wrapping" title="Permalink to this headline">¶</a></h4>
+<p>Generally, instead of returning a <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object or requiring
+entity wrapping in the object to be JSON-encoded as the request body, some
+functions can accept an unwrapped entity to be sent in the request body, and
+will return the contents of the wrapped entity in the response from the API. If
+the request’s status was not success, or a wrapped entity could not be found in
+the response, <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code></a> will be raised otherwise (if the
+request’s status was not success, or no entity wrapping could be deduced).</p>
+<ul class="simple">
+<li><p>The “<code class="docutils literal notranslate"><span class="pre">r*</span></code> methods” <code class="docutils literal notranslate"><span class="pre">rput</span></code>, <code class="docutils literal notranslate"><span class="pre">rpost</span></code> and <code class="docutils literal notranslate"><span class="pre">rget</span></code>. They will perform the
+same HTTP actions as <code class="docutils literal notranslate"><span class="pre">put</span></code>, <code class="docutils literal notranslate"><span class="pre">post</span></code> and <code class="docutils literal notranslate"><span class="pre">get</span></code> and similarly accept the
+same keyword arguments as <code class="docutils literal notranslate"><span class="pre">requests.Session.request</span></code>. the <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword
+argument (for <code class="docutils literal notranslate"><span class="pre">rpost</span></code>/<code class="docutils literal notranslate"><span class="pre">rput</span></code>), the value can be the</p></li>
+<li><p><a class="reference internal" href="#pdpyras.APISession.find" title="pdpyras.APISession.find"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.find</span></code></a>, <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpyras.APISession.iter_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.iter_all</span></code></a>,
+<a class="reference internal" href="#pdpyras.APISession.list_all" title="pdpyras.APISession.list_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.list_all</span></code></a> and <a class="reference internal" href="#pdpyras.APISession.dict_all" title="pdpyras.APISession.dict_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.dict_all</span></code></a>
+each assume that the API index endpoint being queried follows the classic
+entity wrapping conventions.</p></li>
+<li><p><a class="reference internal" href="#pdpyras.APISession.persist" title="pdpyras.APISession.persist"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.persist</span></code></a> uses <code class="docutils literal notranslate"><span class="pre">rput</span></code>, <code class="docutils literal notranslate"><span class="pre">rpost</span></code> and <code class="docutils literal notranslate"><span class="pre">find</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">iter_cursor</span></code>, although it assumes a much looser definition of entity
+wrapping: the root level key in the response body can be set using the
+<code class="docutils literal notranslate"><span class="pre">attribute</span></code> keyword argument, and if unspecified it will guess that it is
+the same as the last node in the URL path. This is according to the design of
+all current Audit record APIs, which as of this writing are the only APIs that
+support cursor-based pagination.</p></li>
 </ul>
 </div>
-<div class="section" id="using-special-features-of-requests">
-<h4>Using Special Features of Requests<a class="headerlink" href="#using-special-features-of-requests" title="Permalink to this headline">¶</a></h4>
-<p>Keyword arguments to the HTTP methods get passed through to the similarly-
-named functions in <a class="reference external" href="https://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>, so for additional options, please refer
-to the documentation provided by the Requests project.</p>
-</div>
-</div>
-<div class="section" id="data-access-abstraction">
-<h3>Data Access Abstraction<a class="headerlink" href="#data-access-abstraction" title="Permalink to this headline">¶</a></h3>
-<p>The <code class="docutils literal notranslate"><span class="pre">APISession</span></code> class, in addition to providing a more convenient way of
-making the HTTP requests to the API, provides methods that yield/return dicts
-representing the PagerDuty objects with their defined schemas (see: <a class="reference external" href="https://developer.pagerduty.com/api-reference/">REST API
-Reference</a>) without needing to go through enclosing them in a data envelope.</p>
-<p>In other words, in the process of getting from an API call to the object
-representing the desired result, all of the following are taken care of:</p>
-<ol class="arabic simple">
-<li><p>Validate that the response HTTP status is not an error.</p></li>
-<li><p>Predict the name of the envelope property which will contain the object.</p></li>
-<li><p>Validate that the result contains the predicted envelope property.</p></li>
-<li><p>Access the property that is encapsulated within the response.</p></li>
-</ol>
 <div class="section" id="supported-endpoints">
-<h4>Supported Endpoints<a class="headerlink" href="#supported-endpoints" title="Permalink to this headline">¶</a></h4>
-<p><strong>Please note,</strong> not all API endpoints are supported for these convenience
-functions. The general rules are that the name of the wrapped resource
-property must follow from the innermost resource name for the API path in
-question, and that the “nodes” in the URL path (between forward slashes) must
-alternate between resource type and ID.</p>
-<p>For instance, for <code class="docutils literal notranslate"><span class="pre">/escalation_policies/{id}</span></code> the name must be
-<code class="docutils literal notranslate"><span class="pre">escalation_policy</span></code>, and or for <code class="docutils literal notranslate"><span class="pre">/users/{id}/notification_rules</span></code> it must be
-<code class="docutils literal notranslate"><span class="pre">notification_rules</span></code>.</p>
-<p>For example, with <a class="reference external" href="https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1users~1%7Bid%7D~1sessions/get">user sessions</a>
-(one API resource/endpoint that does not follow these rules), one will need to
-use the plain <code class="docutils literal notranslate"><span class="pre">get</span></code> and <code class="docutils literal notranslate"><span class="pre">post</span></code> functions, or <code class="docutils literal notranslate"><span class="pre">jget</span></code> / <code class="docutils literal notranslate"><span class="pre">jpost</span></code>, because
-their URLs are formatted as <code class="docutils literal notranslate"><span class="pre">/users/{id}/sessions/{type}/{session_id}</span></code> and
-the wrapped resource property name is <code class="docutils literal notranslate"><span class="pre">user_sessions</span></code> / <code class="docutils literal notranslate"><span class="pre">user_session</span></code>
-rather than simply <code class="docutils literal notranslate"><span class="pre">sessions</span></code> / <code class="docutils literal notranslate"><span class="pre">session</span></code>.</p>
+<h4>Supported endpoints<a class="headerlink" href="#supported-endpoints" title="Permalink to this headline">¶</a></h4>
+<p>The general rules are that the name of the wrapped resource key must follow
+predictably from the innermost resource name for the API path in question
+whether singular or plural, and that the “nodes” in the URL path (between
+forward slashes) must alternate between resource type and ID.</p>
+<p><strong>Supported endpoint example:</strong> for <code class="docutils literal notranslate"><span class="pre">/escalation_policies/{id}</span></code> the wrapper
+name for singular post/put is <code class="docutils literal notranslate"><span class="pre">escalation_policy</span></code>, and for <code class="docutils literal notranslate"><span class="pre">GET</span>
+<span class="pre">/escalation_policies</span></code> it is <code class="docutils literal notranslate"><span class="pre">escalation_policies</span></code>. For
+<code class="docutils literal notranslate"><span class="pre">/users/{id}/notification_rules</span></code> the wrapper is named <code class="docutils literal notranslate"><span class="pre">notification_rule</span></code>
+for singular post/put and <code class="docutils literal notranslate"><span class="pre">notification_rules</span></code> for the index, <code class="docutils literal notranslate"><span class="pre">GET</span>
+<span class="pre">/users/{id}/notification_rules</span></code>.</p>
+<p><strong>Unsupported endpoint example:</strong> in the
+<a class="reference external" href="https://developer.pagerduty.com/api-reference/b3A6Mjc0ODI0OQ-list-a-user-s-active-sessions">user sessions</a>
+API endpoints, URLs are formatted as
+<code class="docutils literal notranslate"><span class="pre">/users/{id}/sessions/{type}/{session_id}</span></code> whereas the wrapped resource
+property name is <code class="docutils literal notranslate"><span class="pre">user_sessions</span></code> / <code class="docutils literal notranslate"><span class="pre">user_session</span></code> rather than simply
+<code class="docutils literal notranslate"><span class="pre">sessions</span></code> / <code class="docutils literal notranslate"><span class="pre">session</span></code>.</p>
 </div>
-<div class="section" id="iteration">
-<h4>Iteration<a class="headerlink" href="#iteration" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="list-of-non-conformal-endpoints">
+<h4>List of non-conformal endpoints<a class="headerlink" href="#list-of-non-conformal-endpoints" title="Permalink to this headline">¶</a></h4>
+<p>The following list of APIs and endpoints (last updated: 2022-03-15) are
+unsupported by methods <code class="docutils literal notranslate"><span class="pre">rget</span></code>, <code class="docutils literal notranslate"><span class="pre">rpost</span></code>, <code class="docutils literal notranslate"><span class="pre">rput</span></code>, <code class="docutils literal notranslate"><span class="pre">persist</span></code>, <code class="docutils literal notranslate"><span class="pre">find</span></code>,
+<code class="docutils literal notranslate"><span class="pre">iter_all</span></code>, <code class="docutils literal notranslate"><span class="pre">list_all</span></code> and <code class="docutils literal notranslate"><span class="pre">dict_all</span></code> because they do not follow the
+classic entity wrapping  conventions on which the functions are based. They can
+still be used with the basic <code class="docutils literal notranslate"><span class="pre">get</span></code>, <code class="docutils literal notranslate"><span class="pre">post</span></code>, <code class="docutils literal notranslate"><span class="pre">put</span></code> and <code class="docutils literal notranslate"><span class="pre">delete</span></code> methods,
+as well as the <code class="docutils literal notranslate"><span class="pre">j*</span></code> methods:</p>
+<ul class="simple">
+<li><p>Analytics</p></li>
+<li><p>All Audit endpoints (<a class="reference internal" href="#pdpyras.APISession.iter_cursor" title="pdpyras.APISession.iter_cursor"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.iter_cursor</span></code></a> should be used instead, as they feature cursor-based pagination)</p></li>
+<li><p>All Notification Subscription endpoints</p></li>
+<li><p>Paused Incident Reports</p></li>
+<li><dl class="simple">
+<dt>The following Business Services endpoints:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/business_services/{id}/account_subscription</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/business_services/{id}/supporting_services/impacts</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/business_services/impactors</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/business_services/impacts</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[GET|PUT]</span> <span class="pre">/business_services/priority_thresholds</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>The following Incident API endpoints:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">[GET|PUT]</span> <span class="pre">/incidents/{id}/business_services/impacts`</span></code>: list or manually change any of an incident’s impacts on business services</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PUT</span> <span class="pre">/incidents/{id}/merge</span></code>: merge incidents</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/incidents/{id}/responder_requests</span></code>: create a responder request for an incident</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/incidents/{id}/snooze</span></code>: snooze an incident</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Event Orchestrations</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/schedules/{id}/overrides</span></code> (create one or more schedule overrides)</p></li>
+<li><p>Service Dependencies</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/{entity_type}/{id}/change_tags</span></code> (assign tags)</p></li>
+<li><p>Updating team membership (adding or removing users or escalation policies)</p></li>
+<li><p>User sessions</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="pagination">
+<h3>Pagination<a class="headerlink" href="#pagination" title="Permalink to this headline">¶</a></h3>
 <p>The method <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpyras.APISession.iter_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.iter_all</span></code></a> returns an iterator that yields
-all results from a resource index, automatically incrementing the <code class="docutils literal notranslate"><span class="pre">offset</span></code>
-parameter to advance through each page of data.</p>
+results from a resource index, automatically incrementing the <code class="docutils literal notranslate"><span class="pre">offset</span></code>
+parameter to advance through each page of data and make API requests on-demand.</p>
+<p>For all endpoints that support cursor-based pagination,
+<a class="reference internal" href="#pdpyras.APISession.iter_cursor" title="pdpyras.APISession.iter_cursor"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.iter_cursor</span></code></a> should be used instead.</p>
 <p>Note, one can perform <a class="reference external" href="https://v2.developer.pagerduty.com/docs/filtering">filtering</a> with iteration to constrain
 constrain the range of results, by passing in a dictionary object as the <code class="docutils literal notranslate"><span class="pre">params</span></code>
 keyword argument. Any parameters will be automatically merged with the pagination
 parameters and serialized into the final URL, so there is no need to manually
-construct the URL, i.e. append <code class="docutils literal notranslate"><span class="pre">?key1=value1&amp;key2=value2</span></code>.</p>
+construct the URL, i.e. appending <code class="docutils literal notranslate"><span class="pre">?key1=value1&amp;key2=value2</span></code>.</p>
 <p><strong>Example:</strong> Find all users with “Dav” in their name/email (i.e. Dave/David) in
 the PagerDuty account:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">dave</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">iter_all</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;query&#39;</span><span class="p">:</span><span class="s2">&quot;Dav&quot;</span><span class="p">}):</span>
@@ -358,163 +487,53 @@ the PagerDuty account:</p>
 <a class="reference internal" href="#pdpyras.APISession.list_all" title="pdpyras.APISession.list_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.list_all</span></code></a> and <a class="reference internal" href="#pdpyras.APISession.dict_all" title="pdpyras.APISession.dict_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.dict_all</span></code></a>
 which return a list or dictionary of all results, respectively.</p>
 <p><strong>Example:</strong> Get a dictionary of all users, keyed by email, and use it to find
-the ID of the user whose email is <code class="docutils literal notranslate"><span class="pre">bob&#64;example.com</span></code></p>
+the ID of the user whose email is <code class="docutils literal notranslate"><span class="pre">bob&#64;example.com</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">users</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">dict_all</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="s1">&#39;email&#39;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">users</span><span class="p">[</span><span class="s1">&#39;bob@example.com&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
+<div class="section" id="performance">
+<h4>Performance<a class="headerlink" href="#performance" title="Permalink to this headline">¶</a></h4>
+<p>Because HTTP requests are made synchronously and not in multiple threads,
+requesting all pages of data will happen one page at a time and the functions
+<code class="docutils literal notranslate"><span class="pre">list_all</span></code> and <code class="docutils literal notranslate"><span class="pre">dict_all</span></code> will not return until after the final HTTP
+response. Simply put, the functions will take longer to return if the total
+number of results is higher.</p>
 </div>
-<div class="section" id="disclaimers-regarding-iteration">
-<h4>Disclaimers Regarding Iteration<a class="headerlink" href="#disclaimers-regarding-iteration" title="Permalink to this headline">¶</a></h4>
-<p><strong>Regarding Performance:</strong></p>
-<p>Because HTTP requests are made synchronously and not in parallel threads, the
-data will be retrieved one page at a time and the functions <code class="docutils literal notranslate"><span class="pre">list_all</span></code> and
-<code class="docutils literal notranslate"><span class="pre">dict_all</span></code> will not return until after the HTTP response from the final API
-call is received. Simply put, the functions will take longer to return if the
-total number of results is higher.</p>
-<p><strong>On Updating and Deleting Records:</strong></p>
+<div class="section" id="updating-creating-or-deleting-while-paginating">
+<h4>Updating, creating or deleting while paginating<a class="headerlink" href="#updating-creating-or-deleting-while-paginating" title="Permalink to this headline">¶</a></h4>
 <p>If performing page-wise operations, i.e. making changes immediately after
 fetching each page of results, rather than pre-fetching all objects and then
-operating on them, one must be cautious not to perform any changes to the
-results that would affect the set over which iteration is taking place.</p>
-<p>To elaborate, this happens whenever a resource object is deleted, or it is
-updated in such a way that the filter parameters in <code class="docutils literal notranslate"><span class="pre">iter_all</span></code> no longer
-apply to it. This is because indexes’ contents update in real time. Thus,
-should any objects be removed from the set (the objects included in the
-iteration), then the offset when accessing the next page of results will still
-be incremented, whereas the position of the first object in the next page will
-shift to a lower rank in the overall list of objects.</p>
-<p>In other words: let’s say that one is reading and then tearing pages from a
-notebook. If the algorithm is “go through 100 pages, do things with the pages,
-then repeat starting with the 101st page, then with the 201st, etc” but one
-tears out pages immediately after going through them, then what was originally
-the 101st page before starting will shift to become the first page after going
-through the first hundred pages. Thus, when going to the 101st page after
-finishing tearing out the first hundred pages, the second hundred pages will be
-skipped over, and similarly for pages 401-500, 601-700 and so on.</p>
-<p>Also, note, a similar effect would occur if creating objects during iteration.</p>
-<p>As of version 3, this issue is still applicable. To avoid it, do not use
-<code class="docutils literal notranslate"><span class="pre">iter_all</span></code>, but use <code class="docutils literal notranslate"><span class="pre">list_all</span></code> or <code class="docutils literal notranslate"><span class="pre">dict_all</span></code> to pre-fetch the set of
-records to be operated on, and then iterate over the results. This still does
-not constitute a completely bulletproof safeguard against set changes caused by
-insert/update/delete operations carried out by other simultaneous processes
-(i.e. a user renaming a service through the web UI).</p>
-</div>
-<div class="section" id="reading">
-<h4>Reading<a class="headerlink" href="#reading" title="Permalink to this headline">¶</a></h4>
-<p>The method <a class="reference internal" href="#pdpyras.APISession.rget" title="pdpyras.APISession.rget"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rget</span></code></a> gets a resource, returning the object
-within the resource name envelope after JSON-decoding the response body. In
-other words, if retrieving an individual user (for instance), where one would
-have to JSON-decode and then access the <code class="docutils literal notranslate"><span class="pre">user</span></code> key in the resulting
-dictionary object, that object itself is directly returned.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">rget</span></code> method can be called with as little as one argument: the URL (or
-URL path) to request. Example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">service</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s1">&#39;/services/PZYX321&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Service PZYX321&#39;s name: &quot;</span><span class="o">+</span><span class="n">service</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
-</pre></div>
-</div>
-<p>One can also use it on a <a class="reference external" href="https://v2.developer.pagerduty.com/docs/endpoints#resources-index">resource index</a>, although if the goal is to get all
-results rather than a specific page, <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpyras.APISession.iter_all"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.APISession.iter_all</span></code></a> is
-recommended for this purpose, as it will automatically iterate through all
-pages of results, rather than just the first. When using <code class="docutils literal notranslate"><span class="pre">rget</span></code> in this way,
-the return value will be a list of dicts instead of a dict.</p>
-<p>The method also accepts other keyword arguments, which it will pass along to
-<code class="docutils literal notranslate"><span class="pre">reqeusts.Session.get</span></code>, i.e. if requesting an index, <code class="docutils literal notranslate"><span class="pre">params</span></code> can be used
-to set a filter:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">first_100_daves</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span>
-    <span class="s1">&#39;/users&#39;</span><span class="p">,</span>
-    <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;query&#39;</span><span class="p">:</span><span class="s2">&quot;Dave&quot;</span><span class="p">,</span><span class="s1">&#39;limit&#39;</span><span class="p">:</span><span class="mi">100</span><span class="p">}</span>
-<span class="p">)</span>
-</pre></div>
+operating on them (i.e. with <a class="reference internal" href="#pdpyras.APISession.list_all" title="pdpyras.APISession.list_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.list_all</span></code></a>), one must be
+cautious not to perform any changes to the results that would affect the set
+over which iteration is taking place, such as creating objects, deleting them,
+or modifying them in such a way that their status of being in the set of
+results changes.</p>
+<p>This is because indexes’ contents are updated in real time, and this can affect
+the position of objects in the overall list (and thus the edges of each page).
+Changes made apart from the API client can have the same effect.</p>
+<p>To elaborate: let’s say that each resource object in the full list is a page in
+a notebook  Classic pagination with <code class="docutils literal notranslate"><span class="pre">limit=100</span></code> is essentially “go through
+100 pages, then repeat starting with the 101st page, then with the 201st, etc.”
+Deleting records in between these 100-at-a-time pagination requests would be
+like tearing out pages after reading them. At the time of the second page
+request, what was originally the 101st page before starting will shift to
+become the first page after tearing out the first hundred pages. Thus, when
+going to the 101st page after finishing tearing out the first hundred pages,
+the second hundred pages will be skipped over, and similarly for pages 401-500,
+601-700 and so on. If attaching pages, the opposite happens: some results will be
+returned more than once, because they get bumped to the next group of 100 pages.</p>
 </div>
 </div>
-<div class="section" id="creating-and-updating">
-<h4>Creating and Updating<a class="headerlink" href="#creating-and-updating" title="Permalink to this headline">¶</a></h4>
-<p>Just as <code class="docutils literal notranslate"><span class="pre">rget</span></code> eliminates the need to JSON-decode and then pull the data out
-of the envelope in the response schema, <a class="reference internal" href="#pdpyras.APISession.rpost" title="pdpyras.APISession.rpost"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rpost</span></code></a> and
-<a class="reference internal" href="#pdpyras.APISession.rput" title="pdpyras.APISession.rput"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rput</span></code></a> return the data in the envelope property.
-Furthermore, they eliminate the need to enclose the dictionary object
-representing the data to be transmitted in an envelope, and just like <code class="docutils literal notranslate"><span class="pre">rget</span></code>,
-they accept at an absolute minimum one positional argument (the URL), and all
-keyword arguments are passed through to the underlying request method function.</p>
-<p>For instance, instead of having to set the keyword argument <code class="docutils literal notranslate"><span class="pre">json</span> <span class="pre">=</span> <span class="pre">{&quot;user&quot;:</span>
-<span class="pre">{...}}</span></code> to <code class="docutils literal notranslate"><span class="pre">put</span></code>, one can pass <code class="docutils literal notranslate"><span class="pre">json</span> <span class="pre">=</span> <span class="pre">{...}</span></code> to <code class="docutils literal notranslate"><span class="pre">rput</span></code>, to update a
-user. The following function takes a PagerDuty user ID and gives the
-user the admin role and prints a message when done:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">promote_to_admin</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">uid</span><span class="p">):</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rput</span><span class="p">(</span>
-        <span class="s1">&#39;/users/&#39;</span><span class="o">+</span><span class="n">uid</span><span class="p">,</span>
-        <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;role&#39;</span><span class="p">:</span><span class="s1">&#39;admin&#39;</span><span class="p">}</span>
-    <span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> now has admin superpowers&quot;</span><span class="o">%</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
-</pre></div>
-</div>
-<p>Example of creating an incident:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">pdpyras</span> <span class="kn">import</span> <span class="n">APISession</span>
-
-<span class="n">api_token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PD_API_KEY&#39;</span><span class="p">]</span>
-<span class="n">sender</span> <span class="o">=</span> <span class="s1">&#39;user@example.com&#39;</span>
-<span class="n">session</span> <span class="o">=</span> <span class="n">APISession</span><span class="p">(</span><span class="n">api_token</span><span class="p">,</span> <span class="n">default_sender</span><span class="o">=</span><span class="n">sender</span><span class="p">)</span>
-
-<span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;incident&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;This is a test 4&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;service&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;service_id&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;service_reference&quot;</span><span class="p">},</span>
-  <span class="s2">&quot;assignments&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;assignee&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;user_id&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;user_reference&quot;</span><span class="p">}}],</span>
-  <span class="s2">&quot;body&quot;</span><span class="p">:</span> <span class="p">{</span>
-      <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;incident_body&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;details&quot;</span><span class="p">:</span> <span class="s2">&quot;utf8 data displayed the more details section of the alert&quot;</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-<span class="n">pd_incident</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rpost</span><span class="p">(</span><span class="s2">&quot;incidents&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="idempotent-resource-creation">
-<h4>Idempotent Resource Creation<a class="headerlink" href="#idempotent-resource-creation" title="Permalink to this headline">¶</a></h4>
-<p>Beyond just creating a resource, <a class="reference internal" href="#pdpyras.APISession.persist" title="pdpyras.APISession.persist"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.persist</span></code></a> can be used
-to perform a check for a preexisting object before creating it; it returns the
-persisted resource, whether or not the object already existed.</p>
-<p>For instance, the following will create a user having email address
-<code class="docutils literal notranslate"><span class="pre">user&#64;organization.com</span></code> if one does not already exist, and print that user’s
-name:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">persist</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="s1">&#39;email&#39;</span><span class="p">,</span> <span class="p">{</span>
-    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;User McUserson&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;user@organization.com&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span>
-<span class="p">})</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="deleting">
-<h4>Deleting<a class="headerlink" href="#deleting" title="Permalink to this headline">¶</a></h4>
-<p>The <code class="docutils literal notranslate"><span class="pre">rdelete</span></code> method has no return value, but otherwise behaves in exactly
-the same way as the other request methods with <code class="docutils literal notranslate"><span class="pre">r</span></code> prepended to their name.
-Like the other <code class="docutils literal notranslate"><span class="pre">r*</span></code> methods, it will raise <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code></a> if
-the API responds with a non-success HTTP status.</p>
-<p>Example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">session</span><span class="o">.</span><span class="n">rdelete</span><span class="p">(</span><span class="s2">&quot;/services/PI86NOW&quot;</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Service deleted.&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="managing-a-k-a-multi-updating">
-<h4>Managing, a.k.a. Multi-Updating<a class="headerlink" href="#managing-a-k-a-multi-updating" title="Permalink to this headline">¶</a></h4>
-<p>Introduced in version 2.1 is support for automatic data envelope functionality
-in multi-update actions.</p>
-<p>As of this writing, multi-update is limited to the following actions:</p>
+<div class="section" id="multi-updating">
+<h3>Multi-updating<a class="headerlink" href="#multi-updating" title="Permalink to this headline">¶</a></h3>
+<p>Introduced in version 2.1 is support for multi-update actions using <code class="docutils literal notranslate"><span class="pre">rput</span></code>.
+As of this writing, multi-update support includes the following endpoints:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1incidents/put">PUT /incidents</a></p></li>
-<li><p><a class="reference external" href="https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1incidents~1%7Bid%7D~1alerts/put">PUT /incidents/{id}/alerts</a></p></li>
-<li><p><strong>PUT /priorities</strong> (not yet published, as of 2018-11-28)</p></li>
+<li><p><a class="reference external" href="https://developer.pagerduty.com/api-reference/b3A6Mjc0ODEzOQ-manage-incidents">PUT /incidents</a></p></li>
+<li><p><a class="reference external" href="https://developer.pagerduty.com/api-reference/b3A6Mjc0ODE0NA-manage-alerts">PUT /incidents/{id}/alerts</a></p></li>
+<li><p>PUT /priorities (documentation not yet published as of 2022-03-15, but the endpoint is functional)</p></li>
 </ul>
-<p><strong>Please note:</strong> as of yet, merging incidents is not supported by <code class="docutils literal notranslate"><span class="pre">rput</span></code>.
-For this and other unsupported endpoints, you will need to call <code class="docutils literal notranslate"><span class="pre">put</span></code> directly,
-or <code class="docutils literal notranslate"><span class="pre">jput</span></code> to get the response body as a dictionary object.</p>
 <p>To use, simply pass in a list of objects or references (dictionaries having a
 structure according to the API schema reference for that object type) to the
 <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument of <a class="reference internal" href="#pdpyras.APISession.rput" title="pdpyras.APISession.rput"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rput</span></code></a>, and the final
@@ -535,100 +554,104 @@ actions.</p>
 <p>It is important to note, however, that certain actions such as updating
 incidents require the <code class="docutils literal notranslate"><span class="pre">From</span></code> header, which should be the login email address
 of a valid PagerDuty user. To set this, pass it through using the <code class="docutils literal notranslate"><span class="pre">headers</span></code>
-keyword argument, or set the <a class="reference internal" href="#pdpyras.APISession.default_from" title="pdpyras.APISession.default_from"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.default_from</span></code></a> property.</p>
-</div>
-<div class="section" id="using-resources-in-place-of-urls">
-<h4>Using Resources in Place of URLs<a class="headerlink" href="#using-resources-in-place-of-urls" title="Permalink to this headline">¶</a></h4>
-<p>As of version 4.1, one may send the dictionary representation of a resource to
-any of the <code class="docutils literal notranslate"><span class="pre">r*</span></code> methods, with the exception of <code class="docutils literal notranslate"><span class="pre">rpost</span></code>, in place of a URL
-or path. The dictionary must contain a <code class="docutils literal notranslate"><span class="pre">self</span></code> item that is the URL of the
-resource.</p>
-<p>This eliminates the need to construct the resource’s path/URL, or to keep a
-temporary variable with the URL needed for accessing the object.</p>
-<p>For instance, to reload a service object previously fetched from the API, i.e.
-to ensure one has the latest data for that resource:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s1">&#39;users/PSOMEUSR&#39;</span><span class="p">)</span>
-
-<span class="c1"># Do things that take a lot of time during which the user might change</span>
-<span class="c1"># ...</span>
-
-<span class="c1"># Reload the user:</span>
-<span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
-<span class="c1"># as opposed to:</span>
-<span class="c1"># user = session.rget(&#39;users/PSOMEUSR&#39;)</span>
-</pre></div>
-</div>
-<p>Another example: to delete a service:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">session</span><span class="o">.</span><span class="n">rdelete</span><span class="p">(</span><span class="n">service</span><span class="p">)</span>
-<span class="c1"># as opposed to:</span>
-<span class="c1"># session.rdelete(service[&#39;self&#39;])</span>
-</pre></div>
-</div>
-</div>
+keyword argument, or set the <a class="reference internal" href="#pdpyras.APISession.default_from" title="pdpyras.APISession.default_from"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.default_from</span></code></a> property,
+or pass the email address as the <code class="docutils literal notranslate"><span class="pre">default_from</span></code> keyword argument when
+constructing the session initially.</p>
 </div>
 <div class="section" id="error-handling">
-<h3>Error Handling<a class="headerlink" href="#error-handling" title="Permalink to this headline">¶</a></h3>
-<p>What happens when, for any of the <code class="docutils literal notranslate"><span class="pre">r*</span></code> methods, the API responds with a
-non-success HTTP status? Obviously in this case, they cannot return the
-JSON-decoded response, because the response would not be the sought-after data
-but a different schema altogether (see: <a class="reference external" href="https://v2.developer.pagerduty.com/docs/errors">Errors</a>), and this would put the onus
-on the end user to distinguish between success and error based on the structure
-of the returned dictionary object (yuck).</p>
-<p>Instead, when this happens, a <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code></a> exception is
-raised. The advantage of this design lies in how the methods can always be
-expected to return the same sort of data, and if they can’t, the program flow
-that depends on getting this specific structure of data is appropriately
-interrupted. Moreover, because (as of version 2) this exception class will have
-the <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object as its <code class="docutils literal notranslate"><span class="pre">response</span></code> property (whenever the
-exception pertains to a HTTP error), the end user can define specialized error
-handling logic in which the REST API response data (i.e. headers, code and body)
-are directly available.</p>
+<h3>Error handling<a class="headerlink" href="#error-handling" title="Permalink to this headline">¶</a></h3>
+<p>What happens when, for any of the methods that do not return
+<a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a>, the API response is a non-success HTTP status, is that it
+will not return the decoded body. Instead, when this happens, a
+<a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code></a> exception is raised. This way, methods can
+always be expected to return the same structure of data based on the API being
+used. If there is a break in this expectation, the flow is appropriately
+interrupted.</p>
+<p>As of version 2, this exception class has the <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object as
+its <code class="docutils literal notranslate"><span class="pre">response</span></code> property (whenever the exception pertains to a HTTP error).
+The implementer can thus define specialized error handling logic in which the
+REST API response data (i.e. headers, code and body) are directly available.</p>
 <p>For instance, the following code prints “User not found” in the event of a 404,
-raises the underlying exception in the event of an incorrect API access token (401
-Unauthorized) or non-transient network error, prints out the user’s email if
-the user exists, and does nothing otherwise:</p>
+prints out the user’s email if the user exists, raises the underlying
+exception if it’s any other HTTP error code, and prints an error otherwise:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s2">&quot;/users/PJKL678&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">])</span>
-
-<span class="k">except</span> <span class="n">PDClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;User not found&quot;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">401</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">e</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">e</span>
-</pre></div>
-</div>
-<p>Just make sure to import <cite>PDClientError</cite> or reference it throught he namespace, i.e.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pdpyras</span> <span class="kn">import</span> <span class="n">APISession</span><span class="p">,</span> <span class="n">PDClientError</span>
-
-<span class="k">except</span> <span class="n">PDClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</pre></div>
-</div>
-<p>Or:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pdpyras</span>
-
-<span class="o">...</span>
+  <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s2">&quot;/users/PJKL678&quot;</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">])</span>
 
 <span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<span class="o">...</span>
+  <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;User not found&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="n">e</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Non-transient network or client error&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Version 4.4.0 introduced a new error subclass, PDHTTPError, in which it can be
+assumed that the error pertains to a HTTP request:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+  <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s2">&quot;/users/PJKL678&quot;</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">])</span>
+
+<span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDHTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+  <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;User not found&quot;</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="n">e</span>
+<span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Non-transient network or client error&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="http-retry-logic">
-<h3>HTTP Retry Logic<a class="headerlink" href="#http-retry-logic" title="Permalink to this headline">¶</a></h3>
-<p>By default, after receiving a response, <a class="reference internal" href="#pdpyras.PDSession.request" title="pdpyras.PDSession.request"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.request</span></code></a> will
-return the <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object unless its status is <code class="docutils literal notranslate"><span class="pre">429</span></code> (rate
-limiting), in which case it will retry until it gets a status other than <code class="docutils literal notranslate"><span class="pre">429</span></code>.</p>
-<p>The property <a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.retry</span></code></a> allows customization in this
-regard, so that the client can be made to retry on other statuses (i.e.
+<h3>HTTP retry logic<a class="headerlink" href="#http-retry-logic" title="Permalink to this headline">¶</a></h3>
+<p>Session objects support retrying API requests if they receive a non-success
+response or if they encounter a network error. This behavior is configurable
+through the following properties, which are each documented with further
+implementation details:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#pdpyras.PDSession.max_http_attempts" title="pdpyras.PDSession.max_http_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.max_http_attempts</span></code></a></p></li>
+<li><p><a class="reference internal" href="#pdpyras.PDSession.max_network_attempts" title="pdpyras.PDSession.max_network_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.max_network_attempts</span></code></a></p></li>
+<li><p><a class="reference internal" href="#pdpyras.PDSession.sleep_timer" title="pdpyras.PDSession.sleep_timer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.sleep_timer</span></code></a></p></li>
+<li><p><a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.sleep_timer_base</span></code></a></p></li>
+<li><p><a class="reference internal" href="#pdpyras.PDSession.stagger_cooldown" title="pdpyras.PDSession.stagger_cooldown"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.stagger_cooldown</span></code></a></p></li>
+</ul>
+<div class="section" id="cooldown">
+<h4>Cooldown<a class="headerlink" href="#cooldown" title="Permalink to this headline">¶</a></h4>
+<p>After each unsuccessful attempt, if retry logic is active for the given HTTP
+status, the client will sleep for a short period that increases exponentially
+with each retry.</p>
+<p>Let:</p>
+<ul class="simple">
+<li><p>a = <code class="docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></p></li>
+<li><p>t<sub>0</sub> = <code class="docutils literal notranslate"><span class="pre">sleep_timer</span></code></p></li>
+<li><p>t<sub>n</sub> = Sleep time after n attempts</p></li>
+<li><p>ρ = <code class="docutils literal notranslate"><span class="pre">stagger_cooldown</span></code></p></li>
+<li><p>r = a random real number between 0 and 1</p></li>
+</ul>
+<p>Assuming ρ = 0:</p>
+<p>t<sub>n</sub> = t<sub>0</sub> a<sup>n</sup></p>
+<p>If ρ is nonzero:</p>
+<p>t<sub>n</sub> = a (1 + ρ r) t<sub>n-1</sub></p>
+</div>
+<div class="section" id="rate-limiting">
+<h4>Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permalink to this headline">¶</a></h4>
+<p>By default, after receiving a status 429 response, sessions will retry the
+request indefinitely until it receives a status other than 429. This is a sane
+approach; if it is ever responding with 429, the REST API is receiving (for the
+given REST API key) too many requests, and the issue should by nature be
+transient unless there is a rogue process using the key and saturating its rate
+limit.</p>
+</div>
+<div class="section" id="http-retry-configuration">
+<h4>HTTP retry configuration<a class="headerlink" href="#http-retry-configuration" title="Permalink to this headline">¶</a></h4>
+<p>The property <a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.retry</span></code></a> allows customization of HTTP retry
+logic, so that the client can be made to retry on other statuses (i.e.
 502/400), up to a set number of times. The total number of HTTP error responses
 that the client will tolerate before returning the response object is defined
 in <a class="reference internal" href="#pdpyras.PDSession.max_http_attempts" title="pdpyras.PDSession.max_http_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.max_http_attempts</span></code></a>, and this will supersede the
-maximum number of retries defined in
-<a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.retry</span></code></a>.</p>
+maximum number of retries defined in <a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.retry</span></code></a>.</p>
 <p><strong>Example:</strong></p>
 <p>The following will take about 30 seconds plus API request time
 (carrying out four attempts, with 2, 4, 8 and 16 second pauses between them),
@@ -637,23 +660,13 @@ before finally returning with the status 404 <a class="reference external" href=
 <span class="n">session</span><span class="o">.</span><span class="n">max_http_attempts</span> <span class="o">=</span> <span class="mi">4</span>
 <span class="n">session</span><span class="o">.</span><span class="n">sleep_timer</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="n">session</span><span class="o">.</span><span class="n">sleep_timer_base</span> <span class="o">=</span> <span class="mi">2</span>
-<span class="c1"># isinstance(session, pdpyras.APISession)</span>
 <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;/users/PNOEXST&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><strong>Default Behavior:</strong></p>
-<p>Note that without specifying any retry behavior for status 429 (rate limiting),
-it will retry indefinitely. This is a sane approach; if it is ever responding
-with 429, this means that the REST API is receiving (for the given REST API
-key) too many requests, and the issue should by nature be transient.</p>
-<p>Similarly, there is hard-coded default behavior for status 401 (unauthorized):
-immediately raise <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code></a> (as this can be considered in
-all cases a completely non-transient error).</p>
-<p>It is still possible to override these behaviors using
-<a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.retry</span></code></a>, but it is not recommended.</p>
 </div>
-<div class="section" id="events-api-usage">
-<h3>Events API Usage<a class="headerlink" href="#events-api-usage" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="events-api">
+<h3>Events API<a class="headerlink" href="#events-api" title="Permalink to this headline">¶</a></h3>
 <p>As an added bonus, <code class="docutils literal notranslate"><span class="pre">pdpyras</span></code> provides an additional Session class for submitting
 alert data to the Events API and triggering incidents asynchronously:
 <a class="reference internal" href="#pdpyras.EventsAPISession" title="pdpyras.EventsAPISession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.EventsAPISession</span></code></a>. It has most of the same features as
@@ -664,20 +677,23 @@ alert data to the Events API and triggering incidents asynchronously:
 <li><p>Setting all required headers</p></li>
 <li><p>Configurable HTTP retry logic</p></li>
 </ul>
+<p>To instantiate a session object, pass the constructor the routing key. Code
+samples in this section will assume a variable named <code class="docutils literal notranslate"><span class="pre">session</span></code> constructed in
+this way. For example, given an environment variable <code class="docutils literal notranslate"><span class="pre">PD_API_KEY</span></code> set to an
+events API v2 (or global event routing) API key:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pdpyras</span>
+
+<span class="n">routing_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PD_API_KEY&#39;</span><span class="p">]</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">EventsAPISession</span><span class="p">(</span><span class="n">routing_key</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>To transmit alerts and perform actions through the events API, one would use:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="#pdpyras.EventsAPISession.trigger" title="pdpyras.EventsAPISession.trigger"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.EventsAPISession.trigger</span></code></a></p></li>
 <li><p><a class="reference internal" href="#pdpyras.EventsAPISession.acknowledge" title="pdpyras.EventsAPISession.acknowledge"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.EventsAPISession.acknowledge</span></code></a></p></li>
 <li><p><a class="reference internal" href="#pdpyras.EventsAPISession.resolve" title="pdpyras.EventsAPISession.resolve"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.EventsAPISession.resolve</span></code></a></p></li>
 </ul>
-<p>To instantiate a session object, pass the constructor the routing key:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pdpyras</span>
-
-
-<span class="n">routing_key</span> <span class="o">=</span> <span class="s1">&#39;0123456789abcdef0123456789abcdef&#39;</span>
-<span class="n">session</span> <span class="o">=</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">EventsAPISession</span><span class="p">(</span><span class="n">routing_key</span><span class="p">)</span>
-</pre></div>
-</div>
 <p><strong>Example 1:</strong> Trigger an event and use the PagerDuty-supplied deduplication key to resolve it later:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dedup_key</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">trigger</span><span class="p">(</span><span class="s2">&quot;Server is on fire&quot;</span><span class="p">,</span> <span class="s1">&#39;dusty.old.server.net&#39;</span><span class="p">)</span>
 <span class="c1"># ...</span>
@@ -689,6 +705,16 @@ alert data to the Events API and triggering incidents asynchronously:
     <span class="n">dedup_key</span><span class="o">=</span><span class="s1">&#39;abc123&#39;</span><span class="p">)</span>
 <span class="c1"># ...</span>
 <span class="n">session</span><span class="o">.</span><span class="n">acknowledge</span><span class="p">(</span><span class="s1">&#39;abc123&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="change-events-api">
+<h3>Change Events API<a class="headerlink" href="#change-events-api" title="Permalink to this headline">¶</a></h3>
+<p>To submit a change event, create an instance of
+<a class="reference internal" href="#pdpyras.ChangeEventsAPISession" title="pdpyras.ChangeEventsAPISession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.ChangeEventsAPISession</span></code></a>, passing an Events API v2 key to the
+class constructor as with <code class="xref py py-class docutils literal notranslate"><span class="pre">EventsAPISession</span></code>. Then, call
+<a class="reference internal" href="#pdpyras.ChangeEventsAPISession.submit" title="pdpyras.ChangeEventsAPISession.submit"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.ChangeEventsAPISession.submit</span></code></a>, i.e.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">session</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="s2">&quot;new build finished at latest HEAD&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;automation&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1083,7 +1109,7 @@ default as the <code class="docutils literal notranslate"><span class="pre">From
 <dt id="pdpyras.APISession.default_page_size">
 <code class="sig-name descname">default_page_size</code><em class="property"> = 100</em><a class="headerlink" href="#pdpyras.APISession.default_page_size" title="Permalink to this definition">¶</a></dt>
 <dd><p>This will be the default number of results requested in each page when
-iterating/querying an index (the <code class="docutils literal notranslate"><span class="pre">limit</span></code> parameter). See: <a class="reference external" href="https://v2.developer.pagerduty.com/docs/pagination">pagination</a>.</p>
+iterating/querying an index (the <code class="docutils literal notranslate"><span class="pre">limit</span></code> parameter). See: <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination">pagination</a>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1103,7 +1129,7 @@ uniqueness validation, so if you use an attribute that is not
 distinct for the data set, this function will omit some data in the
 results.</p></li>
 <li><p><strong>params</strong> – Additional URL parameters to include.</p></li>
-<li><p><strong>paginate</strong> – If True, use <a class="reference external" href="https://v2.developer.pagerduty.com/docs/pagination">pagination</a> to get through all available results. If
+<li><p><strong>paginate</strong> – If True, use <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination">pagination</a> to get through all available results. If
 False, ignore / don’t page through more than the first 100 results.
 Useful for special index endpoints that don’t fully support
 pagination yet, i.e. “nested” endpoints like
@@ -1120,7 +1146,7 @@ pagination yet, i.e. “nested” endpoints like
 <p>Returns a dict if a result is found. The structure will be that of an
 entry in the index endpoint schema’s array of results. Otherwise, it
 will return <code class="docutils literal notranslate"><span class="pre">None</span></code> if no result is found or an error is encountered.</p>
-<p>Works by querying a given <a class="reference external" href="https://v2.developer.pagerduty.com/docs/endpoints#resources-index">resource index</a> endpoint using the <code class="docutils literal notranslate"><span class="pre">query</span></code>
+<p>Works by querying a given <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU0-endpoints#resources-index">resource index</a> endpoint using the <code class="docutils literal notranslate"><span class="pre">query</span></code>
 parameter. To use this function on any given resource, the resource’s
 index must support the <code class="docutils literal notranslate"><span class="pre">query</span></code> parameter; otherwise, the function may
 not work as expected. If the index ignores the parameter, for instance,
@@ -1155,13 +1181,13 @@ matching results have been yielded or a HTTP error response is received.</p>
 <p>Each yielded value is a dict object representing a result returned from
 the index. For example, if requesting the <code class="docutils literal notranslate"><span class="pre">/users</span></code> endpoint, each
 yielded value will be an entry of the <code class="docutils literal notranslate"><span class="pre">users</span></code> array property in the
-response; see: <a class="reference external" href="https://v2.developer.pagerduty.com/v2/page/api-reference#!/Users/get_users">List Users</a></p>
+response.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>path</strong> (<em>str</em>) – The index endpoint URL to use.</p></li>
 <li><p><strong>params</strong> (<em>dict</em><em> or </em><em>None</em>) – Additional URL parameters to include.</p></li>
-<li><p><strong>paginate</strong> (<em>bool</em>) – If True, use <a class="reference external" href="https://v2.developer.pagerduty.com/docs/pagination">pagination</a> to get through all available results. If
+<li><p><strong>paginate</strong> (<em>bool</em>) – If True, use <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination">pagination</a> to get through all available results. If
 False, ignore / don’t page through more than the first 100 results.
 Useful for special index endpoints that don’t fully support
 pagination yet, i.e. “nested” endpoints like (as of this writing):
@@ -1223,7 +1249,7 @@ to <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpy
 <dl class="py method">
 <dt id="pdpyras.APISession.persist">
 <code class="sig-name descname">persist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span></em>, <em class="sig-param"><span class="n">attr</span></em>, <em class="sig-param"><span class="n">values</span></em>, <em class="sig-param"><span class="n">update</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.persist" title="Permalink to this definition">¶</a></dt>
-<dd><p>Finds or creates and returns a resource matching an idempotency key.</p>
+<dd><p>Finds or creates and returns a resource with a matching attribute</p>
 <p>Given a resource name, an attribute to use as an idempotency key and a
 set of attribute:value pairs as a dict, create a resource with the
 specified attributes if it doesn’t exist already and return the resource
@@ -1232,7 +1258,7 @@ persisted via the API (whether or not it already existed).</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>resource</strong> (<em>str</em>) – The resource name. Must be a valid API resource that is supported by
-the <code class="docutils literal notranslate"><span class="pre">r*</span></code> methods; see <a class="reference internal" href="#supported-endpoints"><span class="std std-ref">Supported Endpoints</span></a>.</p></li>
+the <code class="docutils literal notranslate"><span class="pre">r*</span></code> methods; see <a class="reference internal" href="#supported-endpoints"><span class="std std-ref">Supported endpoints</span></a>.</p></li>
 <li><p><strong>attr</strong> (<em>str</em>) – Name of the attribute to use as the idempotency key. For instance,
 “email” when the resource is “users” will not create the user if a
 user with the email address given in <code class="docutils literal notranslate"><span class="pre">values</span></code> already exists.</p></li>
@@ -1508,8 +1534,8 @@ for more details.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="id2">
-<h3>Errors<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id6">
+<h3>Errors<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
 <dl class="py class">
 <dt id="pdpyras.PDClientError">
 <em class="property">class </em><code class="sig-prename descclassname">pdpyras.</code><code class="sig-name descname">PDClientError</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="n">response</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDClientError" title="Permalink to this definition">¶</a></dt>
@@ -1711,8 +1737,8 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 
 </div>
 </div>
-<div class="section" id="id3">
-<h2>Changelog<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id7">
+<h2>Changelog<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h2>
 <p><strong>2022-02-22: Version 4.5.0</strong></p>
 <ul class="simple">
 <li><p>Add a new API generator <code class="docutils literal notranslate"><span class="pre">iter_cursor</span></code> to <a class="reference internal" href="#pdpyras.APISession" title="pdpyras.APISession"><code class="xref py py-class docutils literal notranslate"><span class="pre">APISession</span></code></a> that yields results from API endpoints that support cursor-based pagination, requesting the next page of results whenever needed.</p></li>
@@ -1875,29 +1901,41 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </li>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#usage-guide">Usage Guide</a><ul>
-<li><a class="reference internal" href="#basic-usage">Basic Usage</a></li>
-<li><a class="reference internal" href="#using-an-oauth-2-access-token-to-authenticate">Using an OAuth 2 Access Token to Authenticate</a></li>
-<li><a class="reference internal" href="#general-concepts">General Concepts</a><ul>
+<li><a class="reference internal" href="#authentication">Authentication</a><ul>
+<li><a class="reference internal" href="#using-a-basic-rest-api-key">Using a basic REST API key</a></li>
+<li><a class="reference internal" href="#using-an-oauth2-token">Using an OAuth2 token</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#basic-usage">Basic usage</a></li>
+<li><a class="reference internal" href="#general-concepts">General concepts</a><ul>
 <li><a class="reference internal" href="#urls">URLs</a></li>
-<li><a class="reference internal" href="#request-and-response-bodies">Request and Response Bodies</a></li>
-<li><a class="reference internal" href="#using-special-features-of-requests">Using Special Features of Requests</a></li>
+<li><a class="reference internal" href="#request-and-response-bodies">Request and response bodies</a></li>
+<li><a class="reference internal" href="#resource-schemas">Resource schemas</a></li>
+<li><a class="reference internal" href="#data-types">Data types</a></li>
+<li><a class="reference internal" href="#using-http-client-library-features">Using HTTP client library features</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#data-access-abstraction">Data Access Abstraction</a><ul>
-<li><a class="reference internal" href="#supported-endpoints">Supported Endpoints</a></li>
-<li><a class="reference internal" href="#iteration">Iteration</a></li>
-<li><a class="reference internal" href="#disclaimers-regarding-iteration">Disclaimers Regarding Iteration</a></li>
-<li><a class="reference internal" href="#reading">Reading</a></li>
-<li><a class="reference internal" href="#creating-and-updating">Creating and Updating</a></li>
-<li><a class="reference internal" href="#idempotent-resource-creation">Idempotent Resource Creation</a></li>
-<li><a class="reference internal" href="#deleting">Deleting</a></li>
-<li><a class="reference internal" href="#managing-a-k-a-multi-updating">Managing, a.k.a. Multi-Updating</a></li>
-<li><a class="reference internal" href="#using-resources-in-place-of-urls">Using Resources in Place of URLs</a></li>
+<li><a class="reference internal" href="#wrapped-entities">Wrapped entities</a><ul>
+<li><a class="reference internal" href="#functions-that-assume-entity-wrapping">Functions that assume entity wrapping</a></li>
+<li><a class="reference internal" href="#supported-endpoints">Supported endpoints</a></li>
+<li><a class="reference internal" href="#list-of-non-conformal-endpoints">List of non-conformal endpoints</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#error-handling">Error Handling</a></li>
-<li><a class="reference internal" href="#http-retry-logic">HTTP Retry Logic</a></li>
-<li><a class="reference internal" href="#events-api-usage">Events API Usage</a></li>
+<li><a class="reference internal" href="#pagination">Pagination</a><ul>
+<li><a class="reference internal" href="#performance">Performance</a></li>
+<li><a class="reference internal" href="#updating-creating-or-deleting-while-paginating">Updating, creating or deleting while paginating</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#multi-updating">Multi-updating</a></li>
+<li><a class="reference internal" href="#error-handling">Error handling</a></li>
+<li><a class="reference internal" href="#http-retry-logic">HTTP retry logic</a><ul>
+<li><a class="reference internal" href="#cooldown">Cooldown</a></li>
+<li><a class="reference internal" href="#rate-limiting">Rate Limiting</a></li>
+<li><a class="reference internal" href="#http-retry-configuration">HTTP retry configuration</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#events-api">Events API</a></li>
+<li><a class="reference internal" href="#change-events-api">Change Events API</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#contributing">Contributing</a></li>
@@ -1912,11 +1950,11 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 <li><a class="reference internal" href="#rest-api-client">REST API Client</a></li>
 <li><a class="reference internal" href="#events-api-client">Events API Client</a></li>
 <li><a class="reference internal" href="#change-events-api-client">Change Events API Client</a></li>
-<li><a class="reference internal" href="#id2">Errors</a></li>
+<li><a class="reference internal" href="#id6">Errors</a></li>
 <li><a class="reference internal" href="#module-pdpyras">Functions</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id3">Changelog</a></li>
+<li><a class="reference internal" href="#id7">Changelog</a></li>
 </ul>
 </li>
 </ul>

@@ -279,13 +279,16 @@ class APISessionTest(SessionTest):
         # to assertRaises because the method returns a generator
         #
         # Test: guessing the envelope name, incorrect
-        self.assertRaises(ValueError, lambda p: list(sess.iter_cursor(p)), 
-            '/things/stuff')
+        self.assertRaises(
+            pdpyras.PDClientError,
+            lambda p: list(sess.iter_cursor(p)),
+            '/things/stuff'
+        )
         get.reset_mock()
         # Test: taking user's input for the envelope name, incorrect
         get.side_effect = wrong_envelope_name
         self.assertRaises(
-            ValueError,
+            pdpyras.PDClientError,
             lambda p: list(sess.iter_cursor(p, attribute="thing")),
             '/stuff/things'
         )
@@ -332,7 +335,13 @@ class APISessionTest(SessionTest):
             'self': 'https://api.pagerduty.com/users/PCWKOPZ'
         })
         sess.persist('users', 'email', new_user, update=True)
-        updater.assert_called_with(new_user['self'], json=new_user)
+        updater.assert_called_with(new_user, json=new_user)
+        # Call session.rput to update but w/no change so no API PUT request:
+        updater.reset_mock()
+        existing_user = dict(new_user)
+        iterator.return_value = iter([existing_user])
+        sess.persist('users', 'email', new_user, update=True)
+        updater.assert_not_called()
 
     def test_postprocess(self):
         logger = MagicMock()

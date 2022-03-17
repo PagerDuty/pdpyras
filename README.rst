@@ -1,7 +1,9 @@
 ===========================================
 PDPYRAS: PagerDuty Python REST API Sessions
 ===========================================
-A minimal, practical Python client for the PagerDuty REST API.
+A lightweight Python client for the PagerDuty REST API.
+
+Also includes clients for the Events and Change Events APIs.
 
 |circleci-build|
 
@@ -23,36 +25,30 @@ and response body schemas of each particular resource (as documented in our
 
 Features
 ********
-- Efficient API access through automatic HTTP connection pooling and
-  persistence
+- Uses Requests' automatic HTTP connection pooling and persistence
 - Tested in / support for Python 3.5 through 3.9
-- Configurable cooldown/reattempt logic for rate limiting and transient network
-  problems
-- Inclusion of required `HTTP Request Headers`_ for PagerDuty REST API requests
-- Bulk data retrieval and iteration over `resource index`_ endpoints with
-  pagination
-- Individual object retrieval by name
-- API request profiling
-- Bonus Events API client
+- Configurable cooldown/reattempt logic for handling rate limiting and
+  transient HTTP or network issues
+- Abstraction for `pagination`_, `wrapped entities`_, `API authentication`_ and
+  more
 
 History
 *******
-This module was borne of necessity for a basic, reusable API client to
-eliminate code duplication in some of PagerDuty Support's internal Python-based
-API tools. We needed something that could get the job done without reinventing
-the wheel or getting in the way.
+This module was borne of necessity for a basic API client to eliminate code
+duplication in some of PagerDuty Support's internal Python-based API tooling.
 
-We also frequently found ourselves performing REST API requests using beta or
-non-documented API endpoints for one reason or another, so we also needed a
-client that provided easy access to features of the underlying HTTP library
-(i.e. to obtain the response headers, or set special request headers). We
-needed something that eliminated tedious tasks like querying, `pagination`_ and
-header-setting commonly associated with REST API usage. Finally, we discovered
-that the way we were using `requests`_ wasn't making use of connection re-use,
-and wanted a way to easily enforce this as a standard practice.
+We found ourselves frequently performing REST API requests using beta or
+non-documented API endpoints for one reason or another, so we needed the client
+that provided easy access to features of the underlying HTTP library (i.e. to
+obtain the response headers, or set special request headers). We also needed
+something that eliminated tedious tasks like querying objects by name,
+pagination and authentication. Finally, we discovered that the way we were
+using `Requests`_ wasn't making use of its connection pooling feature, and
+wanted a way to easily enforce this as a standard practice.
 
-Ultimately, we deemed most other libraries to be both overkill for this task
-and also not very conducive to use for experimental API calls.
+We evaluated at the time a few other open-source API libraries and deemed them
+to be either overkill for our purposes or not giving the implementer enough
+control over how API calls were made.
 
 Copyright
 *********
@@ -103,7 +99,70 @@ will be used.
 Usage Guide
 -----------
 
-Basic Usage
+Authentication
+**************
+
+All REST API examples included in this documentation assume that the variable
+``session`` is an instance of :class:`APISession`. When constructing an
+instance, the first argument, required, is always the API key used for `API
+authentication`_.
+
+If the session will be used for API endpoints that require a ``From`` header,
+such as taking actions on incidents, and if using an account-level API key
+(created by an administrator via the "API Access Keys" page in the
+"Integrations" menu), it is recommended to also include the ``default_from``
+keyword argument, or HTTP 400 responses will result when attempting to
+use such endpoints.
+
+Otherwise, if using a user's API key (created under "API Access" in the "User
+Settings" tab of the user's profile), the user will be derived from the key
+itself and ``default_from`` is not necessary.
+
+When encountering status 401 (unauthorized), the client will immediately raise
+:class:`pdpyras.PDClientError`, as this can be considered a non-transient error
+under any circumstance.
+
+Using a basic REST API key
+++++++++++++++++++++++++++
+
+For example, given an environment variable ``PD_API_KEY`` set to an
+account-wide REST API key, and a dummy user in the PagerDuty account with email
+address "api@example-company.com":
+
+.. code-block:: python
+
+    import os
+    from pdpyras import APISession
+
+    api_key = os.environ['PD_API_KEY']
+    session = APISession(api_key, default_from="api@example-company.com")
+
+Using an OAuth2 token
++++++++++++++++++++++
+
+When using an OAuth2 token, pass the keyword argument ``auth_type='oauth2'``
+or ``auth_type='bearer'`` to the constructor. This tells the client to set the
+``Authorization`` header appropriately in order to use this type of API
+credential.
+
+Example:
+
+.. code-block:: python
+
+    session = APISession(oauth_token_here, auth_type='oauth2')
+
+Note, obtaining an access token via the OAuth 2 flow is outside the purview of
+an API client, and should be performed separately by your application.
+
+For further information on OAuth 2 authentication with PagerDuty, refer to the
+official documentation:
+
+* `OAuth 2 Functionality <https://v2.developer.pagerduty.com/docs/oauth-2-functionality>`_
+* `OAuth 2: PKCE Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-pkce>`_
+* `OAuth 2: Authorization Code Grant Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-client-secret>`_
+
+
+Basic usage
 ***********
 
 Some examples of usage:
@@ -112,76 +171,78 @@ Some examples of usage:
 
 .. code-block:: python
 
-    import os
-    from pdpyras import APISession
-
-    api_token = os.environ['PD_API_KEY']
-    session = APISession(api_token)
-
-    # Using requests.Session.get:
+    # Using get:
     response = session.get('/users/PABC123')
     user = None
 
     if response.ok:
-        user = response.json()['user']
+      user = response.json()['user']
 
-    # Or, more succinctly:
+    # Using rget:
     user = session.rget('/users/PABC123')
 
-**Iteration (1):** Iterate over all users and print their ID, email and name:
+**Pagination (1):** Iterate over all users and print their ID, email and name:
 
 .. code-block:: python
-
-    import os
-    from pdpyras import APISession
-
-    api_token = os.environ['PD_API_KEY']
-    session = APISession(api_token)
 
     for user in session.iter_all('users'):
         print(user['id'], user['email'], user['name'])
 
-**Iteration (2):** Compile a list of all services with "SN" in their name:
+**Pagination (2):** Compile a list of all services with "SN" in their name:
 
 .. code-block:: python
 
-    import os
-    from pdpyras import APISession
+    services = session.list_all('services', params={'query': 'SN'})
 
-    api_token = os.environ['PD_API_KEY']
-
-    session = APISession(api_token)
-    services = list(session.iter_all('services', params={'query': 'SN'}))
-
-**Querying and updating:** Find a user exactly matching email address ``jane@example35.com``
-and update their name to "Jane Doe":
+**Cursor-based pagination:** look up audit trail records for all PagerDuty objects going back 24 hours:
 
 .. code-block:: python
 
-    import os
-    from pdpyras import APISession
+    audit_records = list(session.iter_cursor('/audit/records'))
 
-    api_token = os.environ['PD_API_KEY']
-    session = APISession(api_token)
+**Querying:** Find a user exactly matching email address ``jane@example35.com``
+
+.. code-block:: python
 
     user = session.find('users', 'jane@example35.com', attribute='email')
 
-    if user is not None:
-        # Update using put directly:
-        updated_user = None
-        response = session.put(user['self'], json={
-            'user':{'type':'user', 'name': 'Jane Doe'}
-        })
-        if response.ok:
-            updated_user = response.json()['user']
+**Updating using put / rput**: assuming there is a variable ``user``
+defined that is a dictionary representation of a PagerDuty user,
 
-        # Alternately / more succinctly:
-        try:
-            updated_user = session.rput(user['self'], json={
-                'type':'user', 'name': 'Jane Doe'
-            })
-        except PDClientError:
-            updated_user = None
+.. code-block:: python
+
+    if user is not None:
+      updated_user = None
+
+      # (1) using put directly:
+      response = session.put(user['self'], json={
+        'user':{'type':'user', 'name': 'Jane Doe'}
+      })
+      if response.ok:
+        updated_user = response.json()['user']
+
+      # (2) using rput (no entity wrapping required):
+      try:
+        updated_user = session.rput(user['self'], json={
+            'type':'user', 'name': 'Jane Doe'
+        })
+      except PDClientError:
+        updated_user = None
+
+**Updating/creating using persist (idempotent create/update function)**:
+assuming a dict object ``user_data`` is defined, and it is structured like a
+PagerDuty user object, containing at least the name and email address fields,
+this will look for a user with its ``email`` field equal to the ``email`` value
+in ``user_data``, and update that user according to the contents of
+``user_data`` (or create one with attributes according to ``user_data`` if it
+doesn't already exist):
+
+.. code-block:: python
+
+      try:
+        updated_user = session.persist('users', 'email', user_data, update=True)
+      except PDClientError:
+        updated_user = None
 
 **Multiple update:** acknowledge all triggered incidents assigned to user with
 ID ``PHIJ789``. Note that to acknowledge, we need to set the ``From`` header.
@@ -189,12 +250,6 @@ This example assumes that ``admin@example.com`` corresponds to a user in the
 PagerDuty account:
 
 .. code-block:: python
-
-    import os
-    from pdpyras import APISession
-
-    api_token = os.environ['PD_API_KEY']
-    session = APISession(api_token, default_from='admin@example.com')
 
     # Query incidents
     incidents = session.list_all(
@@ -209,37 +264,10 @@ PagerDuty account:
     # PUT the updated list back up to the API
     updated_incidents = session.rput('incidents', json=incidents)
 
-Using an OAuth 2 Access Token to Authenticate
-*********************************************
-
-When using an OAuth2 token, include the keyword argument ``auth_type='oauth2'``
-or ``auth_type='bearer'`` to the constructor. This tells the client to set the
-``Authorization`` header appropriately in order to use this type of API
-credential.
-
-Example:
-
-.. code-block:: python
-
-    from pdpyras import APISession
-
-
-    session = APISession(oauth_token_here, auth_type='oauth2')
-
-Note, obtaining an access token via the OAuth 2 flow is outside the purview of
-an API client, and should be performed separately by your application.
-
-For further information on OAuth 2 authentication with PagerDuty, refer to the
-official documentation:
-
-* `OAuth 2 Functionality <https://v2.developer.pagerduty.com/docs/oauth-2-functionality>`_
-* `OAuth 2: PKCE Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-pkce>`_
-* `OAuth 2: Authorization Code Grant Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-client-secret>`_
-
-General Concepts
+General concepts
 ****************
 In all cases, when sending or receiving data through the REST API using
-``pdpyras.APISession``, note the following:
+:class:`pdpyras.APISession`, the following will apply.
 
 URLs
 ++++
@@ -247,101 +275,209 @@ URLs
   root, leading slash or no, is automatically appended to the base URL when
   constructing an API request, i.e. one can specify ``users/PABC123`` or
   ``/users/PABC123`` instead of ``https://api.pagerduty.com/users/PABC123``.
-
 * One can also pass the full URL of an API endpoint and it will still work, i.e.
   the ``self`` property of any object can be used, and there is no need to strip
   out the API base URL.
+* The ``r*`` methods, i.e. ``rget``, can accept a dictionary object
+  representing an API resource in place of a URL (in which case the value at
+  the ``self`` key will be used as the URL).
 
-Request and Response Bodies
+Request and response bodies
 +++++++++++++++++++++++++++
-Note that when working with the REST API using ``pdpyras.APISession``, the
-implementer is not insulated from having to work directly with the schemas of
-requests and responses. Rather, one must follow the `REST API Reference`_ which
-documents the schemas at length, and construct/access objects representing the
-request and response bodies, while the API client takes care of everything else.
+To set the request body in a post or put request, pass a ``json`` keyword
+argument that will be JSON-encoded and sent as the body to the HTTP verb
+method. To obtain the response from the API:
 
-* Data is represented as dictionary or list  objects, and should have a
-  structure that mirrors that of the API schema:
+* If using ``request``, ``get``, ``post`` (etc) directly, a `requests.Response`_ 
+  object is returned. That object's ``json()`` method will return the response
+  body decoded from JSON as a Python dict object.
+* If using the ``j*`` methods (``jget``, ``jpost`` etc.) or the ``r*`` methods
+  (``rget``, ``rpost`` etc), or any other method that makes API calls: objects
+  returned will be from JSON-decoding the body of the API response if successful;
+  otherwise :class:`PDClientError` will be raised.
 
-  - If the data type documented in the schema is
-    `object <https://v2.developer.pagerduty.com/docs/types#object>`_, then the
-    corresponding type in Python will be ``dict``.
+Resource schemas
+++++++++++++++++
+Main article: `Resource Schemas <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU5-resource-schemas>`_
 
-  - If the data type documented in the schema is
-    `array <https://v2.developer.pagerduty.com/docs/types#array>`_, then the
-    corresponding type in Python will be ``list``.
+Concerning the structure of objects in response and request bodies: this
+library does not contain abstraction of PagerDuty API schemas. Rather, it
+provides abstraction for the basics of API access. The details of any interface
+between API schema and application are left to the implementer's judgment. The
+intent of not insulating the implementer from schemas is to avoid the client
+becoming "an API for the API".
 
-* Everything is automatically JSON-encoded and decoded, using it as follows:
+The details of any given resource's schema can be found in the request and
+response examples from the `REST API Reference`_ pages for the resource's
+respective API, as well as the page documenting the resource type itself.
 
-  - To send a JSON request body, pass a ``dict`` object (or ``list``, where
-    applicable) in the ``json`` keyword argument.
+Data types
+++++++++++
+Main article: `Types <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types>`_
 
-  - To get the response body as a ``dict`` (or ``list``, if applicable), call
-    the `requests.Response.json`_ object returned by any of the functions named
-    exactly after their respective lower-case HTTP methods.
+Note these analogues in structure between the JSON schema and the object
+in Python:
 
-  - If using the ``r{VERB}`` methods, i.e.  ``rget``, the return value will be
-    the ``dict``/``list`` object decoded from the `wrapped entity
-    <https://v2.developer.pagerduty.com/docs/wrapped-entities>`_  and there is
-    no need to call ``response.json()``.
+* If the data type documented in the schema is
+  `object <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#object>`_,
+  then the corresponding type of the Python object will be ``dict``.
+* If the data type documented in the schema is
+  `array <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#array>`_,
+  then the corresponding type of the Python object will be ``list``.
+* Generally speaking, the data type in the decoded object is according to the
+  design of the `json <https://docs.python.org/3/library/json.html>`_ Python library.
 
-  - Similarly, the ``j{VERB}`` methods, i.e.  ``jget``, return the object
-    decoded from the JSON string in the response body (but without attempting
-    to unwrap any wrapped entities it may contain).
+For example, consider the example structure of an escalation policy as given in the
+`GET /escalation_policies/{id} <https://developer.pagerduty.com/api-reference/b3A6Mjc0ODEyNg-get-an-escalation-policy>`_
+API reference page. To access the name of the second target in level 1,
+assuming the variable ``ep`` represents the unwrapped escalation policy object:
 
-Using Special Features of Requests
+.. code-block:: python
+
+    ep['escalation_rules'][0]['targets'][1]['summary']
+    # "Daily Engineering Rotation"
+
+To add a new level, one would need to create a new 
+`escalation rule <https://developer.pagerduty.com/api-reference/c2NoOjI3NDgwMjI-escalation-rule>`_
+and then append it to the ``escalation rules`` property. Using the example
+given in the above API reference page:
+
+.. code-block:: python
+
+    new_rule = {
+      "escalation_delay_in_minutes": 30,
+      "targets": [
+        {
+          "id": "PAM4FGS",
+          "type": "user_reference"
+        },
+        {
+          "id": "PI7DH85",
+          "type": "schedule_reference"
+        }
+      ]
+    }
+    ep['escalation_rules'].append(new_rule)
+    # Save changes:
+    session.rput(ep, json=ep)
+
+Using HTTP client library features
 ++++++++++++++++++++++++++++++++++
-Keyword arguments to the HTTP methods get passed through to the similarly-
-named functions in `requests.Session`_, so for additional options, please refer
-to the documentation provided by the Requests project.
+Keyword arguments to the HTTP verb methods and their ``r*`` / ``j*``
+equivalents get passed through to the similarly- named functions in
+`requests.Session`_.
 
-Data Access Abstraction
-***********************
-The ``APISession`` class, in addition to providing a more convenient way of
-making the HTTP requests to the API, provides methods that yield/return dicts
-representing the PagerDuty objects with their defined schemas (see: `REST API
-Reference`_) without needing to go through enclosing them in a data envelope.
+Furthermore, the methods ``get``, ``post``, ``put``, ``delete`` and ``request``
+return `requests.Response`_ objects, whose properties contain information about
+the request and response.
 
-In other words, in the process of getting from an API call to the object
-representing the desired result, all of the following are taken care of:
+For additional options, please refer to the documentation provided by the
+Requests project.
 
-1. Validate that the response HTTP status is not an error.
-2. Predict the name of the envelope property which will contain the object.
-3. Validate that the result contains the predicted envelope property.
-4. Access the property that is encapsulated within the response.
+Wrapped entities
+****************
+Main article: `wrapped entities <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYx-wrapped-entities>`_
+(formerly the term "resource envelope" was used).
 
-Supported Endpoints
+Most of PagerDuty's endpoints respond with their data inside of a key at the
+root level of the JSON-encoded object in the response. The key is named after
+the resource, whether singular or plural. All endpoints that follow this
+convention are supported by methods that eliminate the need for the implementer
+to wrap and unwrap resource entities.
+
+Functions that assume entity wrapping
++++++++++++++++++++++++++++++++++++++
+Generally, instead of returning a `requests.Response`_ object or requiring
+entity wrapping in the object to be JSON-encoded as the request body, some
+functions can accept an unwrapped entity to be sent in the request body, and
+will return the contents of the wrapped entity in the response from the API. If
+the request's status was not success, or a wrapped entity could not be found in
+the response, :class:`pdpyras.PDClientError` will be raised otherwise (if the
+request's status was not success, or no entity wrapping could be deduced).
+
+* The "``r*`` methods" ``rput``, ``rpost`` and ``rget``. They will perform the
+  same HTTP actions as ``put``, ``post`` and ``get`` and similarly accept the
+  same keyword arguments as ``requests.Session.request``. the ``json`` keyword
+  argument (for ``rpost``/``rput``), the value can be the
+* :attr:`pdpyras.APISession.find`, :attr:`pdpyras.APISession.iter_all`,
+  :attr:`pdpyras.APISession.list_all` and :attr:`pdpyras.APISession.dict_all`
+  each assume that the API index endpoint being queried follows the classic
+  entity wrapping conventions.
+* :attr:`pdpyras.APISession.persist` uses ``rput``, ``rpost`` and ``find``
+* ``iter_cursor``, although it assumes a much looser definition of entity
+  wrapping: the root level key in the response body can be set using the
+  ``attribute`` keyword argument, and if unspecified it will guess that it is
+  the same as the last node in the URL path. This is according to the design of
+  all current Audit record APIs, which as of this writing are the only APIs that
+  support cursor-based pagination.
+
+Supported endpoints
 +++++++++++++++++++
+The general rules are that the name of the wrapped resource key must follow
+predictably from the innermost resource name for the API path in question
+whether singular or plural, and that the "nodes" in the URL path (between
+forward slashes) must alternate between resource type and ID.
 
-**Please note,** not all API endpoints are supported for these convenience
-functions. The general rules are that the name of the wrapped resource
-property must follow from the innermost resource name for the API path in
-question, and that the "nodes" in the URL path (between forward slashes) must
-alternate between resource type and ID.
+**Supported endpoint example:** for ``/escalation_policies/{id}`` the wrapper
+name for singular post/put is ``escalation_policy``, and for ``GET
+/escalation_policies`` it is ``escalation_policies``. For
+``/users/{id}/notification_rules`` the wrapper is named ``notification_rule``
+for singular post/put and ``notification_rules`` for the index, ``GET
+/users/{id}/notification_rules``.
 
-For instance, for ``/escalation_policies/{id}`` the name must be
-``escalation_policy``, and or for ``/users/{id}/notification_rules`` it must be
-``notification_rules``.
+**Unsupported endpoint example:** in the
+`user sessions <https://developer.pagerduty.com/api-reference/b3A6Mjc0ODI0OQ-list-a-user-s-active-sessions>`_
+API endpoints, URLs are formatted as
+``/users/{id}/sessions/{type}/{session_id}`` whereas the wrapped resource
+property name is ``user_sessions`` / ``user_session`` rather than simply
+``sessions`` / ``session``.
 
-For example, with `user sessions <https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1users~1%7Bid%7D~1sessions/get>`_
-(one API resource/endpoint that does not follow these rules), one will need to
-use the plain ``get`` and ``post`` functions, or ``jget`` / ``jpost``, because
-their URLs are formatted as ``/users/{id}/sessions/{type}/{session_id}`` and
-the wrapped resource property name is ``user_sessions`` / ``user_session``
-rather than simply ``sessions`` / ``session``.
+List of non-conformal endpoints
+++++++++++++++++++++++++++++++++
+The following list of APIs and endpoints (last updated: 2022-03-15) are
+unsupported by methods ``rget``, ``rpost``, ``rput``, ``persist``, ``find``,
+``iter_all``, ``list_all`` and ``dict_all`` because they do not follow the
+classic entity wrapping  conventions on which the functions are based. They can
+still be used with the basic ``get``, ``post``, ``put`` and ``delete`` methods,
+as well as the ``j*`` methods:
 
-Iteration
-+++++++++
+* Analytics
+* All Audit endpoints (:attr:`pdpyras.APISession.iter_cursor` should be used instead, as they feature cursor-based pagination)
+* All Notification Subscription endpoints
+* Paused Incident Reports
+* The following Business Services endpoints:
+    * ``POST /business_services/{id}/account_subscription``
+    * ``GET /business_services/{id}/supporting_services/impacts``
+    * ``GET /business_services/impactors``
+    * ``GET /business_services/impacts``
+    * ``[GET|PUT] /business_services/priority_thresholds``
+* The following Incident API endpoints:
+    * ``[GET|PUT] /incidents/{id}/business_services/impacts```: list or manually change any of an incident's impacts on business services
+    * ``PUT /incidents/{id}/merge``: merge incidents
+    * ``POST /incidents/{id}/responder_requests``: create a responder request for an incident
+    * ``POST /incidents/{id}/snooze``: snooze an incident
+* Event Orchestrations
+* ``POST /schedules/{id}/overrides`` (create one or more schedule overrides)
+* Service Dependencies
+* ``POST /{entity_type}/{id}/change_tags`` (assign tags)
+* Updating team membership (adding or removing users or escalation policies)
+* User sessions
+
+Pagination
+**********
 The method :attr:`pdpyras.APISession.iter_all` returns an iterator that yields
-all results from a resource index, automatically incrementing the ``offset``
-parameter to advance through each page of data.
+results from a resource index, automatically incrementing the ``offset``
+parameter to advance through each page of data and make API requests on-demand.
+
+For all endpoints that support cursor-based pagination,
+:attr:`pdpyras.APISession.iter_cursor` should be used instead.
 
 Note, one can perform `filtering
 <https://v2.developer.pagerduty.com/docs/filtering>`_ with iteration to constrain
 constrain the range of results, by passing in a dictionary object as the ``params``
 keyword argument. Any parameters will be automatically merged with the pagination
 parameters and serialized into the final URL, so there is no need to manually
-construct the URL, i.e. append ``?key1=value1&key2=value2``.
+construct the URL, i.e. appending ``?key1=value1&key2=value2``.
 
 **Example:** Find all users with "Dav" in their name/email (i.e. Dave/David) in
 the PagerDuty account:
@@ -356,188 +492,55 @@ Also, note, as of version 2.2, there are the methods
 which return a list or dictionary of all results, respectively.
 
 **Example:** Get a dictionary of all users, keyed by email, and use it to find
-the ID of the user whose email is ``bob@example.com``
+the ID of the user whose email is ``bob@example.com``:
 
 .. code-block:: python
 
     users = session.dict_all('users', by='email')
     print(users['bob@example.com']['id'])
 
-Disclaimers Regarding Iteration
-+++++++++++++++++++++++++++++++
+Performance
++++++++++++
+Because HTTP requests are made synchronously and not in multiple threads,
+requesting all pages of data will happen one page at a time and the functions
+``list_all`` and ``dict_all`` will not return until after the final HTTP
+response. Simply put, the functions will take longer to return if the total
+number of results is higher.
 
-**Regarding Performance:**
-
-Because HTTP requests are made synchronously and not in parallel threads, the
-data will be retrieved one page at a time and the functions ``list_all`` and
-``dict_all`` will not return until after the HTTP response from the final API
-call is received. Simply put, the functions will take longer to return if the
-total number of results is higher.
-
-**On Updating and Deleting Records:**
-
+Updating, creating or deleting while paginating
++++++++++++++++++++++++++++++++++++++++++++++++
 If performing page-wise operations, i.e. making changes immediately after
 fetching each page of results, rather than pre-fetching all objects and then
-operating on them, one must be cautious not to perform any changes to the
-results that would affect the set over which iteration is taking place.
+operating on them (i.e. with :attr:`pdpyras.APISession.list_all`), one must be
+cautious not to perform any changes to the results that would affect the set
+over which iteration is taking place, such as creating objects, deleting them,
+or modifying them in such a way that their status of being in the set of
+results changes.
 
-To elaborate, this happens whenever a resource object is deleted, or it is
-updated in such a way that the filter parameters in ``iter_all`` no longer
-apply to it. This is because indexes' contents update in real time. Thus,
-should any objects be removed from the set (the objects included in the
-iteration), then the offset when accessing the next page of results will still
-be incremented, whereas the position of the first object in the next page will
-shift to a lower rank in the overall list of objects.
+This is because indexes' contents are updated in real time, and this can affect
+the position of objects in the overall list (and thus the edges of each page).
+Changes made apart from the API client can have the same effect.
 
-In other words: let's say that one is reading and then tearing pages from a
-notebook. If the algorithm is "go through 100 pages, do things with the pages,
-then repeat starting with the 101st page, then with the 201st, etc" but one
-tears out pages immediately after going through them, then what was originally
-the 101st page before starting will shift to become the first page after going
-through the first hundred pages. Thus, when going to the 101st page after
-finishing tearing out the first hundred pages, the second hundred pages will be
-skipped over, and similarly for pages 401-500, 601-700 and so on.
+To elaborate: let's say that each resource object in the full list is a page in
+a notebook  Classic pagination with ``limit=100`` is essentially "go through
+100 pages, then repeat starting with the 101st page, then with the 201st, etc."
+Deleting records in between these 100-at-a-time pagination requests would be
+like tearing out pages after reading them. At the time of the second page
+request, what was originally the 101st page before starting will shift to
+become the first page after tearing out the first hundred pages. Thus, when
+going to the 101st page after finishing tearing out the first hundred pages,
+the second hundred pages will be skipped over, and similarly for pages 401-500,
+601-700 and so on. If attaching pages, the opposite happens: some results will be
+returned more than once, because they get bumped to the next group of 100 pages.
 
-Also, note, a similar effect would occur if creating objects during iteration.
+Multi-updating
+**************
+Introduced in version 2.1 is support for multi-update actions using ``rput``.
+As of this writing, multi-update support includes the following endpoints:
 
-As of version 3, this issue is still applicable. To avoid it, do not use
-``iter_all``, but use ``list_all`` or ``dict_all`` to pre-fetch the set of
-records to be operated on, and then iterate over the results. This still does
-not constitute a completely bulletproof safeguard against set changes caused by
-insert/update/delete operations carried out by other simultaneous processes
-(i.e. a user renaming a service through the web UI).
-
-Reading
-+++++++
-The method :attr:`pdpyras.APISession.rget` gets a resource, returning the object
-within the resource name envelope after JSON-decoding the response body. In
-other words, if retrieving an individual user (for instance), where one would
-have to JSON-decode and then access the ``user`` key in the resulting
-dictionary object, that object itself is directly returned.
-
-The ``rget`` method can be called with as little as one argument: the URL (or
-URL path) to request. Example:
-
-.. code-block:: python
-
-    service = session.rget('/services/PZYX321')
-    print("Service PZYX321's name: "+service['name'])
-
-One can also use it on a `resource index`_, although if the goal is to get all
-results rather than a specific page, :class:`pdpyras.APISession.iter_all` is
-recommended for this purpose, as it will automatically iterate through all
-pages of results, rather than just the first. When using ``rget`` in this way,
-the return value will be a list of dicts instead of a dict.
-
-The method also accepts other keyword arguments, which it will pass along to
-``reqeusts.Session.get``, i.e. if requesting an index, ``params`` can be used
-to set a filter:
-
-.. code-block:: python
-
-    first_100_daves = session.rget(
-        '/users',
-        params={'query':"Dave",'limit':100}
-    )
-
-Creating and Updating
-+++++++++++++++++++++
-Just as ``rget`` eliminates the need to JSON-decode and then pull the data out
-of the envelope in the response schema, :attr:`pdpyras.APISession.rpost` and
-:attr:`pdpyras.APISession.rput` return the data in the envelope property.
-Furthermore, they eliminate the need to enclose the dictionary object
-representing the data to be transmitted in an envelope, and just like ``rget``,
-they accept at an absolute minimum one positional argument (the URL), and all
-keyword arguments are passed through to the underlying request method function.
-
-For instance, instead of having to set the keyword argument ``json = {"user":
-{...}}`` to ``put``, one can pass ``json = {...}`` to ``rput``, to update a
-user. The following function takes a PagerDuty user ID and gives the
-user the admin role and prints a message when done:
-
-.. code-block:: python
-
-    def promote_to_admin(session, uid):
-        user = session.rput(
-            '/users/'+uid,
-            json={'role':'admin'}
-        )
-        print("%s now has admin superpowers"%user['name'])
-
-
-Example of creating an incident:
-
-.. code-block:: python
-
-    import os
-    from pdpyras import APISession
-
-    api_token = os.environ['PD_API_KEY']
-    sender = 'user@example.com'
-    session = APISession(api_token, default_sender=sender)
-
-    payload = {
-      "type": "incident",
-      "title": "This is a test 4",
-      "service": {"id": "service_id", "type": "service_reference"},
-      "assignments": [{"assignee": {"id": "user_id", "type": "user_reference"}}],
-      "body": {
-          "type": "incident_body",
-          "details": "utf8 data displayed the more details section of the alert"
-      }
-    }
-    pd_incident = session.rpost("incidents", json=payload)
-
-
-Idempotent Resource Creation
-++++++++++++++++++++++++++++
-Beyond just creating a resource, :attr:`pdpyras.APISession.persist` can be used
-to perform a check for a preexisting object before creating it; it returns the
-persisted resource, whether or not the object already existed.
-
-For instance, the following will create a user having email address
-``user@organization.com`` if one does not already exist, and print that user's
-name:
-
-.. code-block:: python
-
-    user = session.persist('users', 'email', {
-        "name": "User McUserson",
-        "email": "user@organization.com",
-        "type": "user"
-    })
-
-    print(user['name'])
-
-Deleting
-++++++++
-The ``rdelete`` method has no return value, but otherwise behaves in exactly
-the same way as the other request methods with ``r`` prepended to their name.
-Like the other ``r*`` methods, it will raise :class:`pdpyras.PDClientError` if
-the API responds with a non-success HTTP status.
-
-Example:
-
-.. code-block:: python
-
-    session.rdelete("/services/PI86NOW")
-
-    print("Service deleted.")
-
-Managing, a.k.a. Multi-Updating
-+++++++++++++++++++++++++++++++
-Introduced in version 2.1 is support for automatic data envelope functionality
-in multi-update actions.
-
-As of this writing, multi-update is limited to the following actions:
-
-* `PUT /incidents <https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1incidents/put>`_
-* `PUT /incidents/{id}/alerts <https://developer.pagerduty.com/api-reference/reference/REST/openapiv3.json/paths/~1incidents~1%7Bid%7D~1alerts/put>`_
-* **PUT /priorities** (not yet published, as of 2018-11-28)
-
-**Please note:** as of yet, merging incidents is not supported by ``rput``.
-For this and other unsupported endpoints, you will need to call ``put`` directly,
-or ``jput`` to get the response body as a dictionary object.
+* `PUT /incidents <https://developer.pagerduty.com/api-reference/b3A6Mjc0ODEzOQ-manage-incidents>`_
+* `PUT /incidents/{id}/alerts <https://developer.pagerduty.com/api-reference/b3A6Mjc0ODE0NA-manage-alerts>`_
+* PUT /priorities (documentation not yet published as of 2022-03-15, but the endpoint is functional)
 
 To use, simply pass in a list of objects or references (dictionaries having a
 structure according to the API schema reference for that object type) to the
@@ -563,113 +566,114 @@ actions.
 It is important to note, however, that certain actions such as updating
 incidents require the ``From`` header, which should be the login email address
 of a valid PagerDuty user. To set this, pass it through using the ``headers``
-keyword argument, or set the :attr:`pdpyras.APISession.default_from` property.
+keyword argument, or set the :attr:`pdpyras.APISession.default_from` property,
+or pass the email address as the ``default_from`` keyword argument when
+constructing the session initially.
 
-Using Resources in Place of URLs
-++++++++++++++++++++++++++++++++
-As of version 4.1, one may send the dictionary representation of a resource to
-any of the ``r*`` methods, with the exception of ``rpost``, in place of a URL
-or path. The dictionary must contain a ``self`` item that is the URL of the
-resource.
-
-This eliminates the need to construct the resource's path/URL, or to keep a
-temporary variable with the URL needed for accessing the object.
-
-For instance, to reload a service object previously fetched from the API, i.e.
-to ensure one has the latest data for that resource:
-
-.. code-block:: python
-
-    user = session.rget('users/PSOMEUSR')
-
-    # Do things that take a lot of time during which the user might change
-    # ...
-
-    # Reload the user:
-    user = session.rget(user)
-    # as opposed to:
-    # user = session.rget('users/PSOMEUSR')
-
-Another example: to delete a service:
-
-.. code-block:: python
-
-    session.rdelete(service)
-    # as opposed to:
-    # session.rdelete(service['self'])
-
-Error Handling
+Error handling
 **************
-What happens when, for any of the ``r*`` methods, the API responds with a
-non-success HTTP status? Obviously in this case, they cannot return the
-JSON-decoded response, because the response would not be the sought-after data
-but a different schema altogether (see: `Errors`_), and this would put the onus
-on the end user to distinguish between success and error based on the structure
-of the returned dictionary object (yuck).
+What happens when, for any of the methods that do not return
+`requests.Response`_, the API response is a non-success HTTP status, is that it
+will not return the decoded body. Instead, when this happens, a
+:class:`pdpyras.PDClientError` exception is raised. This way, methods can
+always be expected to return the same structure of data based on the API being
+used. If there is a break in this expectation, the flow is appropriately
+interrupted. 
 
-Instead, when this happens, a :class:`pdpyras.PDClientError` exception is
-raised. The advantage of this design lies in how the methods can always be
-expected to return the same sort of data, and if they can't, the program flow
-that depends on getting this specific structure of data is appropriately
-interrupted. Moreover, because (as of version 2) this exception class will have
-the `requests.Response`_ object as its ``response`` property (whenever the
-exception pertains to a HTTP error), the end user can define specialized error
-handling logic in which the REST API response data (i.e. headers, code and body)
-are directly available.
+As of version 2, this exception class has the `requests.Response`_ object as
+its ``response`` property (whenever the exception pertains to a HTTP error).
+The implementer can thus define specialized error handling logic in which the
+REST API response data (i.e. headers, code and body) are directly available.
 
 For instance, the following code prints "User not found" in the event of a 404,
-raises the underlying exception in the event of an incorrect API access token (401
-Unauthorized) or non-transient network error, prints out the user's email if
-the user exists, and does nothing otherwise:
+prints out the user's email if the user exists, raises the underlying
+exception if it's any other HTTP error code, and prints an error otherwise:
 
 .. code-block:: python
 
     try:
-        user = session.rget("/users/PJKL678")
-        print(user['email'])
-
-    except PDClientError as e:
-        if e.response:
-            if e.response.status_code == 404:
-                print("User not found")
-            elif e.response.status_code == 401:
-                raise e
-        else:
-            raise e
-
-Just make sure to import `PDClientError` or reference it throught he namespace, i.e.
-
-.. code-block:: python
-
-    from pdpyras import APISession, PDClientError
-
-    except PDClientError as e:
-
-Or:
-
-.. code-block:: python
-
-    import pdpyras
-
-    ...
+      user = session.rget("/users/PJKL678")
+      print(user['email'])
 
     except pdpyras.PDClientError as e:
-    ...
+      if e.response:
+        if e.response.status_code == 404:
+          print("User not found")
+        else:
+          raise e
+      else:
+        print("Non-transient network or client error")
 
+Version 4.4.0 introduced a new error subclass, PDHTTPError, in which it can be
+assumed that the error pertains to a HTTP request:
 
-HTTP Retry Logic
+.. code-block:: python
+
+    try:
+      user = session.rget("/users/PJKL678")
+      print(user['email'])
+
+    except pdpyras.PDHTTPError as e:
+      if e.response.status_code == 404:
+        print("User not found")
+      else:
+        raise e
+    except pdpyras.PDClientError as e:
+      print("Non-transient network or client error")
+
+HTTP retry logic
 ****************
-By default, after receiving a response, :attr:`pdpyras.PDSession.request` will
-return the `requests.Response`_ object unless its status is ``429`` (rate
-limiting), in which case it will retry until it gets a status other than ``429``.
+Session objects support retrying API requests if they receive a non-success
+response or if they encounter a network error. This behavior is configurable
+through the following properties, which are each documented with further
+implementation details:
 
-The property :attr:`pdpyras.PDSession.retry` allows customization in this
-regard, so that the client can be made to retry on other statuses (i.e.
+* :attr:`pdpyras.PDSession.max_http_attempts`
+* :attr:`pdpyras.PDSession.max_network_attempts`
+* :attr:`pdpyras.PDSession.sleep_timer`
+* :attr:`pdpyras.PDSession.sleep_timer_base`
+* :attr:`pdpyras.PDSession.stagger_cooldown`
+
+Cooldown
+++++++++
+After each unsuccessful attempt, if retry logic is active for the given HTTP
+status, the client will sleep for a short period that increases exponentially
+with each retry. 
+
+Let:
+
+* a = ``sleep_timer_base``
+* t\ :sub:`0` = ``sleep_timer``
+* t\ :sub:`n` = Sleep time after n attempts
+* ρ = ``stagger_cooldown``
+* r = a random real number between 0 and 1
+
+
+Assuming ρ = 0:
+
+t\ :sub:`n` = t\ :sub:`0` a\ :sup:`n`
+
+If ρ is nonzero:
+
+t\ :sub:`n` = a (1 + ρ r) t\ :sub:`n-1`
+
+Rate Limiting
++++++++++++++
+By default, after receiving a status 429 response, sessions will retry the
+request indefinitely until it receives a status other than 429. This is a sane
+approach; if it is ever responding with 429, the REST API is receiving (for the
+given REST API key) too many requests, and the issue should by nature be
+transient unless there is a rogue process using the key and saturating its rate
+limit.
+
+HTTP retry configuration
+++++++++++++++++++++++++
+The property :attr:`pdpyras.PDSession.retry` allows customization of HTTP retry
+logic, so that the client can be made to retry on other statuses (i.e.
 502/400), up to a set number of times. The total number of HTTP error responses
 that the client will tolerate before returning the response object is defined
 in :attr:`pdpyras.PDSession.max_http_attempts`, and this will supersede the
-maximum number of retries defined in
-:attr:`pdpyras.PDSession.retry`.
+maximum number of retries defined in :attr:`pdpyras.PDSession.retry`.
 
 **Example:**
 
@@ -683,25 +687,11 @@ before finally returning with the status 404 `requests.Response`_ object:
     session.max_http_attempts = 4
     session.sleep_timer = 1
     session.sleep_timer_base = 2
-    # isinstance(session, pdpyras.APISession)
     response = session.get('/users/PNOEXST')
 
-**Default Behavior:**
 
-Note that without specifying any retry behavior for status 429 (rate limiting),
-it will retry indefinitely. This is a sane approach; if it is ever responding
-with 429, this means that the REST API is receiving (for the given REST API
-key) too many requests, and the issue should by nature be transient.
-
-Similarly, there is hard-coded default behavior for status 401 (unauthorized):
-immediately raise :class:`pdpyras.PDClientError` (as this can be considered in
-all cases a completely non-transient error).
-
-It is still possible to override these behaviors using
-:attr:`pdpyras.PDSession.retry`, but it is not recommended.
-
-Events API Usage
-****************
+Events API
+**********
 
 As an added bonus, ``pdpyras`` provides an additional Session class for submitting
 alert data to the Events API and triggering incidents asynchronously:
@@ -713,21 +703,24 @@ alert data to the Events API and triggering incidents asynchronously:
 * Setting all required headers
 * Configurable HTTP retry logic
 
+To instantiate a session object, pass the constructor the routing key. Code
+samples in this section will assume a variable named ``session`` constructed in
+this way. For example, given an environment variable ``PD_API_KEY`` set to an
+events API v2 (or global event routing) API key:
+
+.. code-block:: python
+
+    import os
+    import pdpyras
+
+    routing_key = os.environ['PD_API_KEY']
+    session = pdpyras.EventsAPISession(routing_key)
+
 To transmit alerts and perform actions through the events API, one would use:
 
 * :attr:`pdpyras.EventsAPISession.trigger`
 * :attr:`pdpyras.EventsAPISession.acknowledge`
 * :attr:`pdpyras.EventsAPISession.resolve`
-
-To instantiate a session object, pass the constructor the routing key:
-
-.. code-block:: python
-
-    import pdpyras
-
-
-    routing_key = '0123456789abcdef0123456789abcdef'
-    session = pdpyras.EventsAPISession(routing_key)
 
 
 **Example 1:** Trigger an event and use the PagerDuty-supplied deduplication key to resolve it later:
@@ -746,6 +739,18 @@ To instantiate a session object, pass the constructor the routing key:
         dedup_key='abc123')
     # ...
     session.acknowledge('abc123')
+
+Change Events API
+*****************
+
+To submit a change event, create an instance of
+:class:`pdpyras.ChangeEventsAPISession`, passing an Events API v2 key to the
+class constructor as with :class:`EventsAPISession`. Then, call
+:attr:`pdpyras.ChangeEventsAPISession.submit`, i.e.
+
+.. code-block:: python
+
+    session.submit("new build finished at latest HEAD", source="automation")
 
 
 Contributing
@@ -811,22 +816,22 @@ a clean local file tree) run:
 .. References:
 .. -----------
 
-.. _`Errors`: https://v2.developer.pagerduty.com/docs/errors
-.. _`HTTP Request Headers`: https://v2.developer.pagerduty.com/docs/rest-api#http-request-headers
-.. _make: https://www.gnu.org/software/make/
-.. _pagination: https://v2.developer.pagerduty.com/docs/pagination
-.. _pypd: https://github.com/PagerDuty/pagerduty-api-python-client/
 .. _Requests: https://docs.python-requests.org/en/master/
-.. _requests.Response: https://docs.python-requests.org/en/master/api/#requests.Response
-.. _requests.Response.json: https://docs.python-requests.org/en/master/api/#requests.Response.json
-.. _requests.Session: https://docs.python-requests.org/en/master/api/#request-sessions
-.. _requests.Session.request: https://docs.python-requests.org/en/master/api/#requests.Session.request
-.. _`resource index`: https://v2.developer.pagerduty.com/docs/endpoints#resources-index
+.. _`API authentication`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUx-authentication
+.. _`Errors`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors
+.. _`HTTP Request Headers`: https://v2.developer.pagerduty.com/docs/rest-api#http-request-headers
 .. _`REST API Reference`: https://developer.pagerduty.com/api-reference/
-.. _`setuptools`: https://pypi.org/project/setuptools/
 .. _`pdpyras.py`: https://raw.githubusercontent.com/PagerDuty/pdpyras/master/pdpyras.py
+.. _`resource index`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU0-endpoints#resources-index
+.. _`setuptools`: https://pypi.org/project/setuptools/
+.. _`wrapped entities`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYx-wrapped-entities
+.. _make: https://www.gnu.org/software/make/
+.. _pagination: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination
+.. _pypd: https://github.com/PagerDuty/pagerduty-api-python-client/
+.. _requests.Response.json: https://docs.python-requests.org/en/master/api/#requests.Response.json
+.. _requests.Response: https://docs.python-requests.org/en/master/api/#requests.Response
+.. _requests.Session.request: https://docs.python-requests.org/en/master/api/#requests.Session.request
+.. _requests.Session: https://docs.python-requests.org/en/master/api/#request-sessions
 
-.. |travis-build| image:: https://travis-ci.com/Deconstrained/pdpyras.svg?branch=master
-    :target: https://travis-ci.com/Deconstrained/pdpyras
 .. |circleci-build| image:: https://circleci.com/gh/PagerDuty/pdpyras.svg?style=svg
     :target: https://circleci.com/gh/PagerDuty/pdpyras

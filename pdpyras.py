@@ -145,7 +145,7 @@ def resource_envelope(method):
         r = raise_on_error(method(self, path, **pass_kw))
         # Now let's try to unpack...
         response_obj = try_decoding(r)
-        # Get the encapsulated object
+        # Get the wrapped entity
         if envelope_name not in response_obj:
             raise PDClientError("Cannot extract object; expected top-level "
                 "property \"%s\", but could not find it in the response "
@@ -588,10 +588,10 @@ class PDSession(requests.Session):
                 continue
             elif status == 401:
                 # Stop. Authentication failed. We shouldn't try doing any more,
-                # because we'll run into problems later anyway.
+                # because we'll run into the same problem later anyway.
                 raise PDHTTPError(
-                    "Received 401 Unauthorized response from the API. The "
-                    "access key (...%s) might not be valid."%self.trunc_key,
+                    "Received 401 Unauthorized response from the API. The key "
+                    "(...%s) may be invalid or deactivated."%self.trunc_key,
                     response)
             else:
                 # All went according to plan.
@@ -1095,8 +1095,7 @@ class APISession(PDSession):
         Each yielded value is a dict object representing a result returned from
         the index. For example, if requesting the ``/users`` endpoint, each
         yielded value will be an entry of the ``users`` array property in the
-        response; see: `List Users
-        <https://v2.developer.pagerduty.com/v2/page/api-reference#!/Users/get_users>`_
+        response.
 
         :param path:
             The index endpoint URL to use.
@@ -1243,7 +1242,7 @@ class APISession(PDSession):
                 user_params.update({'cursor': next_cursor})
             page = self.jget(path, params=user_params)
             if assumed_attribute not in page:
-                raise ValueError("No attribute \"{attribute}\" at the root "
+                raise PDClientError("No attribute \"{attribute}\" at the root "
                     "level of the response body from {path}. Attributes "
                     "include: {examples}".format(
                         attribute = assumed_attribute,
@@ -1297,7 +1296,7 @@ class APISession(PDSession):
 
     def persist(self, resource, attr, values, update=False):
         """
-        Finds or creates and returns a resource matching an idempotency key.
+        Finds or creates and returns a resource with a matching attribute
 
         Given a resource name, an attribute to use as an idempotency key and a
         set of attribute:value pairs as a dict, create a resource with the
@@ -1330,8 +1329,11 @@ class APISession(PDSession):
         existing = self.find(resource, values[attr], attribute=attr)
         if existing:
             if update:
+                original = {}
+                original.update(existing)
                 existing.update(values)
-                existing = self.rput(existing['self'], json=existing)
+                if original != existing:
+                    existing = self.rput(existing, json=existing)
             return existing
         else:
             return self.rpost(resource, json=values)
@@ -1428,7 +1430,7 @@ class APISession(PDSession):
     @resource_envelope
     def rget(self, resource, **kw):
         """
-        Retrieve a resource and return the encapsulated object in the response
+        Retrieve a resource and return the wrapped entity in the response
 
         :param resource:
             The path/URL to which to send the request, or a dict object
@@ -1467,7 +1469,7 @@ class APISession(PDSession):
     @resource_envelope
     def rput(self, resource, **kw):
         """
-        Update an individual resource, returning the encapsulated object.
+        Update an individual resource, returning the wrapped entity as a dict
 
         :param resource:
             The path/URL to which to send the request, or a dict object
