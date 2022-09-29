@@ -363,16 +363,23 @@ given in the above API reference page:
 
 Using HTTP client library features
 ++++++++++++++++++++++++++++++++++
-Keyword arguments to the HTTP verb methods and their ``r*`` / ``j*``
-equivalents get passed through to the similarly- named functions in
-`requests.Session`_.
+For all request functions: keyword arguments to the HTTP verb methods and their
+``r*`` / ``j*`` equivalents get passed through to the similarly-named
+functions in `requests.Session`_. Furthermore, the methods ``get``, ``post``,
+``put``, ``delete`` and ``request`` return `requests.Response`_ objects, whose
+properties contain information about the request and response.
 
-Furthermore, the methods ``get``, ``post``, ``put``, ``delete`` and ``request``
-return `requests.Response`_ objects, whose properties contain information about
-the request and response.
+Note also that since :class:`pdpyras.PDSession` is subclassed directly from
+`requests.Session`_ , it behaves as a ``Session`` object and so all of the
+documented features of that class can also be used. For example, to configure
+``10.42.187.3:4012`` as a proxy for HTTPS traffic:
 
-For additional options, please refer to the documentation provided by the
-Requests project.
+.. code-block:: python
+
+    session.proxies.update({'https': '10.42.187.3:4012'})
+
+For documentation on additional options and features, refer to
+`Requests' developer interface documentation <https://requests.readthedocs.io/en/latest/api/>`_
 
 Wrapped entities
 ****************
