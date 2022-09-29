@@ -445,8 +445,7 @@ The following list of APIs and endpoints (last updated: 2022-03-15) are
 unsupported by methods ``rget``, ``rpost``, ``rput``, ``persist``, ``find``,
 ``iter_all``, ``list_all`` and ``dict_all`` because they do not follow the
 classic entity wrapping  conventions on which the functions are based. They can
-still be used with the basic ``get``, ``post``, ``put`` and ``delete`` methods,
-as well as the ``j*`` methods:
+still be used with the basic ``get``, ``post``, ``put`` and ``delete`` methods.
 
 * Analytics
 * All Audit endpoints (:attr:`pdpyras.APISession.iter_cursor` should be used instead, as they feature cursor-based pagination)
