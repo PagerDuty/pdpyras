@@ -363,16 +363,23 @@ given in the above API reference page:
 
 Using HTTP client library features
 ++++++++++++++++++++++++++++++++++
-Keyword arguments to the HTTP verb methods and their ``r*`` / ``j*``
-equivalents get passed through to the similarly- named functions in
-`requests.Session`_.
+For all request functions: keyword arguments to the HTTP verb methods and their
+``r*`` / ``j*`` equivalents get passed through to the similarly-named
+functions in `requests.Session`_. Furthermore, the methods ``get``, ``post``,
+``put``, ``delete`` and ``request`` return `requests.Response`_ objects, whose
+properties contain information about the request and response.
 
-Furthermore, the methods ``get``, ``post``, ``put``, ``delete`` and ``request``
-return `requests.Response`_ objects, whose properties contain information about
-the request and response.
+Note also that since :class:`pdpyras.PDSession` is subclassed directly from
+`requests.Session`_ , it behaves as a ``Session`` object and so all of the
+documented features of that class can also be used. For example, to configure
+``10.42.187.3:4012`` as a proxy for HTTPS traffic:
 
-For additional options, please refer to the documentation provided by the
-Requests project.
+.. code-block:: python
+
+    session.proxies.update({'https': '10.42.187.3:4012'})
+
+For documentation on additional options and features, refer to
+`Requests' developer interface documentation <https://requests.readthedocs.io/en/latest/api/>`_
 
 Wrapped entities
 ****************
@@ -438,8 +445,7 @@ The following list of APIs and endpoints (last updated: 2022-03-15) are
 unsupported by methods ``rget``, ``rpost``, ``rput``, ``persist``, ``find``,
 ``iter_all``, ``list_all`` and ``dict_all`` because they do not follow the
 classic entity wrapping  conventions on which the functions are based. They can
-still be used with the basic ``get``, ``post``, ``put`` and ``delete`` methods,
-as well as the ``j*`` methods:
+still be used with the basic ``get``, ``post``, ``put`` and ``delete`` methods.
 
 * Analytics
 * All Audit endpoints (:attr:`pdpyras.APISession.iter_cursor` should be used instead, as they feature cursor-based pagination)
