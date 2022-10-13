@@ -264,8 +264,45 @@ PagerDuty account:
     # PUT the updated list back up to the API
     updated_incidents = session.rput('incidents', json=incidents)
 
-General concepts
-****************
+Logging and debugging
+*********************
+When a session is created, a
+`Logger object <https://docs.python.org/3/library/logging.html#logger-objects>`_
+is created as follows:
+
+* Its level is unconfigured (``logging.NOTSET``) which causes it to defer to the 
+  level of the parent logger, which is the root logger unless specified
+  otherwise (see `Logging Levels
+  <https://docs.python.org/3/library/logging.html#logging-levels>`_).
+* The logger is initially not configured with any handlers. Configuring
+  handlers is left to the discretion of the implementer (see `logging.handlers
+  <https://docs.python.org/3/library/logging.handlers.html>`_)
+* The logger can be accessed through the property :attr:`pdpyras.PDSession.log`.
+  The property is mutable and can be set to a custom logger object.
+
+In version 4.6.0 and later, for debugging and API request troubleshooting, one
+can enable and disable sending log messages to command line output via the
+:attr:`pdpyras.PDSession.debug` property as follows:
+
+.. code-block:: python
+
+    # Method 1: keyword argument, when constructing a new session:
+    session = pdpyras.APISession(api_key, debug=True)
+
+    # Method 2: on an existing session, by setting the property:
+    session.debug = True
+
+    # to disable:
+    session.debug = False
+
+
+What this does is assign a `logging.StreamHandler
+<https://docs.python.org/3/library/logging.handlers.html#streamhandler>`_
+directly to the session's logger and set the log level to debug (``logging.DEBUG``).
+All log messages are then sent directly to ``sys.stderr``.
+
+General API Concepts
+********************
 In all cases, when sending or receiving data through the REST API using
 :class:`pdpyras.APISession`, the following will apply.
 
