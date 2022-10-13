@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 refresh_virtualenv () {
     echo "Re-creating temporary virtualenv"
     rm -rf ./tmp

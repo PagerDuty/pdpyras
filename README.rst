@@ -799,9 +799,17 @@ Perform end-to-end publish and installation testing
 
 To test publishing and installing from the package index, first make sure you
 have a valid user account on ``test.pypi.org`` that has publisher access to the
-project as on ``pypi.org``. Then, entering your credentials when prompted, run:
+project as on ``pypi.org``.
 
-... code-block:: shell
+Note, once a release is uploaded, it is no longer possible to upload a release
+with the same version number, even if that release is deleted. For that reason,
+it is a good idea to first add a suffix, i.e. ``-dev001``, to ``__version__``
+in ``setup.py``.
+
+To perform end-to-end tests,  run the following, entering credentials for
+``test.pypi.org`` when prompted:
+
+.. code-block:: shell
 
     make testpublish
 
@@ -812,16 +820,11 @@ The make target ``testpublish`` performs the following:
 * Test-install the library from ``test.pypi.org`` into a temporary Python
   virtualenv that does not already have the library installed, to test
   installing for the first time
-* Tests-installs the library from ``test.pypi.org`` into a temporary Python
+* Tests-install the library from ``test.pypi.org`` into a temporary Python
   virtualenv where the library is already installed, to test upgrading
 
-If any errors are encountered, they should be addressed first before publishing.
-
-To test again, first delete the new release that was previously uploaded:
-
-#. Log in to ``test.pypi.org`` 
-#. Go to https://test.pypi.org/manage/project/pdpyras/releases/
-#. Select "Delete" from the options menu to the right of the new release
+If any errors are encountered, the script should immediately exit. Errors
+should be investigated and mitigated before publishing.
 
 Merge changes and tag
 +++++++++++++++++++++
@@ -829,12 +832,15 @@ Merge changes and tag
 A pull request for releasing a new version should be created, which along with
 the functional changes should also include at least:
 
-* An update to CHANGELOG.rst, where all lines corresponding to community
+* An update to the changelog, where all items corresponding to community
   contributions end with (in parentheses) the GitHub user handle of the
-  contributor, a slash, and a link to the pull request.
+  contributor, a slash, and a link to the pull request (see CHANGELOG.rst for
+  preexisting examples).
 * A change in the version number in both setup.py and pdpyras.py, to a new
   version that follows `Semantic Versioning <https://semver.org/>`_.
 * Rebuilt HTML documentation
+
+
 
 The HTML documentation can be rebuilt with the ``docs`` make target:
 
