@@ -11,6 +11,7 @@ from datetime import datetime
 from random import random
 
 import requests
+from logging import StreamHandler
 from urllib3.exceptions import HTTPError, PoolError
 from requests.exceptions import RequestException
 
@@ -287,10 +288,26 @@ class PDSession(requests.Session):
     - It will only perform requests with methods as given in the
       :attr:`permitted_methods` list, and will raise :class:`PDClientError` for
       any other HTTP methods.
+
+    :param api_key:
+        REST API access token to use for HTTP requests
+    :param name:
+        Optional name identifier for logging. If unspecified or ``None``, the
+        last four characters of the REST API token will be used.
+    :param debug:
+        Sets :attr:`debug`. Set to True to enable verbose command line output.
+    :type token: str
+    :type name: str or None
+    :type debug: bool
     """
 
     log = None
-    """A ``logging.Logger`` object for printing messages."""
+    """
+    A ``logging.Logger`` object for logging messages. By default it is
+    configured without any handlers and so no messages will be emitted. See
+    `logger objects
+    <https://docs.python.org/3/library/logging.html#logger-objects>`_
+    """
 
     max_http_attempts = 10
     """
@@ -374,15 +391,7 @@ class PDSession(requests.Session):
 
     url = ""
 
-    def __init__(self, api_key, name=None):
-        """
-        Basic constructor for API sessions.
-
-        :param api_key:
-            The API credential to use.
-        :param name:
-            Identifying label for the session to use in log messages
-        """
+    def __init__(self, api_key, name=None, debug=False):
         self.parent = super(PDSession, self)
         self.parent.__init__()
         self.api_key = api_key
@@ -392,6 +401,7 @@ class PDSession(requests.Session):
             my_name = self.trunc_key
         self.log = logging.getLogger('pdpyras.%s(%s)'%(
             self.__class__.__name__, my_name))
+        self.debug = debug
         self.retry = {}
 
     def after_set_api_key(self):
@@ -428,6 +438,30 @@ class PDSession(requests.Session):
 
     def cooldown_factor(self):
         return self.sleep_timer_base*(1+self.stagger_cooldown*random())
+
+    @property
+    def debug(self):
+        """
+        If set to True, the logging level of :attr:`log` is set to
+        ``logging.DEBUG`` and all log messages are emitted to ``sys.stderr``.
+        If set to False, the logging level of :attr:`log` is set to
+        ``logging.NOTSET`` and the debugging log handler that prints messages to
+        ``sys.stderr`` is removed. This value thus can be toggled to enable and
+        disable verbose command line output.
+        """
+        return self._debug
+
+    @debug.setter
+    def debug(self, debug):
+        self._debug = debug
+        if debug and not hasattr(self, '_debugHandler'):
+            self.log.setLevel(logging.DEBUG)
+            self._debugHandler = logging.StreamHandler()
+            self.log.addHandler(self._debugHandler)
+        elif hasattr(self, '_debugHandler'):
+            self.log.setLevel(logging.NOTSET)
+            self.log.removeHandler(self._debugHandler)
+            delattr(self, '_debugHandler')
 
     def normalize_params(self, params):
         """
@@ -917,11 +951,14 @@ class APISession(PDSession):
         Optional name identifier for logging. If unspecified or ``None``, it
         will be the last four characters of the REST API token.
     :param default_from:
-        Email address of a valid PagerDuty user to use in API requests by
-        default as the ``From`` header (see: `HTTP Request Headers`_)
+        The default email address to use in the ``From`` header when making
+        API calls using an account-level API access key.
+    :param debug:
+        Sets :attr:`debug`. Set to True to enable verbose command line output.
     :type token: str
     :type name: str or None
     :type default_from: str or None
+    :type debug: bool
 
     :members:
     """
@@ -947,11 +984,16 @@ class APISession(PDSession):
     """Base URL of the REST API"""
 
     def __init__(self, api_key, name=None, default_from=None,
-            auth_type='token'):
+            auth_type='token', debug=False):
+        """
+
+        :param api_key:
+            The API key to use for authentication
+        """
         self.api_call_counts = {}
         self.api_time = {}
         self.auth_type = auth_type
-        super(APISession, self).__init__(api_key, name)
+        super(APISession, self).__init__(api_key, name=name, debug=debug)
         self.default_from = default_from
         self.headers.update({
             'Accept': 'application/vnd.pagerduty+json;version=2',

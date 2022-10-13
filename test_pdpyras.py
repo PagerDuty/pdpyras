@@ -20,7 +20,7 @@ import requests
 import sys
 import unittest
 
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import Mock, MagicMock, patch, call
 
 import pdpyras
 
@@ -172,6 +172,31 @@ class APISessionTest(SessionTest):
                 'https://api.pagerduty.com/users/PCWKOPZ/contact_methods'
             )
         )
+
+    def test_debug(self):
+        sess = pdpyras.APISession('token')
+        log = Mock()
+        log.setLevel = Mock()
+        log.addHandler = Mock()
+        sess.log = log
+        sess.debug = True
+        log.setLevel.assert_called_once_with(logging.DEBUG)
+        self.assertEqual(1, len(log.addHandler.call_args_list))
+        self.assertTrue(isinstance(
+            log.addHandler.call_args_list[0][0][0],
+            logging.StreamHandler
+        ))
+        log.setLevel.reset_mock()
+        log.removeHandler = Mock()
+        sess.debug = False
+        log.setLevel.assert_called_once_with(logging.NOTSET)
+        self.assertEqual(1, len(log.removeHandler.call_args_list))
+        self.assertTrue(isinstance(
+            log.removeHandler.call_args_list[0][0][0],
+            logging.StreamHandler
+        ))
+        sess = pdpyras.APISession('token', debug=True)
+        self.assertTrue(isinstance(sess._debugHandler, logging.StreamHandler))
 
     @patch.object(pdpyras.APISession, 'iter_all')
     def test_find(self, iter_all):
