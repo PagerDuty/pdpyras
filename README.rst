@@ -264,6 +264,31 @@ PagerDuty account:
     # PUT the updated list back up to the API
     updated_incidents = session.rput('incidents', json=incidents)
 
+Logging and debug mode
+**********************
+When a session is created, the property :attr:`pdpyras.PDSession.log` is set to
+a newly-created
+`Logger object <https://docs.python.org/3/library/logging.html#logger-objects>`_,
+but it is initially not configured with any handlers. Configuring this logger with
+the desired handlers is left to the discretion of the implementer (see:
+`logging <https://docs.python.org/3/library/logging.html>`_)
+
+However, for debugging and API request troubleshooting, one can enable the
+emission of log messages in command line output by setting the
+:attr:`pdpyras.PDSession.debug` in version 4.6.0 and later, in either of two
+ways:
+
+.. code-block:: python
+
+    # When the session is initially constructed, using the debug keyword argument:
+    session = pdpyras.APISession(api_key, debug=True)
+
+    # After-the-fact, at any point
+    session.debug = True
+
+Verbose debugging output can also be disabled at any point by setting the
+property to ``False``.
+
 General concepts
 ****************
 In all cases, when sending or receiving data through the REST API using
