@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-__version__ = '4.5.0'
+from pdpyras import __version__
 
 if __name__ == '__main__':
     setup(

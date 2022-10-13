@@ -14,7 +14,7 @@ import requests
 from urllib3.exceptions import HTTPError, PoolError
 from requests.exceptions import RequestException
 
-__version__ = '4.5.0'
+__version__ = '4.5.1'
 
 # These are API resource endpoints/methods for which multi-update is supported
 VALID_MULTI_UPDATE_PATHS = [
@@ -25,7 +25,7 @@ VALID_MULTI_UPDATE_PATHS = [
 
 ITERATION_LIMIT = 1e4
 
-TIMEOUT = 5
+TIMEOUT = 60
 
 #########################
 ### UTILITY FUNCTIONS ###
@@ -418,33 +418,6 @@ class PDSession(requests.Session):
         self._api_key = api_key
         self.headers.update(self.auth_header)
         self.after_set_api_key()
-
-    @property
-    def api_key_access(self):
-        """
-        Memoized API key access type getter.
-
-        Will be "user" if the API key is a user-level token (all users should
-        have permission to create an API key with the same permissions as they
-        have in the PagerDuty web UI).
-
-        If the API key in use is an account-level API token (as only a global
-        administrator user can create), this property will be "account".
-        """
-        if not hasattr(self, '_api_key_access') or self._api_key_access is None:
-            response = self.get('/users/me')
-            if response.status_code == 400:
-                message = try_decoding(response).get('error', '')
-                if 'account-level access token' in message:
-                    self._api_key_access = 'account'
-                else:
-                    self._api_key_access = None
-                    self.log.error("Failed to obtain API key access level; "
-                        "the API did not respond as expected.")
-                    self.log.debug("Body = %s", response.text[:99])
-            else:
-                self._api_key_access = 'user'
-        return self._api_key_access
 
     @property
     def auth_header(self):
@@ -986,6 +959,33 @@ class APISession(PDSession):
 
     def after_set_api_key(self):
         self._subdomain = None
+
+    @property
+    def api_key_access(self):
+        """
+        Memoized API key access type getter.
+
+        Will be "user" if the API key is a user-level token (all users should
+        have permission to create an API key with the same permissions as they
+        have in the PagerDuty web UI).
+
+        If the API key in use is an account-level API token (as only a global
+        administrator user can create), this property will be "account".
+        """
+        if not hasattr(self, '_api_key_access') or self._api_key_access is None:
+            response = self.get('/users/me')
+            if response.status_code == 400:
+                message = try_decoding(response).get('error', '')
+                if 'account-level access token' in message:
+                    self._api_key_access = 'account'
+                else:
+                    self._api_key_access = None
+                    self.log.error("Failed to obtain API key access level; "
+                        "the API did not respond as expected.")
+                    self.log.debug("Body = %s", response.text[:99])
+            else:
+                self._api_key_access = 'user'
+        return self._api_key_access
 
     @property
     def auth_type(self):
