@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 4.5.0 documentation</title>
+    <title>PDPYRAS: PagerDuty Python REST API Sessions &#8212; PagerDuty Python REST API Sessions 4.5.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -741,8 +741,9 @@ in the commit message.</p>
 <p>(Target audience: package maintainers)</p>
 <section id="initial-setup">
 <h3>Initial Setup<a class="headerlink" href="#initial-setup" title="Permalink to this heading">¶</a></h3>
-<p>To be able to rebuild the documentation and release a new version, first
-make sure you have <a class="reference external" href="https://www.gnu.org/software/make/">make</a> and <a class="reference external" href="https://pip.pypa.io/en/stable/installation/">pip</a> installed.</p>
+<p>To be able to rebuild the documentation and release a new version, first make
+sure you have <a class="reference external" href="https://www.gnu.org/software/make/">make</a> and <a class="reference external" href="https://pip.pypa.io/en/stable/installation/">pip</a> installed in your shell
+environment.</p>
 <p>Next, install Python dependencies for building and publishing:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip install -r requirements-publish.txt
 </pre></div>
@@ -750,27 +751,69 @@ make sure you have <a class="reference external" href="https://www.gnu.org/softw
 </section>
 <section id="before-publishing">
 <h3>Before publishing<a class="headerlink" href="#before-publishing" title="Permalink to this heading">¶</a></h3>
-<p>A pull request for releasing a new version should be created, which should include at least:</p>
+<p>You will need valid user accounts on both <code class="docutils literal notranslate"><span class="pre">pypi.org</span></code> and <code class="docutils literal notranslate"><span class="pre">test.pypi.org</span></code>
+that have the “Maintainer” role on the project.</p>
+<section id="perform-end-to-end-publish-and-installation-testing">
+<h4>Perform end-to-end publish and installation testing<a class="headerlink" href="#perform-end-to-end-publish-and-installation-testing" title="Permalink to this heading">¶</a></h4>
+<p>To test publishing and installing from the package index, first make sure you
+have a valid user account on <code class="docutils literal notranslate"><span class="pre">test.pypi.org</span></code> that has publisher access to the
+project as on <code class="docutils literal notranslate"><span class="pre">pypi.org</span></code>. Then, entering your credentials when prompted, run:</p>
+<p>… code-block:: shell</p>
+<blockquote>
+<div><p>make testpublish</p>
+</div></blockquote>
+<p>The make target <code class="docutils literal notranslate"><span class="pre">testpublish</span></code> performs the following:</p>
 <ul class="simple">
-<li><p>An update to CHANGELOG.rst, where all lines corresponding to community contributions end with (in parentheses) the GitHub user handle of the contributor, a slash, and a link to the pull request.</p></li>
-<li><p>A change in the version number in both setup.py and pdpyras.py, to a new version that follows <a class="reference external" href="https://semver.org/">Semantic Versioning</a>.</p></li>
+<li><p>Build the Python egg in <code class="docutils literal notranslate"><span class="pre">dist/</span></code></p></li>
+<li><p>Upload the new library to <code class="docutils literal notranslate"><span class="pre">test.pypi.org</span></code></p></li>
+<li><p>Test-install the library from <code class="docutils literal notranslate"><span class="pre">test.pypi.org</span></code> into a temporary Python
+virtualenv that does not already have the library installed, to test
+installing for the first time</p></li>
+<li><p>Tests-installs the library from <code class="docutils literal notranslate"><span class="pre">test.pypi.org</span></code> into a temporary Python
+virtualenv where the library is already installed, to test upgrading</p></li>
 </ul>
-<p>The pull request should then be reviewed before committing a rebuild of the
-documentation. This is because it adds many file changes that are not meant
-to be reviewed manually, as they are generated. Documentation can be built
-locally for review and proofreading via:</p>
+<p>If any errors are encountered, they should be addressed first before publishing.</p>
+<p>To test again, first delete the new release that was previously uploaded:</p>
+<ol class="arabic simple">
+<li><p>Log in to <code class="docutils literal notranslate"><span class="pre">test.pypi.org</span></code></p></li>
+<li><p>Go to <a class="reference external" href="https://test.pypi.org/manage/project/pdpyras/releases/">https://test.pypi.org/manage/project/pdpyras/releases/</a></p></li>
+<li><p>Select “Delete” from the options menu to the right of the new release</p></li>
+</ol>
+</section>
+<section id="merge-changes-and-tag">
+<h4>Merge changes and tag<a class="headerlink" href="#merge-changes-and-tag" title="Permalink to this heading">¶</a></h4>
+<p>A pull request for releasing a new version should be created, which along with
+the functional changes should also include at least:</p>
+<ul class="simple">
+<li><p>An update to CHANGELOG.rst, where all lines corresponding to community
+contributions end with (in parentheses) the GitHub user handle of the
+contributor, a slash, and a link to the pull request.</p></li>
+<li><p>A change in the version number in both setup.py and pdpyras.py, to a new
+version that follows <a class="reference external" href="https://semver.org/">Semantic Versioning</a>.</p></li>
+<li><p>Rebuilt HTML documentation</p></li>
+</ul>
+<p>The HTML documentation can be rebuilt with the <code class="docutils literal notranslate"><span class="pre">docs</span></code> make target:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>make docs
 </pre></div>
 </div>
-<p>The documentation can then be viewed in the file <code class="docutils literal notranslate"><span class="pre">docs/index.html</span></code>.</p>
+<p>After rebuilding the documentation, it can then be viewed by opening the file
+<code class="docutils literal notranslate"><span class="pre">docs/index.html</span></code> in a web browser. Including rebuilt documentation helps
+reviewers by not requiring them to have the documentation-building tools
+installed.</p>
+<p>Once the pull request is approved, merge, then checkout main and tag:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>git checkout main <span class="o">&amp;&amp;</span> <span class="se">\</span>
+  git pull origin main <span class="o">&amp;&amp;</span> <span class="se">\</span>
+  git tag <span class="s2">&quot;v</span><span class="k">$(</span>python -c <span class="s1">&#39;from pdpyras import __version__; print(__version__)&#39;</span><span class="k">)</span><span class="s2">&quot;</span> <span class="o">&amp;&amp;</span> <span class="se">\</span>
+  git push --tags origin main
+</pre></div>
+</div>
+</section>
 </section>
 <section id="publishing-a-new-version">
 <h3>Publishing a new version<a class="headerlink" href="#publishing-a-new-version" title="Permalink to this heading">¶</a></h3>
-<p>Once the pull request is approved, rebuild the documentation, commit/push
-the changes, and merge.</p>
-<p>Once the changes are merged, tag the merge onto the main branch as
-<code class="docutils literal notranslate"><span class="pre">v{version}</span></code>, i.e. <code class="docutils literal notranslate"><span class="pre">v4.4.0</span></code>, and with that as the current git head (and
-a clean local file tree) run:</p>
+<p>Once the changes are merged and tagged, make sure your local repository clone
+has the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch checked out at the latest avialable commit, and the
+local file tree is clean (has no uncommitted changes). Then run:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>make publish
 </pre></div>
 </div>
@@ -813,17 +856,6 @@ any other HTTP methods.</p></li>
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">api_key</span></span><a class="headerlink" href="#pdpyras.PDSession.api_key" title="Permalink to this definition">¶</a></dt>
 <dd><p>API Key property getter.</p>
 <p>Returns the _api_key attribute’s value.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="pdpyras.PDSession.api_key_access">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">api_key_access</span></span><a class="headerlink" href="#pdpyras.PDSession.api_key_access" title="Permalink to this definition">¶</a></dt>
-<dd><p>Memoized API key access type getter.</p>
-<p>Will be “user” if the API key is a user-level token (all users should
-have permission to create an API key with the same permissions as they
-have in the PagerDuty web UI).</p>
-<p>If the API key in use is an account-level API token (as only a global
-administrator user can create), this property will be “account”.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1015,7 +1047,7 @@ for consistent behavior with previous versions.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="pdpyras.PDSession.timeout">
-<span class="sig-name descname"><span class="pre">timeout</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="headerlink" href="#pdpyras.PDSession.timeout" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">timeout</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">60</span></em><a class="headerlink" href="#pdpyras.PDSession.timeout" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is the value sent to <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Session.request">requests.Session.request</a> as the <code class="docutils literal notranslate"><span class="pre">timeout</span></code>
 parameter that determines the TCP read timeout.</p>
 </dd></dl>
@@ -1085,6 +1117,17 @@ default as the <code class="docutils literal notranslate"><span class="pre">From
 <dt class="sig sig-object py" id="pdpyras.APISession.api_call_counts">
 <span class="sig-name descname"><span class="pre">api_call_counts</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pdpyras.APISession.api_call_counts" title="Permalink to this definition">¶</a></dt>
 <dd><p>A dict object recording the number of API calls per endpoint</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pdpyras.APISession.api_key_access">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">api_key_access</span></span><a class="headerlink" href="#pdpyras.APISession.api_key_access" title="Permalink to this definition">¶</a></dt>
+<dd><p>Memoized API key access type getter.</p>
+<p>Will be “user” if the API key is a user-level token (all users should
+have permission to create an API key with the same permissions as they
+have in the PagerDuty web UI).</p>
+<p>If the API key in use is an account-level API token (as only a global
+administrator user can create), this property will be “account”.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1746,6 +1789,11 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 </section>
 <section id="id7">
 <h2>Changelog<a class="headerlink" href="#id7" title="Permalink to this heading">¶</a></h2>
+<p><strong>2022-10-13: Version 4.5.1</strong></p>
+<ul class="simple">
+<li><p>The default value for request timeouts is now 60s.</p></li>
+<li><p>Method <code class="docutils literal notranslate"><span class="pre">api_key_access</span></code> is now implemented as <a class="reference internal" href="#pdpyras.APISession.api_key_access" title="pdpyras.APISession.api_key_access"><code class="xref py py-attr docutils literal notranslate"><span class="pre">APISession.api_key_access</span></code></a>; formerly it was implemented in the parent class and inherited in classes that did not need it and could not use it.</p></li>
+</ul>
 <p><strong>2022-02-22: Version 4.5.0</strong></p>
 <ul class="simple">
 <li><p>Add a new API generator <code class="docutils literal notranslate"><span class="pre">iter_cursor</span></code> to <a class="reference internal" href="#pdpyras.APISession" title="pdpyras.APISession"><code class="xref py py-class docutils literal notranslate"><span class="pre">APISession</span></code></a> that yields results from API endpoints that support cursor-based pagination, requesting the next page of results whenever needed.</p></li>
@@ -1949,7 +1997,11 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 <li><a class="reference internal" href="#contributing">Contributing</a></li>
 <li><a class="reference internal" href="#releasing">Releasing</a><ul>
 <li><a class="reference internal" href="#initial-setup">Initial Setup</a></li>
-<li><a class="reference internal" href="#before-publishing">Before publishing</a></li>
+<li><a class="reference internal" href="#before-publishing">Before publishing</a><ul>
+<li><a class="reference internal" href="#perform-end-to-end-publish-and-installation-testing">Perform end-to-end publish and installation testing</a></li>
+<li><a class="reference internal" href="#merge-changes-and-tag">Merge changes and tag</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#publishing-a-new-version">Publishing a new version</a></li>
 </ul>
 </li>
@@ -1958,7 +2010,6 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 <li><a class="reference internal" href="#pdpyras.PDSession"><code class="docutils literal notranslate"><span class="pre">PDSession</span></code></a><ul>
 <li><a class="reference internal" href="#pdpyras.PDSession.after_set_api_key"><code class="docutils literal notranslate"><span class="pre">PDSession.after_set_api_key()</span></code></a></li>
 <li><a class="reference internal" href="#pdpyras.PDSession.api_key"><code class="docutils literal notranslate"><span class="pre">PDSession.api_key</span></code></a></li>
-<li><a class="reference internal" href="#pdpyras.PDSession.api_key_access"><code class="docutils literal notranslate"><span class="pre">PDSession.api_key_access</span></code></a></li>
 <li><a class="reference internal" href="#pdpyras.PDSession.auth_header"><code class="docutils literal notranslate"><span class="pre">PDSession.auth_header</span></code></a></li>
 <li><a class="reference internal" href="#pdpyras.PDSession.log"><code class="docutils literal notranslate"><span class="pre">PDSession.log</span></code></a></li>
 <li><a class="reference internal" href="#pdpyras.PDSession.max_http_attempts"><code class="docutils literal notranslate"><span class="pre">PDSession.max_http_attempts</span></code></a></li>
@@ -1989,6 +2040,7 @@ would be classified as <code class="docutils literal notranslate"><span class="p
 <li><a class="reference internal" href="#pdpyras.APISession.rput"><code class="docutils literal notranslate"><span class="pre">APISession.rput()</span></code></a></li>
 <li><a class="reference internal" href="#pdpyras.APISession.after_set_api_key"><code class="docutils literal notranslate"><span class="pre">APISession.after_set_api_key()</span></code></a></li>
 <li><a class="reference internal" href="#pdpyras.APISession.api_call_counts"><code class="docutils literal notranslate"><span class="pre">APISession.api_call_counts</span></code></a></li>
+<li><a class="reference internal" href="#pdpyras.APISession.api_key_access"><code class="docutils literal notranslate"><span class="pre">APISession.api_key_access</span></code></a></li>
 <li><a class="reference internal" href="#pdpyras.APISession.api_time"><code class="docutils literal notranslate"><span class="pre">APISession.api_time</span></code></a></li>
 <li><a class="reference internal" href="#pdpyras.APISession.auth_header"><code class="docutils literal notranslate"><span class="pre">APISession.auth_header</span></code></a></li>
 <li><a class="reference internal" href="#pdpyras.APISession.auth_type"><code class="docutils literal notranslate"><span class="pre">APISession.auth_type</span></code></a></li>
