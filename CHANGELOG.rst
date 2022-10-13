@@ -1,3 +1,8 @@
+**2022-10-13: Version 4.5.1**
+
+* The default value for request timeouts is now 60s.
+* Method ``api_key_access`` is now implemented as :attr:`APISession.api_key_access`; formerly it was implemented in the parent class and inherited in classes that did not need it and could not use it.
+
 **2022-02-22: Version 4.5.0**
 
 * Add a new API generator ``iter_cursor`` to :class:`APISession` that yields results from API endpoints that support cursor-based pagination, requesting the next page of results whenever needed.
