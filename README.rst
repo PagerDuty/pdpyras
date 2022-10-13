@@ -777,9 +777,10 @@ Releasing
 Initial Setup
 *************
 
-To be able to rebuild the documentation and release a new version, first
-make sure you have `make <https://www.gnu.org/software/make/>`_ and `pip
-<https://pip.pypa.io/en/stable/installation/>`_ installed.
+To be able to rebuild the documentation and release a new version, first make
+sure you have `make <https://www.gnu.org/software/make/>`_ and `pip
+<https://pip.pypa.io/en/stable/installation/>`_ installed in your shell
+environment.
 
 Next, install Python dependencies for building and publishing:
 
@@ -790,30 +791,77 @@ Next, install Python dependencies for building and publishing:
 Before publishing
 *****************
 
-A pull request for releasing a new version should be created, which should include at least:
+You will need valid user accounts on both ``pypi.org`` and ``test.pypi.org``
+that have the "Maintainer" role on the project.
 
-* An update to CHANGELOG.rst, where all lines corresponding to community contributions end with (in parentheses) the GitHub user handle of the contributor, a slash, and a link to the pull request.
-* A change in the version number in both setup.py and pdpyras.py, to a new version that follows `Semantic Versioning <https://semver.org/>`_.
+Perform end-to-end publish and installation testing
+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-The pull request should then be reviewed before committing a rebuild of the
-documentation. This is because it adds many file changes that are not meant
-to be reviewed manually, as they are generated. Documentation can be built
-locally for review and proofreading via:
+To test publishing and installing from the package index, first make sure you
+have a valid user account on ``test.pypi.org`` that has publisher access to the
+project as on ``pypi.org``. Then, entering your credentials when prompted, run:
+
+... code-block:: shell
+
+    make testpublish
+
+The make target ``testpublish`` performs the following:
+
+* Build the Python egg in ``dist/``
+* Upload the new library to ``test.pypi.org``
+* Test-install the library from ``test.pypi.org`` into a temporary Python
+  virtualenv that does not already have the library installed, to test
+  installing for the first time
+* Tests-installs the library from ``test.pypi.org`` into a temporary Python
+  virtualenv where the library is already installed, to test upgrading
+
+If any errors are encountered, they should be addressed first before publishing.
+
+To test again, first delete the new release that was previously uploaded:
+
+#. Log in to ``test.pypi.org`` 
+#. Go to https://test.pypi.org/manage/project/pdpyras/releases/
+#. Select "Delete" from the options menu to the right of the new release
+
+Merge changes and tag
++++++++++++++++++++++
+
+A pull request for releasing a new version should be created, which along with
+the functional changes should also include at least:
+
+* An update to CHANGELOG.rst, where all lines corresponding to community
+  contributions end with (in parentheses) the GitHub user handle of the
+  contributor, a slash, and a link to the pull request.
+* A change in the version number in both setup.py and pdpyras.py, to a new
+  version that follows `Semantic Versioning <https://semver.org/>`_.
+* Rebuilt HTML documentation
+
+The HTML documentation can be rebuilt with the ``docs`` make target:
 
 .. code-block:: shell
 
     make docs
 
-The documentation can then be viewed in the file ``docs/index.html``.
+After rebuilding the documentation, it can then be viewed by opening the file
+``docs/index.html`` in a web browser. Including rebuilt documentation helps
+reviewers by not requiring them to have the documentation-building tools
+installed.
+
+Once the pull request is approved, merge, then checkout main and tag:
+
+.. code-block:: shell
+
+    git checkout main && \
+      git pull origin main && \
+      git tag "v$(python -c 'from pdpyras import __version__; print(__version__)')" && \
+      git push --tags origin main
 
 Publishing a new version
 ************************
-Once the pull request is approved, rebuild the documentation, commit/push
-the changes, and merge.
 
-Once the changes are merged, tag the merge onto the main branch as
-``v{version}``, i.e. ``v4.4.0``, and with that as the current git head (and
-a clean local file tree) run:
+Once the changes are merged and tagged, make sure your local repository clone
+has the ``main`` branch checked out at the latest avialable commit, and the
+local file tree is clean (has no uncommitted changes). Then run:
 
 .. code-block:: shell
 
