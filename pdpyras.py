@@ -291,13 +291,9 @@ class PDSession(requests.Session):
 
     :param api_key:
         REST API access token to use for HTTP requests
-    :param name:
-        Optional name identifier for logging. If unspecified or ``None``, the
-        last four characters of the REST API token will be used.
     :param debug:
         Sets :attr:`debug`. Set to True to enable verbose command line output.
     :type token: str
-    :type name: str or None
     :type debug: bool
     """
 
@@ -395,12 +391,9 @@ class PDSession(requests.Session):
         self.parent = super(PDSession, self)
         self.parent.__init__()
         self.api_key = api_key
-        if isinstance(name, str) and name:
-            my_name = name
-        else:
-            my_name = self.trunc_key
-        self.log = logging.getLogger('pdpyras.%s(%s)'%(
-            self.__class__.__name__, my_name))
+        if name is not None:
+            raise DeprecationWarning('The "name" parameter is deprecated.')
+        self.log = logging.getLogger(__name__)
         self.debug = debug
         self.retry = {}
 
