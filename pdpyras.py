@@ -597,21 +597,6 @@ class PDSession(requests.Session):
                 # All went according to plan.
                 return response
 
-    def set_api_key(self, api_key):
-        """
-        (Deprecated) set the API key/token.
-
-        :param api_key:
-            The API key to use
-        :type api_key: str
-        """
-        raise DeprecationWarning("This method is deprecated. Please use the "
-            "object setter directly (i.e. session.api_key = <value>) or "
-            "implement the after_set_api_key method in a child class of "
-            "PDSession to define a hook that runs when the API credential is "
-            "changed.")
-        self.api_key = api_key
-
     @property
     def stagger_cooldown(self):
         """
