@@ -179,6 +179,7 @@ class APISessionTest(SessionTest):
         log.setLevel = Mock()
         log.addHandler = Mock()
         sess.log = log
+        # Enable:
         sess.debug = True
         log.setLevel.assert_called_once_with(logging.DEBUG)
         self.assertEqual(1, len(log.addHandler.call_args_list))
@@ -186,6 +187,7 @@ class APISessionTest(SessionTest):
             log.addHandler.call_args_list[0][0][0],
             logging.StreamHandler
         ))
+        # Disable:
         log.setLevel.reset_mock()
         log.removeHandler = Mock()
         sess.debug = False
@@ -195,8 +197,16 @@ class APISessionTest(SessionTest):
             log.removeHandler.call_args_list[0][0][0],
             logging.StreamHandler
         ))
+        # Setter called via constructor:
         sess = pdpyras.APISession('token', debug=True)
         self.assertTrue(isinstance(sess._debugHandler, logging.StreamHandler))
+        # Setter should be idempotent:
+        sess.debug = False
+        sess.debug = False
+        self.assertFalse(hasattr(sess, '_debugHandler'))
+        sess.debug = True
+        sess.debug = True
+        self.assertTrue(hasattr(sess, '_debugHandler'))
 
     @patch.object(pdpyras.APISession, 'iter_all')
     def test_find(self, iter_all):

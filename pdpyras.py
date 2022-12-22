@@ -392,7 +392,8 @@ class PDSession(requests.Session):
         self.parent.__init__()
         self.api_key = api_key
         if name is not None:
-            raise DeprecationWarning('The "name" parameter is deprecated.')
+            raise DeprecationWarning('The "name" parameter is deprecated and '
+                'has no effect as of v4.6.0')
         self.log = logging.getLogger(__name__)
         self.debug = debug
         self.retry = {}
@@ -451,10 +452,11 @@ class PDSession(requests.Session):
             self.log.setLevel(logging.DEBUG)
             self._debugHandler = logging.StreamHandler()
             self.log.addHandler(self._debugHandler)
-        elif hasattr(self, '_debugHandler'):
+        elif not debug and hasattr(self, '_debugHandler'):
             self.log.setLevel(logging.NOTSET)
             self.log.removeHandler(self._debugHandler)
             delattr(self, '_debugHandler')
+        # else: no-op; only happens if debug is set to the same value twice
 
     def normalize_params(self, params):
         """
