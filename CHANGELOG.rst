@@ -1,7 +1,14 @@
-**2022-10-13: Version 4.5.1**
+**2022-12-X: Version 4.6.0:**
+
+* New property :attr:`APISession.debug` to enable printing log messages to stderr
+* Removal of deprecated ``set_api_key`` method
+* Deprecation of optional ``name`` keyword argument to constructor (this only affected the name of the logger)
+
+**2022-10-13: Version 4.5.2**
 
 * The default value for request timeouts is now 60s.
 * Method ``api_key_access`` is now implemented as :attr:`APISession.api_key_access`; formerly it was implemented in the parent class and inherited in classes that did not need it and could not use it.
+* Bug in version 4.5.1 (removed) in package distribution/build fixed
 
 **2022-02-22: Version 4.5.0**
 
