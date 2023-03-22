@@ -843,7 +843,7 @@ with the same version number, even if that release is deleted. For that reason,
 it is a good idea to first add a suffix, i.e. ``-dev001``, to ``__version__``
 in ``setup.py``.
 
-To perform end-to-end tests,  run the following, entering credentials for
+To perform end-to-end tests, run the following, entering credentials for
 ``test.pypi.org`` when prompted:
 
 .. code-block:: shell
@@ -861,7 +861,10 @@ The make target ``testpublish`` performs the following:
   virtualenv where the library is already installed, to test upgrading
 
 If any errors are encountered, the script should immediately exit. Errors
-should be investigated and mitigated before publishing.
+should be investigated and mitigated before publishing. To test again,
+temporarily change ``__version__`` so that it counts as a new release
+and gets uploaded, and set it to the desired version before the actual
+release.
 
 Merge changes and tag
 +++++++++++++++++++++
@@ -876,8 +879,6 @@ the functional changes should also include at least:
 * A change in the version number in both setup.py and pdpyras.py, to a new
   version that follows `Semantic Versioning <https://semver.org/>`_.
 * Rebuilt HTML documentation
-
-
 
 The HTML documentation can be rebuilt with the ``docs`` make target:
 
