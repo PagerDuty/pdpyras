@@ -56,6 +56,9 @@ TIMEOUT = 60
 #   "additional_fields" for impacted business services, are discarded.
 # -----------------------------------------------------------------------------
 
+# NOTE: To generate ENDPOINT_PATTERNS and CURSOR_BASED_ITERATION_ENDPOINTS, use
+# scripts/get_path_list/get_path_list.py
+
 # List of URL patterns
 #
 # Supporting a new API that breaks entity wrapping name conventions will require
