@@ -826,6 +826,29 @@ class ChangeEventsSessionTest(SessionTest):
 
 class APIUtilsTest(unittest.TestCase):
 
+    def test_identify_url(self):
+        identified_urls = [
+            (
+                '/incidents/{id}',
+                '/incidents/POOPBUG',
+            ),
+            (
+                '/automation_actions/actions/{id}/teams/{team_id}',
+                '/automation_actions/actions/PABC123/teams/PDEF456',
+            ),
+            (
+                '/status_dashboards/url_slugs/{url_slug}/service_impacts',
+                '/status_dashboards/url_slugs/my-awesome-dashboard/service_impacts',
+            ),
+            (
+                '/{entity_type}/{id}/change_tags',
+                '/services/POOPBUG/change_tags',
+            )
+        ]
+        for (pattern, url) in identified_urls:
+            base_url = 'https://api.pagerduty.com'
+            self.assertEqual(pattern, pdpyras.identify_url(base_url, url))
+
     def test_tokenize_url_path(self):
         cm_path = ('users', '{id}', 'contact_methods', '{index}')
         cm_path_str = 'users/PABC123/contact_methods'
