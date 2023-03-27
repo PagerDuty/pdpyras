@@ -17,16 +17,433 @@ from requests.exceptions import RequestException
 
 __version__ = '4.5.2'
 
-# These are API resource endpoints/methods for which multi-update is supported
-VALID_MULTI_UPDATE_PATHS = [
-    ('incidents', '{index}'),
-    ('incidents', '{id}', 'alerts', '{index}'),
-    ('priorities', '{index}'),
+#######################
+### CLIENT DEFAULTS ###
+#######################
+ITERATION_LIMIT = 1e4
+TIMEOUT = 60
+
+#####################################
+### API SPECIAL BEHAVIOR HANDLING ###
+#####################################
+# Earlier APIs followed a simple set of patterns that allowed clients to make
+# assumptions about the resource envelope (a.k.a. entity wrapper) name. This
+# enabled effort-saving abstraction for wrapped entities that worked across all
+# APIs without requiring the abstraction layer be designed to explicitly
+# describe each individual API. This approach was chosen in this client because
+# then no code changes would be required to support new APIs.
+# 
+# Unfortunately, over time, the schemas of many new APIs have departed from
+# these patterns, and the wrapper name does not predictably follow from the
+# endpoint path. Moreover, a very old and long-standing antipattern in the
+# overrides creation endpoint in the Schedules API became known.
+#
+# Thus, additional abstraction has become necessary in order to be able to
+# correctly assign the entity wrapper name. The abstraction has to be based upon
+# some explicit schema information about particular APIs that can override the
+# otherwise global norms.
+#
+# The new assumption about entity wrapping, in a nutshell, on which this design
+# is based, and which the user must be aware of:
+#
+# -----------------------------------------------------------------------------
+#   If the endpoint's response body or expected request body contains only one
+#   property, not counting endpoints supporting pagination, entity wrapping is
+#   enabled for the endpoint. If there are any other properties, and the
+#   endpoint does not support pagination, it is disabled via an entry in
+#   ENDPOINT_RESOURCE_ENTITY_WRAPPERS. Extra properties at the root level of the
+#   object in responses from paginataion-supporting endpoints, e.g.
+#   "additional_fields" for impacted business services, are discarded.
+# -----------------------------------------------------------------------------
+
+# List of URL patterns
+#
+# Supporting a new API that breaks entity wrapping name conventions will require
+# adding its patterns to this list as well as defining its resource entity
+# wrappers.
+#
+# To generate this and the following definition, I ran
+# scripts/get_path_list/get_path_list.py with its sole argument a path to
+# reference/v2/Index.yaml (in the private API doc repo)
+ENDPOINT_PATTERNS = [
+    '/{entity_type}/{id}/change_tags',
+    '/{entity_type}/{id}/tags',
+    '/abilities',
+    '/abilities/{id}',
+    '/addons',
+    '/addons/{id}',
+    '/analytics/metrics/incidents/all',
+    '/analytics/metrics/incidents/services',
+    '/analytics/metrics/incidents/teams',
+    '/analytics/raw/incidents',
+    '/analytics/raw/incidents/{id}',
+    '/analytics/raw/incidents/{id}/responses',
+    '/audit/records',
+    '/automation_actions/actions',
+    '/automation_actions/actions/{id}',
+    '/automation_actions/actions/{id}/invocations',
+    '/automation_actions/actions/{id}/services',
+    '/automation_actions/actions/{id}/services/{service_id}',
+    '/automation_actions/actions/{id}/teams',
+    '/automation_actions/actions/{id}/teams/{team_id}',
+    '/automation_actions/invocations',
+    '/automation_actions/invocations/{id}',
+    '/automation_actions/runners',
+    '/automation_actions/runners/{id}',
+    '/automation_actions/runners/{id}/teams',
+    '/automation_actions/runners/{id}/teams/{team_id}',
+    '/business_services',
+    '/business_services/{id}',
+    '/business_services/{id}/account_subscription',
+    '/business_services/{id}/subscribers',
+    '/business_services/{id}/supporting_services/impacts',
+    '/business_services/{id}/unsubscribe',
+    '/business_services/impactors',
+    '/business_services/impacts',
+    '/business_services/priority_thresholds',
+    '/change_events',
+    '/change_events/{id}',
+    '/customfields/fields',
+    '/customfields/fields/{field_id}',
+    '/customfields/fields/{field_id}/field_options',
+    '/customfields/fields/{field_id}/field_options/{field_option_id}',
+    '/customfields/fields/{field_id}/schemas',
+    '/customfields/schema_assignments',
+    '/customfields/schema_assignments/{id}',
+    '/customfields/schemas',
+    '/customfields/schemas/{schema_id}',
+    '/customfields/schemas/{schema_id}/field_configurations',
+    '/customfields/schemas/{schema_id}/field_configurations/{field_configuration_id}',
+    '/escalation_policies',
+    '/escalation_policies/{id}',
+    '/escalation_policies/{id}/audit/records',
+    '/event_orchestrations',
+    '/event_orchestrations/{id}',
+    '/event_orchestrations/{id}/router',
+    '/event_orchestrations/{id}/unrouted',
+    '/event_orchestrations/services/{id}',
+    '/event_orchestrations/services/{id}/active',
+    '/extension_schemas',
+    '/extension_schemas/{id}',
+    '/extensions',
+    '/extensions/{id}',
+    '/extensions/{id}/enable',
+    '/incident_workflows',
+    '/incident_workflows/{id}',
+    '/incident_workflows/{id}/instances',
+    '/incident_workflows/actions',
+    '/incident_workflows/actions/{id}',
+    '/incident_workflows/triggers',
+    '/incident_workflows/triggers/{id}',
+    '/incident_workflows/triggers/{id}/services',
+    '/incident_workflows/triggers/{trigger_id}/services/{service_id}',
+    '/incidents',
+    '/incidents/{id}',
+    '/incidents/{id}/alerts',
+    '/incidents/{id}/alerts/{alert_id}',
+    '/incidents/{id}/business_services/{business_service_id}/impacts',
+    '/incidents/{id}/business_services/impacts',
+    '/incidents/{id}/field_values',
+    '/incidents/{id}/field_values/schema',
+    '/incidents/{id}/log_entries',
+    '/incidents/{id}/merge',
+    '/incidents/{id}/notes',
+    '/incidents/{id}/outlier_incident',
+    '/incidents/{id}/past_incidents',
+    '/incidents/{id}/related_change_events',
+    '/incidents/{id}/related_incidents',
+    '/incidents/{id}/responder_requests',
+    '/incidents/{id}/snooze',
+    '/incidents/{id}/status_updates',
+    '/incidents/{id}/status_updates/subscribers',
+    '/incidents/{id}/status_updates/unsubscribe',
+    '/incidents/count',
+    '/license_allocations',
+    '/licenses',
+    '/log_entries',
+    '/log_entries/{id}',
+    '/log_entries/{id}/channel',
+    '/maintenance_windows',
+    '/maintenance_windows/{id}',
+    '/notifications',
+    '/oncalls',
+    '/paused_incident_reports/alerts',
+    '/paused_incident_reports/counts',
+    '/priorities',
+    '/response_plays',
+    '/response_plays/{id}',
+    '/response_plays/{response_play_id}/run',
+    '/rulesets',
+    '/rulesets/{id}',
+    '/rulesets/{id}/rules',
+    '/rulesets/{id}/rules/{rule_id}',
+    '/schedules',
+    '/schedules/{id}',
+    '/schedules/{id}/audit/records',
+    '/schedules/{id}/overrides',
+    '/schedules/{id}/overrides/{override_id}',
+    '/schedules/{id}/users',
+    '/schedules/preview',
+    '/service_dependencies/associate',
+    '/service_dependencies/business_services/{id}',
+    '/service_dependencies/disassociate',
+    '/service_dependencies/technical_services/{id}',
+    '/services',
+    '/services/{id}',
+    '/services/{id}/audit/records',
+    '/services/{id}/change_events',
+    '/services/{id}/integrations',
+    '/services/{id}/integrations/{integration_id}',
+    '/services/{id}/rules',
+    '/services/{id}/rules/{rule_id}',
+    '/status_dashboards',
+    '/status_dashboards/{id}',
+    '/status_dashboards/{id}/service_impacts',
+    '/status_dashboards/url_slugs/{url_slug}',
+    '/status_dashboards/url_slugs/{url_slug}/service_impacts',
+    '/tags',
+    '/tags/{id}',
+    '/tags/{id}/{entity_type}',
+    '/teams',
+    '/teams/{id}',
+    '/teams/{id}/audit/records',
+    '/teams/{id}/escalation_policies/{escalation_policy_id}',
+    '/teams/{id}/members',
+    '/teams/{id}/notification_subscriptions',
+    '/teams/{id}/notification_subscriptions/unsubscribe',
+    '/teams/{id}/users/{user_id}',
+    '/templates',
+    '/templates/{id}',
+    '/templates/{id}/render',
+    '/users',
+    '/users/{id}',
+    '/users/{id}/audit/records',
+    '/users/{id}/contact_methods',
+    '/users/{id}/contact_methods/{contact_method_id}',
+    '/users/{id}/license',
+    '/users/{id}/notification_rules',
+    '/users/{id}/notification_rules/{notification_rule_id}',
+    '/users/{id}/notification_subscriptions',
+    '/users/{id}/notification_subscriptions/unsubscribe',
+    '/users/{id}/oncall_handoff_notification_rules',
+    '/users/{id}/oncall_handoff_notification_rules/{oncall_handoff_notification_rule_id}',
+    '/users/{id}/sessions',
+    '/users/{id}/sessions/{type}/{session_id}',
+    '/users/{id}/status_update_notification_rules',
+    '/users/{id}/status_update_notification_rules/{status_update_notification_rule_id}',
+    '/users/me',
+    '/vendors',
+    '/vendors/{id}',
+    '/webhook_subscriptions',
+    '/webhook_subscriptions/{id}',
+    '/webhook_subscriptions/{id}/enable',
+    '/webhook_subscriptions/{id}/ping',
 ]
 
-ITERATION_LIMIT = 1e4
+CURSOR_BASED_ITERATION_ENDPOINTS = [
+    '/audit/records',
+    '/automation_actions/actions',
+    '/automation_actions/runners',
+    '/escalation_policies/{id}/audit/records',
+    '/incident_workflows/actions',
+    '/incident_workflows/triggers',
+    '/schedules/{id}/audit/records',
+    '/services/{id}/audit/records',
+    '/teams/{id}/audit/records',
+    '/users/{id}/audit/records',
+]
 
-TIMEOUT = 60
+# Entity wrapper name configuration
+#
+# When trying to determine the entity wrapper name, this dictionary is checked
+# for keys that apply to the current endpoint. If nothing matches, the classic
+# entity wrapping conventions are assumed. THEREFORE, IF A NEW API IS ADDED AND
+# IT DOES NOT FOLLOW THE CLASSIC NAMING CONVENTIONS, IT IS DE-FACTO UNSUPPORTED
+# UNTIL IT IS ADDED TO THIS DICTIONARY. No entity wrapper name is 100% a-priori
+# knowable without calling up some static reference data about an endpoint, and
+# it has been this way ever since the aforementioned antipatterns started
+# becoming more commonplace.
+#
+# Each of the keys should be a capitalized HTTP method (or * to match any
+# method), followed by a space, followed by one of the patterns in the above
+# list. Each value is either a tuple with request and response body wrappers (if
+# they differ), a string (if they are the same for both cases) or None (if no
+# wrapping is to take place and the data is to be marshaled or unmarshaled
+# as-is). Values in tuples can also be None to denote that either the request or
+# response is unwrapped.
+#
+# An endpoint in this implementation is said to have entity wrapping (not-None)
+# if the response body has only one property containing response data apart from
+# properties used for pagination. If there are any others, entity wrapping is
+# disabled.
+ENDPOINT_RESOURCE_ENTITY_WRAPPERS = {
+    # Analytics
+    '* /analytics/metrics/incidents/all': None,
+    '* /analytics/metrics/incidents/services': None,
+    '* /analytics/metrics/incidents/teams': None,
+    '* /analytics/raw/incidents': None,
+    '* /analytics/raw/incidents/{id}': None,
+    '* /analytics/raw/incidents/{id}/responses': None,
+
+    # Automation Actions
+    'POST /automation_actions/actions/{id}/invocations': (None,'invocation'),
+
+    # Paused Incident Reports
+    'GET /paused_incident_reports/alerts': 'paused_incident_reporting_counts',
+    'GET /paused_incident_reports/counts': 'paused_incident_reporting_counts',
+
+    # Business Services
+    '* /business_services/{id}/account_subscription': None,
+    'POST /business_services/{id}/subscribers': ('subscribers', 'subscriptions'),
+    'POST /business_services/{id}/unsubscribe': ('subscribers', None),
+    # Early access / no clear pattern with respec to entity wrapping:
+    '* /business_services/priority_thresholds': None,
+    'GET /business_services/impacts': 'services',
+    'GET /business_services/{id}/supporting_services/impacts': 'services',
+
+    # Change Events
+    'POST /change_events': None, # why not just use ChangeEventsAPISession?
+    'GET /incidents/{id}/related_change_events': 'change_events',
+
+    # Event Orchestrations
+    '* /event_orchestrations': 'orchestrations',
+    '* /event_orchestrations/{id}': 'orchestration',
+    '* /event_orchestrations/{id}/router': 'orchestration_path',
+    '* /event_orchestrations/{id}/unrouted': 'orchestration_path',
+    '* /event_orchestrations/services/{id}': 'orchestration_path',
+    '* /event_orchestrations/services/{id}/active': None,
+
+    # Extensions
+    'POST /extensions/{id}/enable': (None, 'extension'),
+
+    # Incidents
+    'PUT /incidents': 'incidents', # Multi-update
+    'PUT /incidents/{id}/merge': ('source_incidents', 'incident'),
+    'PUT /incidents/{id}/alerts': 'alerts',
+    'POST /incidents/{id}/responder_requests': (None, 'responder_request'),
+    'POST /incidents/{id}/snooze': (None, 'incident'),
+    'POST /incidents/{id}/status_updates': (None, 'status_update'),
+    'POST /incidents/{id}/status_updates/subscribers': ('subscribers', 'subscriptions'),
+    'POST /incidents/{id}/status_updates/unsubscribe': ('subscribers', None),
+    'GET /incidents/{id}/business_services/impacts': 'services',
+    # No entity wrapping
+    'PUT /incidents/{id}/business_services/{business_service_id}/impacts': None,
+
+    # Incident Workflows
+    'POST /incident_workflows/{id}/instances': 'incident_workflow_instance',
+    'POST /incident_workflows/triggers/{id}/services': ('service', 'trigger'),
+    # This is an odd one. It issues 201 Created for success instead of 204 No
+    # Content as is customary, and the body includes the updated trigger object:
+    'DELETE /incident_workflows/triggers/{trigger_id}/services/{service_id}': (None, 'trigger'),
+
+    # Response Plays
+    'POST /response_plays/{response_play_id}/run': None, # (deprecated)
+
+    # Schedules
+    'POST /schedules/{id}/overrides': ('overrides', None),
+
+    # Service Dependencies
+    'POST /service_dependencies/associate': 'relationships',
+
+    # Webhooks
+    'POST /webhook_subscriptions/{id}/enable': (None, 'webhook_subscription'),
+    'POST /webhook_subscriptions/{id}/ping': None,
+
+    # Status Dashboards
+    'GET /status_dashboards/{id}/service_impacts': 'services',
+    'GET /status_dashboards/url_slugs/{url_slug}': 'status_dashboard',
+    'GET /status_dashboards/url_slugs/{url_slug}/service_impacts': 'services',
+
+    # Tags
+    'POST /{entity_type}/{id}/change_tags': None,
+
+    # Teams
+    'PUT /teams/{id}/escalation_policies/{escalation_policy_id}': None,
+    'POST /teams/{id}/notification_subscriptions': ('subscribables', 'subscriptions'),
+    'POST /teams/{id}/notification_subscriptions/unsubscribe': ('subscribables', None),
+    'PUT /teams/{id}/users/{user_id}': None,
+    'GET /teams/{id}/notification_subscriptions': 'subscriptions',
+
+    # Templates
+    'POST /templates/{id}/render': None,
+
+    # Users
+    '* /users/{id}/notification_subscriptions': ('subscribables', 'subscriptions'),
+    'POST /users/{id}/notification_subscriptions/unsubscribe': ('subscribables', None),
+    'GET /users/{id}/sessions': 'user_sessions',
+    'GET /users/{id}/sessions/{type}/{session_id}': 'user_session',
+    'GET /users/me': 'user',
+}
+
+###################################
+### API ENDPOINT CLASSIFICATION ###
+###################################
+
+def get_wrapper_name(base_url, url, method):
+    # TODO: Implement this function. It should return a 2-tuple:
+    #
+    # 1. Identify the endpoint to look up in ENDPOINT_RESOURCE_ENTITY_WRAPPERS
+    # 2. If it's disabled (None), print a warning and return (None, None)
+    # 3. If it's a string, return a 2-tuple with both elements equal the string
+    # 4. If it's a tuple, return it as-is
+    # 5. If it's not found, assume classic conventions and generate the tuple.
+    url_pattern = identify_url(base_url, url)
+
+def identify_url(base_url, url):
+    global ENDPOINT_PATTERNS
+    full_url = normalize_url(base_url, url)
+    # Starting with / after hostname up until the parameters:
+    url_path = full_url.replace(base_url.rstrip('/'), '').split('?')[0]
+    n_nodes = url_path.count('/')
+    # First winnow the list down to paths with the same number of nodes:
+    patterns = list(filter(
+        lambda p: p.count('/') == n_nodes,
+        ENDPOINT_PATTERNS
+    ))
+    # Match against individual nodes:
+    for i, node in enumerate(url_path.split('/')[1:]):
+        j = i+1 # We're skipping index zero because everything starts with "/"
+        patterns = list(filter(
+            lambda p: p.split('/')[j] == node or is_path_param(p.split('/')[j]),
+            patterns
+        ))
+    if len(patterns) == 0:
+        raise URLError(f"URL {url} does not match any endpoint URL pattern "
+            "that is supported by this client.")
+    elif len(patterns) > 1:
+        raise Exception(f"Ambiguous URL {url} matches more than one URL pattern"
+            ": "+', '.join(patterns)+'; this is likely a bug in pdpyras.')
+    else:
+        return patterns[0]
+
+def is_path_param(path_node):
+    return path_node.startswith('{') and path_node.endswith('}')
+
+def normalize_url(base_url, url):
+    """
+    Compose the full API endpoint URL
+
+    The ``url`` argument may be a path relative to the base URL or a full URL.
+    If it is a complete URL but not within the base URL, a ValueError is raised.
+
+    :param url: The URL to normalize
+    :param baseurl: The base API URL, excluding any trailing slash, i.e.
+        "https://api.pagerduty.com"
+    :type url: string
+    :type baseurl: string
+    :returns: The full API endpoint URL
+    :rtype: str
+    """
+    if url.startswith(base_url):
+        return url
+    elif not url.startswith('http://') or url.startswith('https://'):
+        return base_url.rstrip('/') + "/" + url.lstrip('/')
+    else:
+        raise ValueError(
+            f"URL {url} does not start with API base URL {baseurl}"
+        )
+
+
 
 #########################
 ### UTILITY FUNCTIONS ###
@@ -479,10 +896,7 @@ class PDSession(requests.Session):
 
     def normalize_url(self, url):
         """Compose the URL whether it is a path or an already-complete URL"""
-        if url.startswith(self.url) or not self.url:
-            return url
-        else:
-            return self.url + "/" + url.lstrip('/')
+        return normalize_url(self.url, url)
 
     def postprocess(self, response):
         """
@@ -1153,11 +1567,20 @@ class APISession(PDSession):
         :rtype: dict
         """
         # Validate that it's an index URL being requested:
+        # TODO: change this logic to a basic "is_index" (supporting pagination)
+        # function that returns a boolean. Members of the API map (which are the
+        # new APIs that do not follow the same entity wrapping and URL structure
+        # conventions as every API introduced before 2019) should also have a
+        # way of storing/representing this information.
         path_nodes = tokenize_url_path(path, baseurl=self.url)
         if not path_nodes[-1] == '{index}':
             raise ValueError("Invalid index url/path: "+path[:99])
         # Determine the resource name:
+        # TODO: a more generic way of getting this information, i.e.
+        # first checking for the presence of the URL in a map that stores
+        # per-endpoint information
         r_name = path_nodes[-2]
+
         # Parameters to send:
         data = {}
         if paginate:
@@ -1248,6 +1671,9 @@ class APISession(PDSession):
             Query parameters to include in the request.
         """
 
+        # TODO: support when the user tosses in a custom query string instead of
+        # using the params argument (hopefully requests knows how to append
+        # parameters)
         if attribute:
             assumed_attribute = attribute
         else:
@@ -1411,6 +1837,11 @@ class APISession(PDSession):
         return headers
 
     def profiler_key(self, method, path, suffix=None):
+    # TODO: deprecate this and profiling in general, or enable it only for
+    # supported endpoints.
+    # REASON: we're moving to explicit support for endpoints with respect to
+    # tokenizing / classifying / identifying URLs. Trying to profile based on
+    # that will break the client for all unpublished endpoints.
         """
         Generates a fixed-format key to classify a request, i.e. for profiling.
 
@@ -1535,6 +1966,12 @@ class APISession(PDSession):
     def trunc_token(self):
         """Truncated token for secure display/identification purposes."""
         return last_4(self.api_key)
+
+class URLError(Exception):
+    """
+    Exception class for unsupported URLs.
+    """
+    pass
 
 class PDClientError(Exception):
     """
