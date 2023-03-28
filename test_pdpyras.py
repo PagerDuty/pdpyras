@@ -824,9 +824,8 @@ class ChangeEventsSessionTest(SessionTest):
                 },
                 parent.request.call_args[1]['json'])
 
-class APIUtilsTest(unittest.TestCase):
-
-    def test_identify_url(self):
+class APIWrappedEntitiesTest(unittest.TestCase):
+    def test_canonical_path(self):
         identified_urls = [
             (
                 '/incidents/{id}',
@@ -847,7 +846,12 @@ class APIUtilsTest(unittest.TestCase):
         ]
         for (pattern, url) in identified_urls:
             base_url = 'https://api.pagerduty.com'
-            self.assertEqual(pattern, pdpyras.identify_url(base_url, url))
+            self.assertEqual(pattern, pdpyras.canonical_path(base_url, url))
+
+    def test_get_wrapper_name(self):
+            base_url = 'https://api.pagerduty.com'
+
+class APIUtilsTest(unittest.TestCase):
 
     def test_tokenize_url_path(self):
         cm_path = ('users', '{id}', 'contact_methods', '{index}')

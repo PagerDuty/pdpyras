@@ -26,12 +26,12 @@ def main():
         api_ref['paths'].items()
     )))
 
-    print('ENDPOINT_PATTERNS = [')
+    print('CANONICAL_PATHS = [')
     for path in public_endpoints:
         print(f"    '{path}',")
     print("]\n")
 
-    print('CURSOR_BASED_ITERATION_ENDPOINTS = [')
+    print('CURSOR_BASED_ITERATION_PATHS = [')
     cursor_param_ref = '../common/models/Parameters.yaml#/cursor_cursor'
     for (path, spec) in public_endpoints_dict.items():
         getspec = spec.get('get', {})

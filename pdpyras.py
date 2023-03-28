@@ -23,9 +23,8 @@ __version__ = '4.5.2'
 ITERATION_LIMIT = 1e4
 TIMEOUT = 60
 
-#####################################
-### API SPECIAL BEHAVIOR HANDLING ###
-#####################################
+# On resource wrapping and handling of special behaviors of certain APIs:
+#
 # Earlier APIs followed a simple set of patterns that allowed clients to make
 # assumptions about the resource envelope (a.k.a. entity wrapper) name. This
 # enabled effort-saving abstraction for wrapped entities that worked across all
@@ -39,36 +38,45 @@ TIMEOUT = 60
 # overrides creation endpoint in the Schedules API became known.
 #
 # Thus, additional abstraction has become necessary in order to be able to
-# correctly assign the entity wrapper name. The abstraction has to be based upon
-# some explicit schema information about particular APIs that can override the
-# otherwise global norms.
-#
-# The new assumption about entity wrapping, in a nutshell, on which this design
-# is based, and which the user must be aware of:
+# correctly assign the entity wrapper name using some explicit schema
+# information about particular APIs that can override the otherwise global
+# norms. The new assumptions about entity wrapping, in a nutshell, on which this
+# design is based, and which the implementer must be aware of:
 #
 # -----------------------------------------------------------------------------
+# 1:
 #   If the endpoint's response body or expected request body contains only one
-#   property, not counting endpoints supporting pagination, entity wrapping is
-#   enabled for the endpoint. If there are any other properties, and the
-#   endpoint does not support pagination, it is disabled via an entry in
-#   ENDPOINT_RESOURCE_ENTITY_WRAPPERS. Extra properties at the root level of the
-#   object in responses from paginataion-supporting endpoints, e.g.
-#   "additional_fields" for impacted business services, are discarded.
+#   property that contains all the content of the requested object, or if it is
+#   a request made to an endpoint that supports pagination, entity wrapping is
+#   enabled for the endpoint.
+#
+# 2:
+#   If there are any other properties, and the endpoint does not support
+#   pagination, entity wrapping is disabled, and using methods on them that
+#   assume entity wrapping will produce warning messages.
+#
+# 3: 
+#   For all endpoints that support pagination but whose responses contain any
+#   properties other than the wrapped list of response entities and the standard
+#   pagination properties (i.e. limit, offset, more, cursor), those properties
+#   are discarded from responses, and only the response entities are returned.
+#
+# 4:
+#   As with previous versions, entity wrapping can be bypassed for request
+#   bodies by passing a complete request object (i.e. a dictionary that when
+#   marshaled to JSON will represent the whole request body structure that is
+#   expected by the endpoint).
 # -----------------------------------------------------------------------------
 
-# NOTE: To generate ENDPOINT_PATTERNS and CURSOR_BASED_ITERATION_ENDPOINTS, use
+# NOTE: To generate CANONICAL_PATHS and CURSOR_BASED_ITERATION_PATHS, use
 # scripts/get_path_list/get_path_list.py
 
-# List of URL patterns
+# List of canonical API paths
 #
-# Supporting a new API that breaks entity wrapping name conventions will require
-# adding its patterns to this list as well as defining its resource entity
-# wrappers.
-#
-# To generate this and the following definition, I ran
-# scripts/get_path_list/get_path_list.py with its sole argument a path to
-# reference/v2/Index.yaml (in the private API doc repo)
-ENDPOINT_PATTERNS = [
+# Supporting a new API for entity wrapping will require adding its patterns to
+# this list. If it doesn't follow standard naming conventions, it will also
+# require one or more new entries in ENDPOINT_RESOURCE_ENTITY_WRAPPERS.
+CANONICAL_PATHS = [
     '/{entity_type}/{id}/change_tags',
     '/{entity_type}/{id}/tags',
     '/abilities',
@@ -243,7 +251,7 @@ ENDPOINT_PATTERNS = [
     '/webhook_subscriptions/{id}/ping',
 ]
 
-CURSOR_BASED_ITERATION_ENDPOINTS = [
+CURSOR_BASED_ITERATION_PATHS = [
     '/audit/records',
     '/automation_actions/actions',
     '/automation_actions/runners',
@@ -259,28 +267,35 @@ CURSOR_BASED_ITERATION_ENDPOINTS = [
 # Entity wrapper name configuration
 #
 # When trying to determine the entity wrapper name, this dictionary is checked
-# for keys that apply to the current endpoint. If nothing matches, the classic
-# entity wrapping conventions are assumed. THEREFORE, IF A NEW API IS ADDED AND
-# IT DOES NOT FOLLOW THE CLASSIC NAMING CONVENTIONS, IT IS DE-FACTO UNSUPPORTED
-# UNTIL IT IS ADDED TO THIS DICTIONARY. No entity wrapper name is 100% a-priori
-# knowable without calling up some static reference data about an endpoint, and
-# it has been this way ever since the aforementioned antipatterns started
-# becoming more commonplace.
+# for keys that apply to a given endpoint based on a matching logic.
+#
+# MODIFYING THIS GLOBAL CAN BREAK IMPLEMENTATIONS OF THE CLIENT. Be careful when
+# modifying the entity wrapper configuration for existing entries or adding
+# entries where the conventional patterns (where wrapping can be inferred)
+# apply; that should ot be necessary unless the endpoint responses themselves
+# change or the wrapping configuration is already broken. This is because it
+# directly affects how the API response data is (re)structured when it is
+# returned to or taken from the implementer's scope.
 #
 # Each of the keys should be a capitalized HTTP method (or * to match any
-# method), followed by a space, followed by one of the patterns in the above
-# list. Each value is either a tuple with request and response body wrappers (if
-# they differ), a string (if they are the same for both cases) or None (if no
-# wrapping is to take place and the data is to be marshaled or unmarshaled
-# as-is). Values in tuples can also be None to denote that either the request or
-# response is unwrapped.
+# method), followed by a space, followed by a canonical path.  Each value is
+# either a tuple with request and response body wrappers (if they differ), a
+# string (if they are the same for both cases) or None (if wrapping is disabled
+# and the data is to be marshaled or unmarshaled as-is). Values in tuples can
+# also be None to denote that either the request or response is unwrapped.
 #
-# An endpoint in this implementation is said to have entity wrapping (not-None)
-# if the response body has only one property containing response data apart from
-# properties used for pagination. If there are any others, entity wrapping is
-# disabled.
+# An endpoint, under the design logic of this client, is said to have entity
+# wrapping if the body (request or response) has only one property containing
+# the content requested or transmitted, apart from properties used for
+# pagination. If there are any secondary content-bearing properties (other than
+# those used for pagination), entity wrapping should be disabled to avoid
+# discarding those properties from responses or preventing the use of those
+# properties in request bodies.
 ENDPOINT_RESOURCE_ENTITY_WRAPPERS = {
     # Analytics
+    #
+    # This is a REST API in name only. There's no rhyme or reason to how the
+    # responses are structured, only what is documented in the API reference:
     '* /analytics/metrics/incidents/all': None,
     '* /analytics/metrics/incidents/services': None,
     '* /analytics/metrics/incidents/teams': None,
@@ -378,48 +393,139 @@ ENDPOINT_RESOURCE_ENTITY_WRAPPERS = {
     'GET /users/me': 'user',
 }
 
-###################################
-### API ENDPOINT CLASSIFICATION ###
-###################################
+####################################
+### URL CLASSIFICATION FUNCTIONS ###
+####################################
 
-def get_wrapper_name(base_url, url, method):
-    # TODO: Implement this function. It should return a 2-tuple:
-    #
-    # 1. Identify the endpoint to look up in ENDPOINT_RESOURCE_ENTITY_WRAPPERS
-    # 2. If it's disabled (None), print a warning and return (None, None)
-    # 3. If it's a string, return a 2-tuple with both elements equal the string
-    # 4. If it's a tuple, return it as-is
-    # 5. If it's not found, assume classic conventions and generate the tuple.
-    url_pattern = identify_url(base_url, url)
+def canonical_path(base_url, url):
+    """
+    Returns the canonical REST API path corresponding to a URL.
 
-def identify_url(base_url, url):
-    global ENDPOINT_PATTERNS
+    :param base_url: The base URL of the API
+    :param url: A non-normalized URL (a path or full URL)
+    :rtype str:
+    """
+    global CANONICAL_PATHS
     full_url = normalize_url(base_url, url)
     # Starting with / after hostname up until the parameters:
     url_path = full_url.replace(base_url.rstrip('/'), '').split('?')[0]
-    n_nodes = url_path.count('/')
+    n_nodes = url_path.count('/')-1
     # First winnow the list down to paths with the same number of nodes:
     patterns = list(filter(
         lambda p: p.count('/') == n_nodes,
-        ENDPOINT_PATTERNS
+        CANONICAL_PATHS
     ))
-    # Match against individual nodes:
+    # Match against each nodes, skipping index zero because everything
+    # starts with "/" and using adjusted index "j":
     for i, node in enumerate(url_path.split('/')[1:]):
-        j = i+1 # We're skipping index zero because everything starts with "/"
+        j = i+1
         patterns = list(filter(
             lambda p: p.split('/')[j] == node or is_path_param(p.split('/')[j]),
             patterns
         ))
+        # Don't break early if len = 1, but require an exact match...
     if len(patterns) == 0:
-        raise URLError(f"URL {url} does not match any endpoint URL pattern "
-            "that is supported by this client.")
+        raise URLError(f"URL {url} does not match any canonical API path "
+            "supported by this client.")
     elif len(patterns) > 1:
-        raise Exception(f"Ambiguous URL {url} matches more than one URL pattern"
-            ": "+', '.join(patterns)+'; this is likely a bug in pdpyras.')
+        raise Exception(f"Ambiguous URL {url} matches more than one canonical "
+            "path pattern: "+', '.join(patterns)+'; this is likely a bug.')
     else:
         return patterns[0]
 
+def endpoint_matches(e, m, p):
+    """
+    Returns true if a method and path match an endpoint pattern
+
+    :param e: The endpoint pattern in the form ``METHOD PATH`` where ``METHOD``
+        is the HTTP method in uppercase or ``*`` to match all methods, and
+        ``PATH`` is a canonical API path.
+    :param m: The HTTP method
+    :param p: The canonical API path (i.e. as returned by `canonical_path`_)
+    :rtype: boolean
+    """
+    return (e.startswith(m.upper()) or e.startswith('*')) and e.endswith(p)
+
+def get_entity_wrapping(path, method):
+    """
+    Obtains entity wrapping information for a given endpoint (path and method)
+
+    :param path: A canonical API path i.e. as returned by `canonical_path`_
+    :param method: The HTTP method being used on the path
+    :rtype: tuple
+    """
+    global ENDPOINT_RESOURCE_ENTITY_WRAPPERS
+    endpoint = "%s %s"%(method.upper(), path)
+    match = list(filter(
+        lambda k: endpoint_matches(k, method, path),
+        ENDPOINT_RESOURCE_ENTITY_WRAPPERS.keys()
+    ))
+    if len(match) > 1:
+        matches_str = ', '.join(match)
+        raise Exception(f"Request {endpoint} matches more than one endpoint "
+            f"pattern: {matches_str}; this is likely a bug.")
+    elif len(match) == 0:
+        # Derive the wrapper name from the URL:
+        wrapper_name = infer_entity_wrapping_from_endpoint(path, method)
+        return (wrapper_name, wrapper_name)
+    else:
+        # Look up entity wrapping info from the global dictionary:
+        wrapping = ENDPOINT_RESOURCE_ENTITY_WRAPPERS[match[0]]
+        if type(wrapping) is tuple and len(wrapping) == 2:
+            # The first element is the request body wrapper and the second is
+            # the response body wrapper (for when they differ). If a value is
+            # None, that indicates that the request or response should be
+            # marshaled and un-marshaled as-is without modifications.
+            return wrapping
+        elif type(wrapping) is str:
+            # Both request and response have the same wrapper
+            return (wrapping, wrapping)
+        elif wrapping is None:
+            # Entity wrapping is disabled and objects should be marshaled and
+            # unmarshaled as-is without modifications for both request and
+            # response. Downstream functions should perform error handling based
+            # on this value in order to provide context-specific warnings for
+            # explicit disablement.
+            return (None, None)
+        else:
+            # This should never happen provided that the wrapping configuration
+            # dictionary defined above is valid:
+            strval = str(wrapping)
+            raise Exception('Invalid entity wrapping configuration for '
+                f"{endpoint}: {strval}; this likely is a bug.")
+
+def infer_entity_wrapping_from_endpoint(path, method):
+    """
+    Infer the entity wrapper name from the endpoint using orthodox patterns.
+
+    This is the codification of patterns that were once nearly universal in the
+    v2 REST API, where the wrapper name is predictable from the path and method.
+
+    :param path: A canonical API path
+    :param method: The HTTP method being used on the path
+    :rtype str:
+    """
+    m = method.upper()
+    path_nodes = path.split('/')
+    if is_path_param(path_nodes[-1]):
+        # Singular if it's an individual resource's URL for read/update/delete
+        # (named similarly to the second to last node, as the last is its ID):
+        return singular_name(path_nodes[-2])
+    elif m == 'POST':
+        # Singular if creating a new resource by POSTing to the index containing
+        # similar resources (named simiarly to the last path node):
+        return singular_name(path_nodes[-1])
+    else:
+        # Plural if listing via GET to the index endpoint, or doing a multi-put:
+        return path_nodes[-1]
+
 def is_path_param(path_node):
+    """
+    Returns true if a given node in a canonical path represents a parameter.
+
+    :param path_node: The node (value between slashes) in the path
+    :rtype bool:
+    """
     return path_node.startswith('{') and path_node.endswith('}')
 
 def normalize_url(base_url, url):
@@ -427,7 +533,6 @@ def normalize_url(base_url, url):
     Compose the full API endpoint URL
 
     The ``url`` argument may be a path relative to the base URL or a full URL.
-    If it is a complete URL but not within the base URL, a ValueError is raised.
 
     :param url: The URL to normalize
     :param baseurl: The base API URL, excluding any trailing slash, i.e.
@@ -442,15 +547,13 @@ def normalize_url(base_url, url):
     elif not url.startswith('http://') or url.startswith('https://'):
         return base_url.rstrip('/') + "/" + url.lstrip('/')
     else:
-        raise ValueError(
-            f"URL {url} does not start with API base URL {baseurl}"
+        raise URLError(
+            f"URL {url} does not start with the API base URL {baseurl}"
         )
 
-
-
-#########################
-### UTILITY FUNCTIONS ###
-#########################
+###########################
+### FUNCTION DECORATORS ###
+###########################
 
 def auto_json(method):
     """
@@ -460,51 +563,6 @@ def auto_json(method):
         response = raise_on_error(method(self, path, **kw))
         return try_decoding(response)
     return call
-
-def last_4(secret):
-    """Returns an abbreviation of the input"""
-    return '*'+str(secret)[-4:]
-
-def object_type(r_name):
-    """
-    Derives an object type (i.e. ``user``) from a resource name (i.e. ``users``)
-
-    :param r_name:
-        Resource name, i.e. would be ``users`` for the resource index URL
-        ``https://api.pagerduty.com/users``
-    :returns: The object type name; usually the ``type`` property of an instance
-        of the given resource.
-    :rtype: str
-    """
-    if r_name.endswith('ies'):
-        # Because English
-        return r_name[:-3]+'y'
-    else:
-        return r_name.rstrip('s')
-
-def raise_on_error(r):
-    """
-    Raise an exception if a HTTP error response has error status.
-
-    :param r: Response object corresponding to the response received.
-    :type r: `requests.Response`_
-    :returns: The response object, if its status was success
-    :rtype: `requests.Response`_
-    """
-    received_http_response = bool(r.status_code)
-    if received_http_response:
-        if r.ok:
-            return r
-        else:
-            raise PDHTTPError("%s %s: API responded with non-success status "
-                "(%d): %s" % (
-                    r.request.method.upper(),
-                    r.request.url.replace('https://api.pagerduty.com', ''),
-                    r.status_code,
-                    r.text[:99]
-                ), r)
-    else:
-        raise PDClientError("Network or unknown error: "+str(r))
 
 def resource_envelope(method):
     """
@@ -542,12 +600,14 @@ def resource_envelope(method):
     global VALID_MULTI_UPDATE_PATHS
     http_method = method.__name__.lstrip('r')
     def call(self, path, **kw):
+        # TODO: Refactor envelope name getting into get_envelope_name which does
+        # generic stuff for conformal and non-conformal endpoints
         pass_kw = deepcopy(kw) # Make a copy for modification
         nodes = tokenize_url_path(path, baseurl=self.url)
         is_index = nodes[-1] == '{index}'
         resource = nodes[-2]
         multi_put = http_method == 'put' and nodes in VALID_MULTI_UPDATE_PATHS
-        envelope_name_single = object_type(resource) # Usually the "type"
+        envelope_name_single = singular_name(resource) # Usually the "type"
         if is_index and http_method=='get' or multi_put:
             # Plural resource name, for index action (GET /<resource>), or for
             # multi-update (PUT /<resource>). In both cases, the response
@@ -576,6 +636,64 @@ def resource_envelope(method):
         return response_obj[envelope_name]
     return call
 
+def resource_path(method):
+    """
+    API call decorator that allows passing a resource dict as the path/URL
+
+    Most resources returned by the API will contain a ``self`` attribute that is
+    the URL of the resource itself.
+
+    Using this decorator allows the implementer to pass either a URL/path or
+    such a resource dictionary as the ``path`` argument, thus eliminating the
+    need to re-construct the resource URL or hold it in a temporary variable.
+    """
+    def call(self, resource, **kw):
+        url = resource
+        if type(resource) is dict and 'self' in resource: # passing an object
+            url = resource['self']
+        if type(url) is not str:
+            name = method.__name__
+            msg = f"Value passed to {name} is not a str or dict with key 'self'"
+            raise URLError(msg)
+        return method(self, url, **kw)
+    return call
+
+########################
+### HELPER FUNCTIONS ###
+########################
+
+def last_4(secret):
+    """Returns an abbreviation of the input"""
+    return '*'+str(secret)[-4:]
+
+def path_nodes(url, base_url):
+    path_and_query = normalize_url(url, base_url).replace(base_url, '')
+    return path_and_query.split('?')[0].split('/')
+
+def raise_on_error(r):
+    """
+    Raise an exception if a HTTP error response has error status.
+
+    :param r: Response object corresponding to the response received.
+    :type r: `requests.Response`_
+    :returns: The response object, if its status was success
+    :rtype: `requests.Response`_
+    """
+    received_http_response = bool(r.status_code)
+    if received_http_response:
+        if r.ok:
+            return r
+        else:
+            raise PDHTTPError("%s %s: API responded with non-success status "
+                "(%d): %s" % (
+                    r.request.method.upper(),
+                    r.request.url.replace('https://api.pagerduty.com', ''),
+                    r.status_code,
+                    r.text[:99]
+                ), r)
+    else:
+        raise PDClientError("Network or unknown error: "+str(r))
+
 def resource_name(obj_type):
     """
     Transforms an object type into a resource name
@@ -595,27 +713,29 @@ def resource_name(obj_type):
     else:
         return obj_type+'s'
 
-def resource_path(method):
+def singular_name(r_name):
     """
-    API call decorator that allows passing a resource dict as the path/URL
+    Derives an object type (i.e. ``user``) from a resource name (i.e. ``users``)
 
-    Most resources returned by the API will contain a ``self`` attribute that is
-    the URL of the resource itself.
-
-    Using this decorator allows the implementer to pass either a URL/path or
-    such a resource dictionary as the ``path`` argument, thus eliminating the
-    need to re-construct the resource URL or hold it in a temporary variable.
+    :param r_name:
+        Resource name, i.e. would be ``users`` for the resource index URL
+        ``https://api.pagerduty.com/users``
+    :returns: The object type name; usually the ``type`` property of an instance
+        of the given resource.
+    :rtype: str
     """
-    def call(self, resource, **kw):
-        url = resource
-        if type(resource) is dict and 'self' in resource: # passing an object
-            url = resource['self']
-        return method(self, url, **kw)
-    return call
+    if r_name.endswith('ies'):
+        # Because English
+        return r_name[:-3]+'y'
+    else:
+        return r_name.rstrip('s')
 
 def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
     """
-    Classifies a URL according to some global patterns in the API.
+    Classifies a URL according to some common patterns in the API.
+
+    These patterns are very common but not universal, and generally, newer APIs
+    do not follow them.
 
     If the URL is to access a specific individual resource by ID, the node type
     will be identified as ``{id}``, whereas if it is an index, it will be
