@@ -47,7 +47,7 @@ TIMEOUT = 60
 # 1:
 #   If the endpoint's response body or expected request body contains only one
 #   property that contains all the content of the requested object, or if it is
-#   a request made to an endpoint that supports pagination, entity wrapping is
+#   a request made to an endpoint that supports pagination*, entity wrapping is
 #   enabled for the endpoint.
 #
 # 2:
@@ -66,6 +66,10 @@ TIMEOUT = 60
 #   bodies by passing a complete request object (i.e. a dictionary that when
 #   marshaled to JSON will represent the whole request body structure that is
 #   expected by the endpoint).
+#
+# * An endpoint is said to support pagination if it takes the query parameters
+# ``limit`` and either ``offset`` (classic pagination) or ``cursor``
+# (cursor-based pagination).
 # -----------------------------------------------------------------------------
 
 # NOTE: To generate CANONICAL_PATHS and CURSOR_BASED_ITERATION_PATHS, use
@@ -75,7 +79,7 @@ TIMEOUT = 60
 #
 # Supporting a new API for entity wrapping will require adding its patterns to
 # this list. If it doesn't follow standard naming conventions, it will also
-# require one or more new entries in ENDPOINT_RESOURCE_ENTITY_WRAPPERS.
+# require one or more new entries in ENTITY_WRAPPER_CONFIG.
 CANONICAL_PATHS = [
     '/{entity_type}/{id}/change_tags',
     '/{entity_type}/{id}/tags',
@@ -291,11 +295,8 @@ CURSOR_BASED_ITERATION_PATHS = [
 # those used for pagination), entity wrapping should be disabled to avoid
 # discarding those properties from responses or preventing the use of those
 # properties in request bodies.
-ENDPOINT_RESOURCE_ENTITY_WRAPPERS = {
+ENTITY_WRAPPER_CONFIG = {
     # Analytics
-    #
-    # This is a REST API in name only. There's no rhyme or reason to how the
-    # responses are structured, only what is documented in the API reference:
     '* /analytics/metrics/incidents/all': None,
     '* /analytics/metrics/incidents/services': None,
     '* /analytics/metrics/incidents/teams': None,
@@ -314,7 +315,6 @@ ENDPOINT_RESOURCE_ENTITY_WRAPPERS = {
     '* /business_services/{id}/account_subscription': None,
     'POST /business_services/{id}/subscribers': ('subscribers', 'subscriptions'),
     'POST /business_services/{id}/unsubscribe': ('subscribers', None),
-    # Early access / no clear pattern with respec to entity wrapping:
     '* /business_services/priority_thresholds': None,
     'GET /business_services/impacts': 'services',
     'GET /business_services/{id}/supporting_services/impacts': 'services',
@@ -337,7 +337,6 @@ ENDPOINT_RESOURCE_ENTITY_WRAPPERS = {
     # Incidents
     'PUT /incidents': 'incidents', # Multi-update
     'PUT /incidents/{id}/merge': ('source_incidents', 'incident'),
-    'PUT /incidents/{id}/alerts': 'alerts',
     'POST /incidents/{id}/responder_requests': (None, 'responder_request'),
     'POST /incidents/{id}/snooze': (None, 'incident'),
     'POST /incidents/{id}/status_updates': (None, 'status_update'),
@@ -412,7 +411,7 @@ def canonical_path(base_url, url):
     n_nodes = url_path.count('/')-1
     # First winnow the list down to paths with the same number of nodes:
     patterns = list(filter(
-        lambda p: p.count('/') == n_nodes,
+        lambda p: p.count('/')-1 == n_nodes,
         CANONICAL_PATHS
     ))
     # Match against each nodes, skipping index zero because everything
@@ -433,7 +432,7 @@ def canonical_path(base_url, url):
     else:
         return patterns[0]
 
-def endpoint_matches(e, m, p):
+def endpoint_matches(endpoint_pattern, method, path):
     """
     Returns true if a method and path match an endpoint pattern
 
@@ -444,65 +443,71 @@ def endpoint_matches(e, m, p):
     :param p: The canonical API path (i.e. as returned by `canonical_path`_)
     :rtype: boolean
     """
-    return (e.startswith(m.upper()) or e.startswith('*')) and e.endswith(p)
+    return (
+        endpoint_pattern.startswith(method.upper()) \
+            or endpoint_pattern.startswith('*')
+    ) and endpoint_pattern.endswith(f" {path}")
 
-def get_entity_wrapping(path, method):
+def entity_wrappers(method, path):
     """
     Obtains entity wrapping information for a given endpoint (path and method)
 
+    Returns a 2-tuple. The first element is the wrapper name that should be used
+    for the request body, and the second is the wrapper name to be used for the
+    response body. For either elements, if ``None`` is returned, that signals to
+    disable wrapping and pass the user-supplied request body or API response
+    body object unmodified.
+
+    :param method: The HTTP method
     :param path: A canonical API path i.e. as returned by `canonical_path`_
-    :param method: The HTTP method being used on the path
     :rtype: tuple
     """
-    global ENDPOINT_RESOURCE_ENTITY_WRAPPERS
-    endpoint = "%s %s"%(method.upper(), path)
+    global ENTITY_WRAPPER_CONFIG
+    m = method.upper()
+    endpoint = "%s %s"%(m, path)
     match = list(filter(
-        lambda k: endpoint_matches(k, method, path),
-        ENDPOINT_RESOURCE_ENTITY_WRAPPERS.keys()
+        lambda k: endpoint_matches(k, m, path),
+        ENTITY_WRAPPER_CONFIG.keys()
     ))
-    if len(match) > 1:
-        matches_str = ', '.join(match)
-        raise Exception(f"Request {endpoint} matches more than one endpoint "
-            f"pattern: {matches_str}; this is likely a bug.")
+
+    if len(match) == 1:
+        # Look up entity wrapping info from the global dictionary and validate:
+        wrapper = ENTITY_WRAPPER_CONFIG[match[0]]
+        invalid_config_error = 'Invalid entity wrapping configuration for ' \
+                    f"{endpoint}: {wrapper}; this is most likely a bug."
+        if wrapper is not None and type(wrapper) not in (tuple, str):
+            raise Exception(invalid_config_error)
+        elif wrapper is None or type(wrapper) is str:
+            # Both request and response have the same wrapping at this endpoint.
+            return (wrapper, wrapper)
+        elif type(wrapper) is tuple and len(wrapper) == 2:
+            # Endpoint uses different wrapping for request and response bodies.
+            #
+            # Both elements must be either str or None. The first element is the
+            # request body wrapper and the second is the response body wrapper.
+            # If a value is None, that indicates that the request or response
+            # value should be encoded and decoded as-is without modifications.
+            if False in [w is None or type(w) is str for w in wrapper]:
+                raise Exception(invalid_config_error)
+            return wrapper
     elif len(match) == 0:
         # Derive the wrapper name from the URL:
-        wrapper_name = infer_entity_wrapping_from_endpoint(path, method)
-        return (wrapper_name, wrapper_name)
+        wrapper = infer_entity_wrapper_from_endpoint(method, path)
+        return (wrapper, wrapper)
     else:
-        # Look up entity wrapping info from the global dictionary:
-        wrapping = ENDPOINT_RESOURCE_ENTITY_WRAPPERS[match[0]]
-        if type(wrapping) is tuple and len(wrapping) == 2:
-            # The first element is the request body wrapper and the second is
-            # the response body wrapper (for when they differ). If a value is
-            # None, that indicates that the request or response should be
-            # marshaled and un-marshaled as-is without modifications.
-            return wrapping
-        elif type(wrapping) is str:
-            # Both request and response have the same wrapper
-            return (wrapping, wrapping)
-        elif wrapping is None:
-            # Entity wrapping is disabled and objects should be marshaled and
-            # unmarshaled as-is without modifications for both request and
-            # response. Downstream functions should perform error handling based
-            # on this value in order to provide context-specific warnings for
-            # explicit disablement.
-            return (None, None)
-        else:
-            # This should never happen provided that the wrapping configuration
-            # dictionary defined above is valid:
-            strval = str(wrapping)
-            raise Exception('Invalid entity wrapping configuration for '
-                f"{endpoint}: {strval}; this likely is a bug.")
+        matches_str = ', '.join(match)
+        raise Exception(f"{endpoint} matches more than one pattern:" + \
+            f"{matches_str}; this is most likely a bug.")
 
-def infer_entity_wrapping_from_endpoint(path, method):
+def infer_entity_wrapper_from_endpoint(method, path):
     """
     Infer the entity wrapper name from the endpoint using orthodox patterns.
 
     This is the codification of patterns that were once nearly universal in the
     v2 REST API, where the wrapper name is predictable from the path and method.
 
-    :param path: A canonical API path
-    :param method: The HTTP method being used on the path
+    :param method: The HTTP method
+    :param path: A canonical API path i.e. as returned by `canonical_path`_
     :rtype str:
     """
     m = method.upper()
@@ -551,16 +556,17 @@ def normalize_url(base_url, url):
             f"URL {url} does not start with the API base URL {baseurl}"
         )
 
+
 ###########################
 ### FUNCTION DECORATORS ###
 ###########################
 
 def auto_json(method):
     """
-    Function decorator that makes methods return the full response JSON
+    Makes methods return the full response body object after decoding from JSON.
     """
-    def call(self, path, **kw):
-        response = raise_on_error(method(self, path, **kw))
+    def call(self, url, **kw):
+        response = raise_on_error(method(self, url, **kw))
         return try_decoding(response)
     return call
 
@@ -568,73 +574,12 @@ def resource_envelope(method):
     """
     Convenience and consistency decorator for HTTP verb functions.
 
-    This makes the request methods ``GET``, ``POST`` and ``PUT`` always return a
-    dictionary object representing the resource at the envelope property (i.e.
-    the ``{...}`` from ``{"escalation_policy":{...}}`` in a get/put request to
-    an escalation policy)  rather than a `requests.Response`_ object.
-
-    Methods using this decorator will raise a :class:`PDClientError` with its
-    ``response`` property being being the `requests.Response`_ object in the
-    case of any error (as of version 4.2 this is subclassed as
-    :class:`PDHTTPError`), so that the implementer can access it by catching the
-    exception, and thus design their own custom logic around different types of
-    error responses.
-
-    It allows creation of methods that can provide more succinct ways of making
-    API calls. In particular, the methods using this decorator don't require
-    checking for a success status, JSON-decoding the response body and then
-    pulling the essential data out of the envelope (i.e. for ``GET
-    /escalation_policies/{id}`` one would have to access the
-    ``escalation_policy`` property of the object decoded from the response body,
-    assuming nothing went wrong in the whole process).
-
-    These methods are :attr:`APISession.rget`, :attr:`APISession.rpost` and
-    :attr:`APISession.rput`.
-
-    :param method: Method being decorated. Must take one positional argument
-        after ``self`` that is the URL/path to the resource, and must return an
-        object of class `requests.Response`_, and be named after the HTTP method
-        but with "r" prepended.
-    :returns: A callable object; the reformed method
+    DEPRECATED. Use `wrapped_entities`_ instead.
     """
-    global VALID_MULTI_UPDATE_PATHS
-    http_method = method.__name__.lstrip('r')
-    def call(self, path, **kw):
-        # TODO: Refactor envelope name getting into get_envelope_name which does
-        # generic stuff for conformal and non-conformal endpoints
-        pass_kw = deepcopy(kw) # Make a copy for modification
-        nodes = tokenize_url_path(path, baseurl=self.url)
-        is_index = nodes[-1] == '{index}'
-        resource = nodes[-2]
-        multi_put = http_method == 'put' and nodes in VALID_MULTI_UPDATE_PATHS
-        envelope_name_single = singular_name(resource) # Usually the "type"
-        if is_index and http_method=='get' or multi_put:
-            # Plural resource name, for index action (GET /<resource>), or for
-            # multi-update (PUT /<resource>). In both cases, the response
-            # (former) or request (latter) body is {<resource>:[<objects>]}
-            envelope_name = resource
-        else:
-            # Individual resource create/read/update
-            # Body = {<singular-resource-type>: {<object>}}
-            envelope_name = envelope_name_single
-        # Validate the abbreviated (or full) request payload, and automatically
-        # fill the gap for the implementer if some assumptions hold true:
-        if http_method in ('post', 'put') and 'json' in pass_kw and \
-                envelope_name not in pass_kw['json']:
-            pass_kw['json'] = {envelope_name: pass_kw['json']}
+    warnings.warn("Wrapper resource_envelope is deprecated. Use "
+        "wrapped_entities instead.")
+    return wrapped_entities(method)
 
-        r = raise_on_error(method(self, path, **pass_kw))
-        # Now let's try to unpack...
-        response_obj = try_decoding(r)
-        # Get the wrapped entity
-        if envelope_name not in response_obj:
-            raise PDClientError("Cannot extract object; expected top-level "
-                "property \"%s\", but could not find it in the response "
-                "schema. Response body=%s"%(envelope_name, r.text[:99]),
-                response=r)
-            return None
-        return response_obj[envelope_name]
-    return call
 
 def resource_path(method):
     """
@@ -651,12 +596,82 @@ def resource_path(method):
         url = resource
         if type(resource) is dict and 'self' in resource: # passing an object
             url = resource['self']
-        if type(url) is not str:
+        elif type(resource) is not str:
             name = method.__name__
-            msg = f"Value passed to {name} is not a str or dict with key 'self'"
-            raise URLError(msg)
+            raise URLError(f"Value passed to {name} is not a str or dict with "
+                "key 'self'")
         return method(self, url, **kw)
     return call
+
+def wrapped_entities(method):
+    """
+    Automatically wrap request entities and unwrap response entities.
+
+    Used for methods :attr:`APISession.rget`, :attr:`APISession.rpost` and
+    :attr:`APISession.rput`. It makes them always return an object representing
+    the resource entity in the response (whether wrapped in a root-level
+    property or not) rather than the full response body. When making a post /
+    put request, and passing the ``json`` keyword argument to specify the
+    content to be JSON-encoded as the body, that keyword argument can be either
+    the to-be-wrapped content or the full body including the entity wrapper, and
+    the ``json`` keyword argument will be normalized to include the wrapper.
+
+    Methods using this decorator will raise a :class:`PDHTTPError` with its
+    ``response`` property being being the `requests.Response`_ object in the
+    case of any error (as of version 4.2 this is subclassed as
+    :class:`PDHTTPError`), so that the implementer can access it by catching the
+    exception, and thus design their own custom logic around different types of
+    error responses.
+
+    :param method: Method being decorated. Must take one positional argument
+        after ``self`` that is the URL/path to the resource, followed by keyword
+        any number of keyword arguments, and must return an object of class
+        `requests.Response`_, and be named after the HTTP method but with "r"
+        prepended.
+    :returns: A callable object; the reformed method
+    """
+    http_method = method.__name__.lstrip('r')
+    def call(self, url, **kw):
+        pass_kw = deepcopy(kw) # Make a copy for modification
+        path = canonical_path(self.url, url)
+        endpoint = "%s %s"%(http_method.upper(), path)
+        req_w, res_w = entity_wrappers(http_method, path)
+        # Validate the abbreviated (or full) request payload, and automatically
+        # wrap the request entity for the implementer if necessary:
+        if req_w is not None and http_method in ('post', 'put') \
+                and 'json' in pass_kw and req_w not in pass_kw['json']:
+            pass_kw['json'] = {req_w: pass_kw['json']}
+
+        # Make the request:
+        r = raise_on_error(method(self, url, **pass_kw))
+
+        # Unpack the response:
+        body = try_decoding(r)
+        if res_w is not None:
+            # There is a wrapped entity to unpack:
+            bod_type = type(body)
+            error_msg = f"Expected JSON response body for {endpoint} after " \
+                f"decoding to be of type dict and have a key \"{res_w}\", " \
+                'but %s.'
+            if bod_type is dict:
+                if res_w in body:
+                    return body[res_w]
+                else:
+                    raise PDHTTPError(
+                        error_msg%('its keys are: ' + \
+                            ', '.join(body.keys()),),
+                        response=r
+                    )
+            else:
+                raise PDHTTPError(
+                    error_msg%(f"its type is {bod_type}.",),
+                    response=r
+                )
+        else:
+            # Wrapping is disabled for responses:
+            return body
+    return call
+
 
 ########################
 ### HELPER FUNCTIONS ###
@@ -694,7 +709,7 @@ def raise_on_error(r):
     else:
         raise PDClientError("Network or unknown error: "+str(r))
 
-def resource_name(obj_type):
+def plural_name(obj_type):
     """
     Transforms an object type into a resource name
 
@@ -2003,7 +2018,7 @@ class APISession(PDSession):
         raise_on_error(self.delete(resource, **kw))
 
     @resource_path
-    @resource_envelope
+    @wrapped_entities
     def rget(self, resource, **kw):
         """
         Retrieve a resource and return the wrapped entity in the response
@@ -2021,7 +2036,7 @@ class APISession(PDSession):
         """
         return self.get(resource, **kw)
 
-    @resource_envelope
+    @wrapped_entities
     def rpost(self, path, **kw):
         """
         Create a resource.
@@ -2042,7 +2057,7 @@ class APISession(PDSession):
         return self.post(path, **kw)
 
     @resource_path
-    @resource_envelope
+    @wrapped_entities
     def rput(self, resource, **kw):
         """
         Update an individual resource, returning the wrapped entity as a dict

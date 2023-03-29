@@ -595,7 +595,7 @@ class APISessionTest(SessionTest):
                 r = sess.get('/users/P123456')
                 self.assertEqual(404, r.status_code)
 
-    def test_resource_envelope(self):
+    def test_wrapped_entities(self):
         do_http_things = MagicMock()
         response = MagicMock()
         do_http_things.return_value = response
@@ -627,9 +627,7 @@ class APISessionTest(SessionTest):
             pdpyras.resource_envelope(do_http_things), my_self, '/services')
         reset_mocks()
 
-        # OK response, but ruh-roh we hit an anti-pattern (probably won't exist
-        # except maybe in beta/reverse-engineered endpoints; this design is thus
-        # anticipatory rather than practical). Raise exception.
+        # OK response, but the response isn't what we expected: exception.
         do_http_things.reset_mock()
         response.reset_mock()
         response.json = MagicMock()
@@ -637,7 +635,7 @@ class APISessionTest(SessionTest):
         do_http_things.return_value = response
         do_http_things.__name__ = 'rput' # just for instance
         response.json.return_value = {'nope': 'nopenope'}
-        self.assertRaises(pdpyras.PDClientError,
+        self.assertRaises(pdpyras.PDHTTPError,
             pdpyras.resource_envelope(do_http_things), my_self, '/services')
         reset_mocks()
 
@@ -848,8 +846,34 @@ class APIWrappedEntitiesTest(unittest.TestCase):
             base_url = 'https://api.pagerduty.com'
             self.assertEqual(pattern, pdpyras.canonical_path(base_url, url))
 
-    def test_get_wrapper_name(self):
-            base_url = 'https://api.pagerduty.com'
+    def test_entity_wrappers(self):
+        io_expected = [
+            # Conventional endpoint: singular read
+            (('get', '/services/{id}'), ('service', 'service')),
+            # Conventional endpoint: singular update
+            (('put', '/services/{id}'), ('service', 'service')),
+            # Conventional endpoint: create new
+            (('pOsT', '/services'), ('service', 'service')),
+            # Conventional endpoint: multi-update
+            (('PUT', '/incidents/{id}/alerts'), ('alerts', 'alerts')),
+            # Conventional endpoint: list resources
+            (('get', '/incidents/{id}/alerts'), ('alerts', 'alerts')),
+            # Expanded endpoint support: different request/response wrappers
+            (('put', '/incidents/{id}/merge'), ('source_incidents', 'incident')),
+            # Expanded support: same wrapper for req/res and all methods
+            (
+                ('post', '/event_orchestrations'),
+                ('orchestrations', 'orchestrations')
+            ),
+            (
+                ('get', '/event_orchestrations'),
+                ('orchestrations', 'orchestrations')
+            ),
+            # Disabled
+            (('post', '/analytics/raw/incidents'), (None, None)),
+        ]
+        for ((method, path), rval) in io_expected:
+            self.assertEqual(rval, pdpyras.entity_wrappers(method, path))
 
 class APIUtilsTest(unittest.TestCase):
 
@@ -878,13 +902,13 @@ class APIUtilsTest(unittest.TestCase):
         for r_name in ('escalation_policies', 'services', 'log_entries'):
             self.assertEqual(
                 r_name,
-                pdpyras.resource_name(pdpyras.object_type(r_name))
+                pdpyras.plural_name(pdpyras.singular_name(r_name))
             )
         # reverse
         for o_name in ('escalation_policy', 'service', 'log_entry'):
             self.assertEqual(
                 o_name,
-                pdpyras.object_type(pdpyras.resource_name(o_name))
+                pdpyras.singular_name(pdpyras.plural_name(o_name))
             )
 
 def main():
