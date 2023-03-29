@@ -424,11 +424,12 @@ def canonical_path(base_url, url):
         ))
         # Don't break early if len = 1, but require an exact match...
     if len(patterns) == 0:
-        raise URLError(f"URL {url} does not match any canonical API path "
-            "supported by this client.")
+        raise URLError(f"URL {url} does not match any canonical API path " \
+            'supported by this client.')
     elif len(patterns) > 1:
-        raise Exception(f"Ambiguous URL {url} matches more than one canonical "
-            "path pattern: "+', '.join(patterns)+'; this is likely a bug.')
+        raise Exception(f"Ambiguous URL {url} matches more than one " \
+            "canonical path pattern: "+', '.join(patterns)+'; this is likely ' \
+            'a bug.')
     else:
         return patterns[0]
 
