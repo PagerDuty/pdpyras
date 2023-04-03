@@ -23,6 +23,7 @@ __version__ = '4.5.2'
 #######################
 ITERATION_LIMIT = 1e4
 TIMEOUT = 60
+TEXT_LEN_LIMIT = 100
 
 # On resource wrapping and handling of special behaviors of certain APIs:
 #
@@ -584,7 +585,7 @@ def unwrap(body, wrapper, endpoint=None, response=None):
             if wrapper in body:
                 return body[wrapper]
             else:
-                keys = ', '.join(body.keys())[:99]
+                keys = truncate_text(', '.join(body.keys()))
                 raise PDServerError(
                     error_msg%(f"its keys are: {keys}",),
                     response
@@ -737,7 +738,7 @@ def http_error_message(r: requests.Response, err=None, context=None):
         return (
             f"{endpoint}: API responded with {err_type} error, status (%d)" \
             f"{context_msg}: %s"
-        ) % (en, response.status_code, response.text[:99])
+        ) % (en, response.status_code, truncate_text(response.text))
     elif not received_http_response:
         if err is None:
             err_type = "unknown"
@@ -809,6 +810,12 @@ def successful_response(r: requests.Response, context=None): \
         else:
             raise PDHTTPError(http_error_message(r, context=context), r)
 
+def truncate_text(text: str):
+    if len(text) >= TEXT_LEN_LIMIT:
+        return text[:TEXT_LEN_LIMIT-1]+'...'
+    else:
+        return text
+
 def try_decoding(r: requests.Response):
     """
     JSON-decode a response body and raise :class:`PDClientError` if it fails.
@@ -819,7 +826,10 @@ def try_decoding(r: requests.Response):
     try:
         return r.json()
     except ValueError as e:
-        raise PDServerError("API responded with invalid JSON: "+r.text[:99], r)
+        raise PDServerError(
+            "API responded with invalid JSON: " + truncate_text(r.text),
+            r,
+        )
 
 ###############
 ### CLASSES ###
@@ -836,7 +846,7 @@ class PDSession(requests.Session):
       intervals, with attempt limits configurable through the :attr:`retry`
       attribute.
     - When making requests, headers specified ad-hoc in calls to HTTP verb
-      functions will not replace, but will be merged with, default headers.
+      functions will not replace, but will be merged into, default headers.
     - The request URL, if it doesn't already start with the REST API base URL,
       will be prepended with the default REST API base URL.
     - It will only perform requests with methods as given in the
@@ -1141,9 +1151,11 @@ class PDSession(requests.Session):
     @property
     def raise_if_http_error(self):
         """
-        (DEPRECATED) Raise an exception in iteration.
+        (DEPRECATED) Raise an exception in iteration if there is a HTTP error.
 
-        As of v5.0, this is :attr:`APISession.require_complete_results`
+        As of v5.0, the REST API client behavior concerning pagination that was
+        previously covered by this property is controlled via
+        :attr:`APISession.require_complete_results`
         """
         deprecation_warning('raise_if_http_error', 'require_complete_results')
         return self.require_complete_results
@@ -1563,7 +1575,7 @@ class APISession(PDSession):
                     self._api_key_access = None
                     self.log.error("Failed to obtain API key access level; "
                         "the API did not respond as expected.")
-                    self.log.debug("Body = %s", response.text[:99])
+                    self.log.debug("Body = %s", truncate_text(response.text))
             else:
                 self._api_key_access = 'user'
         return self._api_key_access
@@ -1866,9 +1878,8 @@ class APISession(PDSession):
             if self.require_complete_results:
                 successful_response(r)
             elif not r.ok:
-                warn(http_error_message(
-                    r, context=context+': incomplete results'
-                ))
+                warn(http_error_message(r, context=context) + \
+                    '; results may be incomplete')
                 return
 
             # Unpack and yield results
