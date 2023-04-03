@@ -591,7 +591,7 @@ def unwrap(body, wrapper, endpoint=None, response=None):
                     response
                 )
         else:
-            raise PDHTTPError(
+            raise PDServerError(
                 error_msg%(f"its type is {bod_type}.",),
                 response
             )
@@ -1791,9 +1791,8 @@ class APISession(PDSession):
             if self.require_complete_results:
                 successful_response(r, context=context)
             if not r.ok:
-                warn(http_error_message(
-                    r, context=context+': results will be incomplete'
-                ))
+                warn(http_error_message(r, context=context) + \
+                    '; results may be incomplete')
                 return
             body = try_decoding(r)
             results = unwrap(body, wrapper, endpoint=endpoint, response=r)
