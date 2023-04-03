@@ -1501,12 +1501,6 @@ class APISession(PDSession):
     :members:
     """
 
-    api_call_counts = None
-    """A dict object recording the number of API calls per endpoint"""
-
-    api_time = None
-    """A dict object recording the total time of API calls to each endpoint"""
-
     default_from = None
     """The default value to use as the ``From`` request header"""
 
@@ -1532,8 +1526,6 @@ class APISession(PDSession):
 
     def __init__(self, api_key, name=None, default_from=None,
             auth_type='token', debug=False):
-        self.api_call_counts = {}
-        self.api_time = {}
         self.auth_type = auth_type
         super(APISession, self).__init__(api_key, name=name, debug=debug)
         self.default_from = default_from
@@ -1543,6 +1535,11 @@ class APISession(PDSession):
 
     def after_set_api_key(self):
         self._subdomain = None
+
+    @property
+    def api_call_counts(self):
+        deprecation_warning('api_call_counts')
+        return {}
 
     @property
     def api_key_access(self):
@@ -1570,6 +1567,11 @@ class APISession(PDSession):
             else:
                 self._api_key_access = 'user'
         return self._api_key_access
+
+    @property
+    def api_time(self):
+        deprecation_warning('api_time')
+        return {}
 
     @property
     def auth_type(self):
@@ -2123,12 +2125,14 @@ class APISession(PDSession):
     @property
     def total_call_count(self):
         """The total number of API calls made by this instance."""
-        return sum(self.api_call_counts.values())
+        deprecation_warning('total_call_count') # TODO a suitable replacement
+        return 0
 
     @property
     def total_call_time(self):
-        """The total time spent making API calls."""
-        return sum(self.api_time.values())
+        """(DEPRECATED) The total time spent making API calls."""
+        deprecation_warning('total_call_time') # TODO a suitable replacement
+        return 0
 
     @property
     def trunc_token(self):
