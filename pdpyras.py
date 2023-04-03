@@ -1775,13 +1775,13 @@ class APISession(PDSession):
                 return
 
             # Make the request and validate/unpack the response:
+            context='numeric pagination'
             r = self.get(path, params=data.copy())
             if self.require_complete_results:
-                successful_response(r, context='numeric pagination')
+                successful_response(r, context=context)
             if not r.ok:
                 warn(http_error_message(
-                    r,
-                    context='numeric pagination: results will be incomplete'
+                    r, context=context+': results will be incomplete'
                 ))
                 return
             body = try_decoding(r)
@@ -1852,7 +1852,6 @@ class APISession(PDSession):
             wrapper = attribute
         else:
             _, wrapper = entity_wrappers('GET', path)
-
         user_params = {}
         if params:
             user_params.update(params)
@@ -1868,9 +1867,8 @@ class APISession(PDSession):
             if self.require_complete_results:
                 successful_response(r)
             elif not r.ok:
-                warn(warn(http_error_message(
-                    r,
-                    context='cursor-based pagination: incomplete results'
+                warn(http_error_message(
+                    r, context=context+': incomplete results'
                 ))
                 return
 
