@@ -420,6 +420,8 @@ For documentation on additional options and features, refer to
 
 Wrapped entities
 ****************
+TODO: CLEAN THIS UP AFTER DONE REFACTORING AND RE-TESTING
+
 Main article: `wrapped entities <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYx-wrapped-entities>`_
 (formerly the term "resource envelope" was used).
 
@@ -915,17 +917,11 @@ local file tree is clean (has no uncommitted changes). Then run:
 .. -----------
 
 .. _Requests: https://docs.python-requests.org/en/master/
-.. _`API authentication`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUx-authentication
 .. _`Errors`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors
-.. _`HTTP Request Headers`: https://v2.developer.pagerduty.com/docs/rest-api#http-request-headers
-.. _`REST API Reference`: https://developer.pagerduty.com/api-reference/
-.. _`pdpyras.py`: https://raw.githubusercontent.com/PagerDuty/pdpyras/master/pdpyras.py
-.. _`resource index`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU0-endpoints#resources-index
+.. _`PagerDuty API Reference`: https://developer.pagerduty.com/api-reference/
+.. _`PagerDuty Developer Platform Documentation`: https://developer.pagerduty.com/docs/
 .. _`setuptools`: https://pypi.org/project/setuptools/
-.. _`wrapped entities`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYx-wrapped-entities
 .. _make: https://www.gnu.org/software/make/
-.. _pagination: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination
-.. _pypd: https://github.com/PagerDuty/pagerduty-api-python-client/
 .. _requests.Response.json: https://docs.python-requests.org/en/master/api/#requests.Response.json
 .. _requests.Response: https://docs.python-requests.org/en/master/api/#requests.Response
 .. _requests.Session.request: https://docs.python-requests.org/en/master/api/#requests.Session.request
