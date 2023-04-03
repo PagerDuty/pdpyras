@@ -932,13 +932,10 @@ class PDSession(requests.Session):
 
     url = ""
 
-    def __init__(self, api_key, name=None, debug=False):
+    def __init__(self, api_key, debug=False):
         self.parent = super(PDSession, self)
         self.parent.__init__()
         self.api_key = api_key
-        if name is not None:
-            raise DeprecationWarning('The "name" parameter is deprecated and '
-                'has no effect as of v4.6.0')
         self.log = logging.getLogger(__name__)
         self.debug = debug
         self.retry = {}
