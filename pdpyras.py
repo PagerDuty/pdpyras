@@ -1964,20 +1964,18 @@ class APISession(PDSession):
         else:
             return self.rpost(resource, json=values)
 
-    def postprocess(self, response, suffix=None):
+    def postprocess(self, response: requests.Response, suffix=None):
         """
-        Records performance information / request metadata about the API call.
+        Perform additional actions on the response after the API call.
 
         This method is called automatically by :func:`request` for all requests,
-        and can be extended in child classes.
+        and can be overridden in child classes.
 
         :param response:
             The `requests.Response`_ object returned by
             `requests.Session.request`_
         :param suffix:
             Optional suffix to append to the key
-        :type method: str
-        :type response: `requests.Response`_
         :type suffix: str or None
         """
         method = response.request.method
@@ -1987,32 +1985,15 @@ class APISession(PDSession):
         status = response.status_code
         url = response.url
 
-        try:
-            endpoint = canonical_path(
-                response.request.method,
-                response.request.url
-            )
-        except URLError:
-            # This is necessary so that the client can still support unpublished
-            # endpoints or endpoints that haven't been added to the client if
-            # using the basic get/post/put/delete methods.
-            endpoint = "%s %s"%(
-                response.request.method.upper(),
-                response.request.url
-            )
-        self.api_call_counts.setdefault(endpoint, 0)
-        self.api_time.setdefault(endpoint, 0.0)
-        self.api_call_counts[key] += 1
-        self.api_time[key] += request_time
-
         # Request ID / timestamp logging
         self.log.debug("Request completed: #method=%s|#url=%s|#status=%d|"
             "#x_request_id=%s|#date=%s|#wall_time_s=%g", method, url, status,
             request_id, request_date, request_time)
         if int(status/100) == 5:
-            self.log.error("PagerDuty API server error (%d)! "
-                "For additional diagnostics, contact PagerDuty support "
-                "and reference x_request_id=%s / date=%s",
+            self.log.error(
+                "PagerDuty API server error (%d)! For additional " \
+                "diagnostics, contact PagerDuty support and reference " \
+                "x_request_id=%s / date=%s",
                 status, request_id, request_date)
 
     def prepare_headers(self, method, user_headers={}):
