@@ -1987,9 +1987,21 @@ class APISession(PDSession):
         status = response.status_code
         url = response.url
 
-        key = self.profiler_key(method, url, suffix=suffix)
-        self.api_call_counts.setdefault(key, 0)
-        self.api_time.setdefault(key, 0.0)
+        try:
+            endpoint = canonical_path(
+                response.request.method,
+                response.request.url
+            )
+        except URLError:
+            # This is necessary so that the client can still support unpublished
+            # endpoints or endpoints that haven't been added to the client if
+            # using the basic get/post/put/delete methods.
+            endpoint = "%s %s"%(
+                response.request.method.upper(),
+                response.request.url
+            )
+        self.api_call_counts.setdefault(endpoint, 0)
+        self.api_time.setdefault(endpoint, 0.0)
         self.api_call_counts[key] += 1
         self.api_time[key] += request_time
 
@@ -2015,13 +2027,8 @@ class APISession(PDSession):
         return headers
 
     def profiler_key(self, method, path, suffix=None):
-    # TODO: deprecate this and profiling in general, or enable it only for
-    # supported endpoints.
-    # REASON: we're moving to explicit support for endpoints with respect to
-    # tokenizing / classifying / identifying URLs. Trying to profile based on
-    # that will break the client for all unpublished endpoints.
         """
-        Generates a fixed-format key to classify a request, i.e. for profiling.
+        (DEPRECATED) Generates a fixed-format key to classify a request
 
         Returns a string that will have all instances of IDs replaced with
         ``{id}``, and will begin with the method in lower case followed by a
@@ -2038,6 +2045,7 @@ class APISession(PDSession):
         :type suffix: str
         :rtype: str
         """
+        deprecation_warning('profiler_key')
         my_suffix = "" if suffix is None else "#"+suffix
         path_str = '/'.join(tokenize_url_path(path, baseurl=self.url))
         return '%s:%s'%(method.lower(), path_str)+my_suffix
