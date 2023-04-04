@@ -1036,6 +1036,9 @@ class PDSession(requests.Session):
     def postprocess(self, response):
         """
         Perform supplemental actions immediately after receiving a response.
+
+        This method is called by :func:`request` for all requests, and can be
+        extended in child classes.
         """
         pass
 
@@ -1974,12 +1977,9 @@ class APISession(PDSession):
         else:
             return self.rpost(resource, json=values)
 
-    def postprocess(self, response, suffix=None):
+    def postprocess(self, response: requests.Response, suffix=None):
         """
         Records performance information / request metadata about the API call.
-
-        This method is called automatically by :func:`request` for all requests,
-        and can be extended in child classes.
 
         :param response:
             The `requests.Response`_ object returned by
@@ -2012,8 +2012,8 @@ class APISession(PDSession):
             )
         self.api_call_counts.setdefault(endpoint, 0)
         self.api_time.setdefault(endpoint, 0.0)
-        self.api_call_counts[key] += 1
-        self.api_time[key] += request_time
+        self.api_call_counts[endpoint] += 1
+        self.api_time[endpoint] += request_time
 
         # Request ID / timestamp logging
         self.log.debug("Request completed: #method=%s|#url=%s|#status=%d|"
