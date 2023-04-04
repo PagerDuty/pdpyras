@@ -2,17 +2,20 @@
 # Copyright (c) PagerDuty.
 # See LICENSE for details.
 
+# Standard libraries
 import logging
 import sys
 import time
 
 from copy import deepcopy
 from datetime import datetime
+from logging import StreamHandler
 from random import random
 from warnings import warn, DeprecationWarning
 
+# Libraries from PyPI
+import deprecation
 import requests
-from logging import StreamHandler
 from urllib3.exceptions import HTTPError, PoolError
 from requests.exceptions import RequestException
 
@@ -622,13 +625,14 @@ def requires_success(method):
         return successful_response(method(self, url, **kw))
     return call
 
+@deprecation.deprecated(deprecated_in='5.0.0', removed_in='6.0.0',
+    current_version=__version__, details='use "wrapped_entities"')
 def resource_envelope(method):
     """
     Convenience and consistency decorator for HTTP verb functions.
 
     DEPRECATED. Use `wrapped_entities`_ instead.
     """
-    deprecation_warning('resource_envelope', 'wrapped_entities')
     return wrapped_entities(method)
 
 def resource_path(method):
@@ -1151,6 +1155,8 @@ class PDSession(requests.Session):
                 # All went according to plan.
                 return response
 
+    @deprecation.deprecated(deprecated_in='v5.0.0', removed_in='v6.0.0',
+        current_version=__version__, details='use "require_complete_results"')
     @property
     def raise_if_http_error(self):
         """
@@ -1160,12 +1166,12 @@ class PDSession(requests.Session):
         previously covered by this property is controlled via
         :attr:`APISession.require_complete_results`
         """
-        deprecation_warning('raise_if_http_error', 'require_complete_results')
         return self.require_complete_results
 
+    @deprecation.deprecated(deprecated_in='v5.0.0', removed_in='v6.0.0',
+        current_version=__version__, details='use "require_complete_results"')
     @raise_if_http_error.setter
     def raise_if_http_error(self, val: bool):
-        deprecation_warning('raise_if_http_error', 'require_complete_results')
         self.require_complete_results = val
 
     @property
@@ -2036,6 +2042,8 @@ class APISession(PDSession):
             headers.update(user_headers)
         return headers
 
+    @deprecation.deprecated(deprecated_in='v5.0.0', removed_in='v6.0.0',
+        current_version=__version__)
     def profiler_key(self, method, path, suffix=None):
         """
         (DEPRECATED) Generates a fixed-format key to classify a request
@@ -2055,7 +2063,6 @@ class APISession(PDSession):
         :type suffix: str
         :rtype: str
         """
-        deprecation_warning('profiler_key')
         my_suffix = "" if suffix is None else "#"+suffix
         path_str = '/'.join(tokenize_url_path(path, baseurl=self.url))
         return '%s:%s'%(method.lower(), path_str)+my_suffix
