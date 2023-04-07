@@ -337,13 +337,6 @@ Resource schemas
 ++++++++++++++++
 Main article: `Resource Schemas <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU5-resource-schemas>`_
 
-Concerning the structure of objects in response and request bodies: this
-library does not contain abstraction of PagerDuty API schemas. Rather, it
-provides abstraction for the basics of API access. The details of any interface
-between API schema and application are left to the implementer's judgment. The
-intent of not insulating the implementer from schemas is to avoid the client
-becoming "an API for the API".
-
 The details of any given resource's schema can be found in the request and
 response examples from the `REST API Reference`_ pages for the resource's
 respective API, as well as the page documenting the resource type itself.
@@ -418,28 +411,32 @@ documented features of that class can also be used. For example, to configure
 For documentation on additional options and features, refer to
 `Requests' developer interface documentation <https://requests.readthedocs.io/en/latest/api/>`_
 
-Wrapped entities
+Wrapped Entities
 ****************
-TODO: CLEAN THIS UP AFTER DONE REFACTORING AND RE-TESTING
 
-Main article: `wrapped entities <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYx-wrapped-entities>`_
-(formerly the term "resource envelope" was used).
+Many of PagerDuty's endpoints respond with their data inside of a key at the
+root level of the JSON-encoded object in the response, or require the request
+body be wrapped in another object that contains a single key. The key is
+typically named after the last or second to last node of the URL's path
+(between "/"), and is a singular (for an individual resource) or plural (for a
+collection of resources) noun. 
 
-Most of PagerDuty's endpoints respond with their data inside of a key at the
-root level of the JSON-encoded object in the response. The key is named after
-the resource, whether singular or plural. All endpoints that follow this
-convention are supported by methods that eliminate the need for the implementer
-to wrap and unwrap resource entities.
+This client provides an abstraction layer for wrapped entities so that there
+is no need to access a key in the JSON-decoded response to get the content, or
+wrap the object to be JSON-encoded and sent as the response body in another
+dictionary with a single key that differs based on which API endpoint is in
+use.
 
-Functions that assume entity wrapping
+Functions that implement entity wrapping
 +++++++++++++++++++++++++++++++++++++
+
 Generally, instead of returning a `requests.Response`_ object or requiring
-entity wrapping in the object to be JSON-encoded as the request body, some
-functions can accept an unwrapped entity to be sent in the request body, and
-will return the contents of the wrapped entity in the response from the API. If
-the request's status was not success, or a wrapped entity could not be found in
-the response, :class:`pdpyras.PDClientError` will be raised otherwise (if the
-request's status was not success, or no entity wrapping could be deduced).
+entity wrapping in the object to be JSON-encoded as the request body, the
+following methods will accept an unwrapped entity to be sent in the request
+body via the ``json`` keyword argument, and/or will return the contents of the
+wrapped entity in the response from the API: If the request's status was not
+success, or a wrapped entity could not be found in the response,
+:class:`pdpyras.PDHTTPError` will be raised.
 
 * The "``r*`` methods" ``rput``, ``rpost`` and ``rget``. They will perform the
   same HTTP actions as ``put``, ``post`` and ``get`` and similarly accept the
@@ -450,79 +447,62 @@ request's status was not success, or no entity wrapping could be deduced).
   each assume that the API index endpoint being queried follows the classic
   entity wrapping conventions.
 * :attr:`pdpyras.APISession.persist` uses ``rput``, ``rpost`` and ``find``
-* ``iter_cursor``, although it assumes a much looser definition of entity
-  wrapping: the root level key in the response body can be set using the
-  ``attribute`` keyword argument, and if unspecified it will guess that it is
-  the same as the last node in the URL path. This is according to the design of
-  all current Audit record APIs, which as of this writing are the only APIs that
-  support cursor-based pagination.
+* :attr:`pdpyras.APISession.iter_cursor` uses the ``attribute`` keyword
+  argument to unwrap results, if specified; otherwise it determines the wrapper
+  automatically.
 
-Supported endpoints
-+++++++++++++++++++
-The general rules are that the name of the wrapped resource key must follow
-predictably from the innermost resource name for the API path in question
-whether singular or plural, and that the "nodes" in the URL path (between
-forward slashes) must alternate between resource type and ID.
+How to tell if an endpoint has entity wrapping
+++++++++++++++++++++++++++++++++++++++++++++++
+The following 
 
-**Supported endpoint example:** for ``/escalation_policies/{id}`` the wrapper
-name for singular post/put is ``escalation_policy``, and for ``GET
-/escalation_policies`` it is ``escalation_policies``. For
-``/users/{id}/notification_rules`` the wrapper is named ``notification_rule``
-for singular post/put and ``notification_rules`` for the index, ``GET
-/users/{id}/notification_rules``.
+# 1:
+#   If the endpoint's response body or expected request body contains only one
+#   property that points to all the content of the requested object, or if it is
+#   a request made to an endpoint that supports pagination*, entity wrapping is
+#   enabled for the endpoint.
+#
+# 2:
+#   If there are any other properties, and the endpoint does not support
+#   pagination, entity wrapping is disabled, and using methods on them that
+#   require entity wrapping will produce warnings and/or raise exceptions.
+#
+# 3: 
+#   For all endpoints that support pagination but whose responses contain any
+#   properties other than the wrapped list of response entities and the standard
+#   pagination properties (i.e. limit, offset, more, cursor), those properties
+#   are discarded from responses, and only the response entities are returned.
+#
+# 4:
+#   As with previous versions, entity wrapping can be bypassed for request
+#   bodies by passing a complete request object (i.e. a dictionary that when
+#   marshaled to JSON will represent the whole request body structure that is
+#   expected by the endpoint).
+#
+# * An endpoint is said to support pagination if it takes the query parameters
+# ``limit`` and either ``offset`` (classic pagination) or ``cursor``
+# (cursor-based pagination).
 
-**Unsupported endpoint example:** in the
-`user sessions <https://developer.pagerduty.com/api-reference/b3A6Mjc0ODI0OQ-list-a-user-s-active-sessions>`_
-API endpoints, URLs are formatted as
-``/users/{id}/sessions/{type}/{session_id}`` whereas the wrapped resource
-property name is ``user_sessions`` / ``user_session`` rather than simply
-``sessions`` / ``session``.
-
-List of non-conformal endpoints
-++++++++++++++++++++++++++++++++
-The following list of APIs and endpoints (last updated: 2022-03-15) are
-unsupported by methods ``rget``, ``rpost``, ``rput``, ``persist``, ``find``,
-``iter_all``, ``list_all`` and ``dict_all`` because they do not follow the
-classic entity wrapping  conventions on which the functions are based. They can
-still be used with the basic ``get``, ``post``, ``put`` and ``delete`` methods.
-
-* Analytics
-* All Audit endpoints (:attr:`pdpyras.APISession.iter_cursor` should be used instead, as they feature cursor-based pagination)
-* All Notification Subscription endpoints
-* Paused Incident Reports
-* The following Business Services endpoints:
-    * ``POST /business_services/{id}/account_subscription``
-    * ``GET /business_services/{id}/supporting_services/impacts``
-    * ``GET /business_services/impactors``
-    * ``GET /business_services/impacts``
-    * ``[GET|PUT] /business_services/priority_thresholds``
-* The following Incident API endpoints:
-    * ``[GET|PUT] /incidents/{id}/business_services/impacts```: list or manually change any of an incident's impacts on business services
-    * ``PUT /incidents/{id}/merge``: merge incidents
-    * ``POST /incidents/{id}/responder_requests``: create a responder request for an incident
-    * ``POST /incidents/{id}/snooze``: snooze an incident
-* Event Orchestrations
-* ``POST /schedules/{id}/overrides`` (create one or more schedule overrides)
-* Service Dependencies
-* ``POST /{entity_type}/{id}/change_tags`` (assign tags)
-* Updating team membership (adding or removing users or escalation policies)
-* User sessions
 
 Pagination
 **********
+
 The method :attr:`pdpyras.APISession.iter_all` returns an iterator that yields
-results from a resource index, automatically incrementing the ``offset``
-parameter to advance through each page of data and make API requests on-demand.
+results from an endpoint that returns a wrapped collection of resources. By
+default it will use classic, a.k.a. numeric pagination. If the endpoint
+supports cursor-based pagination, it will use that method to iterate through
+results instead. The methods :attr:`pdpyras.APISession.list_all` and
+:attr:`pdpyras.APISession.dict_all` will request all pages of the collection
+and return the results as a list or dictionary, respectively.
 
-For all endpoints that support cursor-based pagination,
-:attr:`pdpyras.APISession.iter_cursor` should be used instead.
+Pagination functions require that the API endpoint being requested has entity
+wrapping enabled.
 
-Note, one can perform `filtering
-<https://v2.developer.pagerduty.com/docs/filtering>`_ with iteration to constrain
-constrain the range of results, by passing in a dictionary object as the ``params``
-keyword argument. Any parameters will be automatically merged with the pagination
-parameters and serialized into the final URL, so there is no need to manually
-construct the URL, i.e. appending ``?key1=value1&key2=value2``.
+To pass query parameters to the endpoint, all pagination methods accept a
+``params`` keyword argument (a dictionary) that is sent through to
+:attr:`pdpyras.APISession.request`. Any parameters in this keyword argument
+will be automatically merged with the pagination parameters and serialized into
+the final URL, so there is no need to manually construct the URL, i.e.
+appending ``?key1=value1&key2=value2``.
 
 **Example:** Find all users with "Dav" in their name/email (i.e. Dave/David) in
 the PagerDuty account:
@@ -531,10 +511,6 @@ the PagerDuty account:
 
     for dave in session.iter_all('users', params={'query':"Dav"}):
         print("%s <%s>"%(dave['name'], dave['email']))
-
-Also, note, as of version 2.2, there are the methods
-:attr:`pdpyras.APISession.list_all` and :attr:`pdpyras.APISession.dict_all`
-which return a list or dictionary of all results, respectively.
 
 **Example:** Get a dictionary of all users, keyed by email, and use it to find
 the ID of the user whose email is ``bob@example.com``:
@@ -551,6 +527,18 @@ requesting all pages of data will happen one page at a time and the functions
 ``list_all`` and ``dict_all`` will not return until after the final HTTP
 response. Simply put, the functions will take longer to return if the total
 number of results is higher.
+
+Completeness of results
++++++++++++++++++++++++
+If at any point a pagination function cannot retrieve a page due to a
+non-transient HTTP error, it will raise an exception. This ensures that the
+results returned are always complete. However, if 
+ a partial result is still acceptable, one can override
+this behavior by setting the
+:attr:`pdpyras.APISession.require_complete_results` attribute of the session to
+``False``. Then, when an error is encountered, ``iter_all`` will simply stop
+iterating when it encounters a HTTP error, and the ``*_all`` methods will
+return the partial results instead of discarding the whole set.
 
 Updating, creating or deleting while paginating
 +++++++++++++++++++++++++++++++++++++++++++++++
