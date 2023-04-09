@@ -31,7 +31,7 @@ def main():
         print(f"    '{path}',")
     print("]\n")
 
-    print('CURSOR_BASED_ITERATION_PATHS = [')
+    print('CURSOR_BASED_PAGINATION_PATHS = [')
     cursor_param_ref = '../common/models/Parameters.yaml#/cursor_cursor'
     for (path, spec) in public_endpoints_dict.items():
         getspec = spec.get('get', {})
