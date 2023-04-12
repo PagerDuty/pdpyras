@@ -76,14 +76,16 @@ TEXT_LEN_LIMIT = 100
 # (cursor-based pagination).
 # -----------------------------------------------------------------------------
 
-# NOTE: To generate CANONICAL_PATHS and CURSOR_BASED_PAGINATION_PATHS, use
-# scripts/get_path_list/get_path_list.py
-
 # List of canonical API paths
 #
 # Supporting a new API for entity wrapping will require adding its patterns to
 # this list. If it doesn't follow standard naming conventions, it will also
 # require one or more new entries in ENTITY_WRAPPER_CONFIG.
+#
+# To generate new definitions for CANONICAL_PATHS and
+# CURSOR_BASED_PAGINATION_PATHS based on the API documentation's source code,
+# use scripts/get_path_list/get_path_list.py
+
 CANONICAL_PATHS = [
     '/{entity_type}/{id}/change_tags',
     '/{entity_type}/{id}/tags',
@@ -468,7 +470,7 @@ def is_path_param(path_node: str):
 
 def normalize_url(base_url: str, url: str):
     """
-    Compose the full API endpoint URL
+    Normalize a URL to a complete API URL.
 
     The ``url`` argument may be a path relative to the base URL or a full URL.
 
@@ -481,18 +483,18 @@ def normalize_url(base_url: str, url: str):
     """
     if url.startswith(base_url):
         return url
-    elif not url.startswith('http://') or url.startswith('https://'):
+    elif not (url.startswith('http://') or url.startswith('https://')):
         return base_url.rstrip('/') + "/" + url.lstrip('/')
     else:
         raise URLError(
-            f"URL {url} does not start with the API base URL {baseurl}"
+            f"URL {url} does not start with the API base URL {base_url}"
         )
 
-@deprecated(deprecated_in='v5.0.0', removed_in='v6.0.0',
+@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
         current_version=__version__, details='Use canonical_path to identify '\
             'URLs instead. This method now returns the nodes of the ' \
             'canonical path as a tuple and only supports explicitly ' \
-            'supported URLs.')
+            'supported URLs (listed in pdpyras.CANONICAL_PATHS)')
 def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
     """(DEPRECATED) return a tuple of path nodes.
 
@@ -582,7 +584,9 @@ def infer_entity_wrapper(method: str, path: str):
 
     This is based on patterns that are broadly applicable but not universal in
     the v2 REST API, where the wrapper name is predictable from the path and
-    method.
+    method. This is the default logic applied to determine the wrapper name
+    based on the path if there is no explicit entity wrapping defined for the
+    given path in ENTITY_WRAPPER_CONFIG
 
     :param method: The HTTP method
     :param path: A canonical API path i.e. as returned by `canonical_path`_
@@ -663,7 +667,7 @@ def requires_success(method):
         return successful_response(method(self, url, **kw))
     return call
 
-@deprecated(deprecated_in='5.0.0', removed_in='6.0.0',
+@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
     current_version=__version__, details='Use wrapped_entities instead.')
 def resource_envelope(method):
     """
@@ -791,7 +795,7 @@ def last_4(secret: str):
     """Returns an abbreviation of the input"""
     return '*'+str(secret)[-4:]
 
-@deprecated(deprecated_in='v5.0.0', removed_in='v6.0.0',
+@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
         current_version=__version__, details='Use singular_name instead.')
 def object_type(r_name):
     return singular_name(r_name)
@@ -815,27 +819,17 @@ def plural_name(obj_type: str):
     else:
         return obj_type+'s'
 
-@deprecated(deprecated_in='v5.0.0', removed_in='v6.0.0',
+@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
         current_version=__version__, details='Use successful_response instead.')
 def raise_on_error(r):
     return successful_response(r)
 
-@deprecated(deprecated_in='v5.0.0', removed_in='v6.0.0',
+@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
         current_version=__version__, details='Use plural_name instead.')
 def resource_name(obj_type):
     return plural_name(obj_type)
 
 def singular_name(r_name: str):
-    """
-    Derives an object type (i.e. ``user``) from a resource name (i.e. ``users``)
-
-    :param r_name:
-        Resource name, i.e. would be ``users`` for the resource index URL
-        ``https://api.pagerduty.com/users``
-    :returns: The object type name; usually the ``type`` property of an instance
-        of the given resource.
-    :rtype: str
-    """
     if r_name.endswith('ies'):
         # Because English
         return r_name[:-3]+'y'
@@ -1211,7 +1205,7 @@ class PDSession(requests.Session):
                 return response
 
     @property
-    @deprecated(deprecated_in='v5.0.0', removed_in='v6.0.0',
+    @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
         current_version=__version__,
         details='Use require_complete_results instead.'
     )
@@ -1226,7 +1220,7 @@ class PDSession(requests.Session):
         return self.require_complete_results
 
     @raise_if_http_error.setter
-    @deprecated(deprecated_in='v5.0.0', removed_in='v6.0.0',
+    @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
         current_version=__version__,
         details='Use require_complete_results instead.'
     )
@@ -1840,12 +1834,12 @@ class APISession(PDSession):
             data['offset'] = offset
             highest_record_index = int(data['offset']) + int(data['limit'])
             if highest_record_index > ITERATION_LIMIT:
+                iter_limit = '%d'%ITERATION_LIMIT
                 warn(
                     f"Stopping iter_all on {endpoint} at "\
                     f"limit+offset={highest_record_index} " \
                     'as this exceeds the maximum permitted by the API ' \
-                    "({ITERATION_LIMIT}). The retrieved data may be " \
-                    "incomplete."
+                    f"({iter_limit}). The set of results may be incomplete."
                 )
                 return
 
@@ -2098,7 +2092,7 @@ class APISession(PDSession):
             headers.update(user_headers)
         return headers
 
-    @deprecated(deprecated_in='v5.0.0', removed_in='v6.0.0',
+    @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
         current_version=__version__, details='Use canonical_path to identify '\
             'REST API v2 URLs instead.')
     def profiler_key(self, method, path, suffix=None):

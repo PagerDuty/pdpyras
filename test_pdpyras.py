@@ -63,28 +63,8 @@ class Response(object):
         self.json.return_value = json.loads(text)
 
 
-class URLFunctionsTest(unittest.TestCase):
+class URLHandlingTest(unittest.TestCase):
 
-    def test_canonical_path(self):
-        # TODO
-        pass
-
-    def test_endpoint_matches(self):
-        # TODO
-        pass
-
-    def test_is_path_param(self):
-        self.assertTrue(pdpyras.is_path_param('{id}'))
-        self.assertFalse(pdpyras.is_path_param('services'))
-
-    def test_normalize_url(self):
-        # TODO
-        # path, full URL, invalid URL (raises URLError)
-        pass
-
-
-
-class WrappedEntitiesFunctionsTest(unittest.TestCase):
     def test_canonical_path(self):
         identified_urls = [
             (
@@ -107,6 +87,48 @@ class WrappedEntitiesFunctionsTest(unittest.TestCase):
         for (pattern, url) in identified_urls:
             base_url = 'https://api.pagerduty.com'
             self.assertEqual(pattern, pdpyras.canonical_path(base_url, url))
+
+    def test_is_path_param(self):
+        self.assertTrue(pdpyras.is_path_param('{id}'))
+        self.assertFalse(pdpyras.is_path_param('services'))
+
+    def test_normalize_url(self):
+        urls_expected = [
+            (
+                ('https://api.pagerduty.com/', 'users'),
+                'https://api.pagerduty.com/users',
+            ),
+            (
+                ('https://api.pagerduty.com', '/users'),
+                'https://api.pagerduty.com/users',
+            ),
+            (
+                (
+                    'https://api.pagerduty.com',
+                    'https://api.pagerduty.com/users',
+                ),
+                'https://api.pagerduty.com/users',
+            )
+        ]
+        for (base_url_url, expected_url) in urls_expected:
+            self.assertEqual(
+                expected_url,
+                pdpyras.normalize_url(*base_url_url)
+            )
+        invalid_input = [ # URL does not start with base_url
+            (
+                'https://api.pagerduty.com/incidents',
+                'https://events.pagerduty.com/api/v2/enqueue',
+            ),
+            (
+                'https://api.pagerduty.com/services',
+                'https://some.shady-site.com/read-auth-headers',
+            )
+        ]
+        for args in invalid_input:
+            self.assertRaises(pdpyras.URLError, pdpyras.normalize_url, *args)
+
+class EntityWrappingTest(unittest.TestCase):
 
     def test_entity_wrappers(self):
         io_expected = [
@@ -136,6 +158,145 @@ class WrappedEntitiesFunctionsTest(unittest.TestCase):
         ]
         for ((method, path), rval) in io_expected:
             self.assertEqual(rval, pdpyras.entity_wrappers(method, path))
+
+    def test_infer_entity_wrapper(self):
+        io_expected = [
+            (('get', '/users'), 'users'),
+            (('PoSt', '/users'), 'user'),
+            (('PUT', '/service/{id}'), 'service'),
+            (('PUT', '/incidents/{id}/alerts'), 'alerts'),
+        ]
+        for (method_path, expected_wrapper) in io_expected:
+            self.assertEqual(
+                expected_wrapper,
+                pdpyras.infer_entity_wrapper(*method_path),
+            )
+
+class FunctionDecoratorsTest(unittest.TestCase):
+
+    @patch.object(pdpyras.APISession, 'put')
+    def test_resource_path(self, put_method):
+        sess = pdpyras.APISession('some-key')
+        resource_url = 'https://api.pagerduty.com/users/PSOMEUSR'
+        user = {
+            'id': 'PSOMEUSR',
+            'type': 'user',
+            'self': resource_url,
+            'name': 'User McUserson',
+            'email': 'user@organization.com'
+        }
+        put_method.return_value = Response(200, json.dumps({'user': user}),
+            method='PUT', url=resource_url)
+        sess.rput(user, json=user)
+        put_method.assert_called_with(resource_url, json={'user': user})
+
+    def test_wrapped_entities(self):
+        do_http_things = MagicMock()
+        response = MagicMock()
+        do_http_things.return_value = response
+        session = pdpyras.APISession('some_key')
+        dummy_session = MagicMock()
+        def reset_mocks():
+            do_http_things.reset_mock()
+            response.reset_mock()
+            do_http_things.return_value = response
+            dummy_session.reset_mock()
+
+        # OK response, good JSON: JSON-decode and unpack response
+        response.ok = True
+        response.json.return_value = {'service': {'name': 'value'}}
+        do_http_things.__name__ = 'rput' # just for instance
+        self.assertEqual(
+            pdpyras.wrapped_entities(do_http_things)(session,
+                '/services/PTHINGY'),
+            {'name': 'value'}
+        )
+        reset_mocks()
+
+        # OK response, bad JSON: raise exception.
+        response.ok = True
+        do_http_things.__name__ = 'rput' # just for instance
+        response.json.side_effect = [ValueError('Bad JSON!')]
+        self.assertRaises(pdpyras.PDClientError,
+            pdpyras.wrapped_entities(do_http_things), session, '/services')
+        reset_mocks()
+
+        # OK response, but the response isn't what we expected: exception.
+        do_http_things.reset_mock()
+        response.reset_mock()
+        response.json = MagicMock()
+        response.ok = True
+        do_http_things.return_value = response
+        do_http_things.__name__ = 'rput' # just for instance
+        response.json.return_value = {'nope': 'nopenope'}
+        self.assertRaises(pdpyras.PDHTTPError,
+            pdpyras.wrapped_entities(do_http_things), session, '/services')
+        reset_mocks()
+
+        # Not OK response, raise
+        response.reset_mock()
+        response.ok = False
+        do_http_things.__name__ = 'rput' # just for instance
+        self.assertRaises(pdpyras.PDClientError,
+            pdpyras.wrapped_entities(do_http_things), session, '/services')
+        reset_mocks()
+
+        # GET /<index>: use a different envelope name
+        response.ok = True
+        users_array = [{"type":"user","email":"user@example.com",
+            "summary":"User McUserson"}]
+        response.json.return_value = {'users': users_array}
+        do_http_things.__name__ = 'rget'
+        dummy_session.url = 'https://api.pagerduty.com'
+        self.assertEqual(users_array,
+            pdpyras.wrapped_entities(do_http_things)(dummy_session, '/users',
+                query='user'))
+        reset_mocks()
+
+        # Test request body JSON envelope stuff in post/put
+        # Response body validation
+        do_http_things.__name__ = 'rpost'
+        user_payload = {'email':'user@example.com', 'name':'User McUserson'}
+        self.assertRaises(
+            pdpyras.PDClientError,
+            pdpyras.wrapped_entities(do_http_things),
+            dummy_session, '/users', json=user_payload
+        )
+        reset_mocks()
+        # Add type property; should work now and automatically pack the user
+        # object into a JSON object inside the envelope.
+        user_payload['type'] = 'user'
+        do_http_things.__name__ = 'rpost'
+        response.ok = True
+        created_user = user_payload.copy()
+        created_user['id'] = 'P456XYZ'
+        response.json.return_value = {'user':created_user}
+        self.assertEqual(
+            created_user,
+            pdpyras.wrapped_entities(do_http_things)(dummy_session, '/users',
+                json=user_payload)
+        )
+        do_http_things.assert_called_with(dummy_session, '/users',
+            json={'user':user_payload})
+
+        reset_mocks()
+        # Test auto-envelope functionality for multi-update
+        incidents = [{'id':'PABC123'}, {'id':'PDEF456'}]
+        do_http_things.__name__ = 'rput'
+        response.ok = True
+        updated_incidents = copy.deepcopy(incidents)
+        response.json.return_value = {'incidents': updated_incidents}
+        self.assertEqual(
+            updated_incidents,
+            pdpyras.wrapped_entities(do_http_things)(dummy_session,
+                '/incidents', json=incidents)
+        )
+        # The final value of the json parameter passed to the method (which goes
+        # straight to put) should be the plural resource name
+        self.assertEqual(
+            do_http_things.mock_calls[0][2]['json'],
+            {'incidents': incidents}
+        )
 
 class HelperFunctionsTest(unittest.TestCase):
 
@@ -677,131 +838,6 @@ class APISessionTest(SessionTest):
                 sess.log = MagicMock()
                 r = sess.get('/users/P123456')
                 self.assertEqual(404, r.status_code)
-
-    def test_wrapped_entities(self):
-        do_http_things = MagicMock()
-        response = MagicMock()
-        do_http_things.return_value = response
-        my_self = pdpyras.APISession('some_key')
-        self.debug(my_self)
-        dummy_session = MagicMock()
-        def reset_mocks():
-            do_http_things.reset_mock()
-            response.reset_mock()
-            do_http_things.return_value = response
-            dummy_session.reset_mock()
-
-        # OK response, good JSON: JSON-decode and unpack response
-        response.ok = True
-        response.json.return_value = {'service': {'name': 'value'}}
-        do_http_things.__name__ = 'rput' # just for instance
-        self.assertEqual(
-            pdpyras.wrapped_entities(do_http_things)(my_self,
-                '/services/PTHINGY'),
-            {'name': 'value'}
-        )
-        reset_mocks()
-
-        # OK response, bad JSON: raise exception.
-        response.ok = True
-        do_http_things.__name__ = 'rput' # just for instance
-        response.json.side_effect = [ValueError('Bad JSON!')]
-        self.assertRaises(pdpyras.PDClientError,
-            pdpyras.wrapped_entities(do_http_things), my_self, '/services')
-        reset_mocks()
-
-        # OK response, but the response isn't what we expected: exception.
-        do_http_things.reset_mock()
-        response.reset_mock()
-        response.json = MagicMock()
-        response.ok = True
-        do_http_things.return_value = response
-        do_http_things.__name__ = 'rput' # just for instance
-        response.json.return_value = {'nope': 'nopenope'}
-        self.assertRaises(pdpyras.PDHTTPError,
-            pdpyras.wrapped_entities(do_http_things), my_self, '/services')
-        reset_mocks()
-
-        # Not OK response, raise (daisy-chained w/raise_on_error decorator)
-        response.reset_mock()
-        response.ok = False
-        do_http_things.__name__ = 'rput' # just for instance
-        self.assertRaises(pdpyras.PDClientError,
-            pdpyras.wrapped_entities(do_http_things), my_self, '/services')
-        reset_mocks()
-
-        # GET /<index>: use a different envelope name
-        response.ok = True
-        users_array = [{"type":"user","email":"user@example.com",
-            "summary":"User McUserson"}]
-        response.json.return_value = {'users': users_array}
-        do_http_things.__name__ = 'rget'
-        dummy_session.url = 'https://api.pagerduty.com'
-        self.assertEqual(users_array,
-            pdpyras.wrapped_entities(do_http_things)(dummy_session, '/users',
-                query='user'))
-        reset_mocks()
-
-        # Test request body JSON envelope stuff in post/put
-        # Response body validation
-        do_http_things.__name__ = 'rpost'
-        user_payload = {'email':'user@example.com', 'name':'User McUserson'}
-        self.assertRaises(
-            pdpyras.PDClientError,
-            pdpyras.wrapped_entities(do_http_things),
-            dummy_session, '/users', json=user_payload
-        )
-        reset_mocks()
-        # Add type property; should work now and automatically pack the user
-        # object into a JSON object inside the envelope.
-        user_payload['type'] = 'user'
-        do_http_things.__name__ = 'rpost'
-        response.ok = True
-        created_user = user_payload.copy()
-        created_user['id'] = 'P456XYZ'
-        response.json.return_value = {'user':created_user}
-        self.assertEqual(
-            created_user,
-            pdpyras.wrapped_entities(do_http_things)(dummy_session, '/users',
-                json=user_payload)
-        )
-        do_http_things.assert_called_with(dummy_session, '/users',
-            json={'user':user_payload})
-
-        reset_mocks()
-        # Test auto-envelope functionality for multi-update
-        incidents = [{'id':'PABC123'}, {'id':'PDEF456'}]
-        do_http_things.__name__ = 'rput'
-        response.ok = True
-        updated_incidents = copy.deepcopy(incidents)
-        response.json.return_value = {'incidents': updated_incidents}
-        self.assertEqual(
-            updated_incidents,
-            pdpyras.wrapped_entities(do_http_things)(dummy_session,
-                '/incidents', json=incidents)
-        )
-        # The final value of the json parameter passed to the method (which goes
-        # straight to put) should be the plural resource name
-        self.assertEqual(
-            do_http_things.mock_calls[0][2]['json'],
-            {'incidents': incidents}
-        )
-
-    @patch.object(pdpyras.APISession, 'put')
-    def test_resource_path(self, put_method):
-        sess = pdpyras.APISession('some-key')
-        resource_url = 'https://api.pagerduty.com/users/PSOMEUSR'
-        user = {
-            'id': 'PSOMEUSR',
-            'type': 'user',
-            'self': resource_url,
-            'name': 'User McUserson',
-            'email': 'user@organization.com'
-        }
-        put_method.return_value = Response(200, json.dumps({'user': user}),
-            method='PUT', url=resource_url)
-        sess.rput(user, json=user)
-        put_method.assert_called_with(resource_url, json={'user': user})
 
     @patch.object(pdpyras.APISession, 'get')
     def test_rget(self, get):
