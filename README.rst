@@ -146,104 +146,135 @@ When encountering status 401 (unauthorized), the client will immediately raise
 Basic Usage
 ***********
 
-Some examples of usage:
+REST API v2
++++++++++++
 
-**Basic getting:** Obtain a user profile as a dict object:
+Making a request and decoding the response, obtaining a resource's contents and
+having them represented as a dict object:
 
 .. code-block:: python
 
     # Using get:
     response = session.get('/users/PABC123')
     user = None
-
     if response.ok:
       user = response.json()['user']
 
     # Using rget:
     user = session.rget('/users/PABC123')
 
-**Pagination (1):** Iterate over all users and print their ID, email and name:
+Using pagination i.e. to perform actions on each result from an index endpoint:
 
 .. code-block:: python
 
+    # Print each user's email address and name:
     for user in session.iter_all('users'):
         print(user['id'], user['email'], user['name'])
 
-**Pagination (2):** Compile a list of all services with "SN" in their name:
+Using filtering with pagination: the ``params`` keyword argument, a dict
+object, is converted to URL query parameters by Requests_:
 
 .. code-block:: python
 
+    # Get a list of all services with "SN" in their name:
     services = session.list_all('services', params={'query': 'SN'})
 
-**Cursor-based pagination:** look up audit trail records for all PagerDuty objects going back 24 hours:
+Querying: Find a resource exactly matching an input string:
 
 .. code-block:: python
 
-    audit_records = list(session.iter_cursor('/audit/records'))
-
-**Querying:** Find a user exactly matching email address ``jane@example35.com``
-
-.. code-block:: python
-
+    # Find the user with email address "jane@example35.com"
     user = session.find('users', 'jane@example35.com', attribute='email')
 
-**Updating using put / rput**: assuming there is a variable ``user``
-defined that is a dictionary representation of a PagerDuty user,
+Updating a resource using the ``json`` keyword argument to set the body:
 
 .. code-block:: python
 
-    if user is not None:
+    # Assuming there is a variable "user" defined that is a dictionary
+    # representation of a PagerDuty user, i.e. as returned by rget or find:
+
+    # (1) using put directly:
+    updated_user = None
+    response = session.put(user['self'], json={
+        'user': {
+            'type':'user',
+            'name': 'Jane Doe'
+        }
+    })
+    if response.ok:
+      updated_user = response.json()['user']
+
+    # (2) using rput: 
+    #   - The URL argument can be the dictionary representation
+    #   - The json argument doesn't have to include the "user" container dict
+    try:
+      updated_user = session.rput(user, json={
+          'type':'user',
+          'name': 'Jane Doe'
+      })
+    except PDClientError:
       updated_user = None
 
-      # (1) using put directly:
-      response = session.put(user['self'], json={
-        'user':{'type':'user', 'name': 'Jane Doe'}
-      })
-      if response.ok:
-        updated_user = response.json()['user']
-
-      # (2) using rput (no entity wrapping required):
-      try:
-        updated_user = session.rput(user['self'], json={
-            'type':'user', 'name': 'Jane Doe'
-        })
-      except PDClientError:
-        updated_user = None
-
-**Updating/creating using persist (idempotent create/update function)**:
-assuming a dict object ``user_data`` is defined, and it is structured like a
-PagerDuty user object, containing at least the name and email address fields,
-this will look for a user with its ``email`` field equal to the ``email`` value
-in ``user_data``, and update that user according to the contents of
-``user_data`` (or create one with attributes according to ``user_data`` if it
-doesn't already exist):
+Updating/creating using persist (idempotent create/update function):
 
 .. code-block:: python
 
-      try:
-        updated_user = session.persist('users', 'email', user_data, update=True)
-      except PDClientError:
-        updated_user = None
+    # Create a user if one doesn't already exist based on the dictionary object
+    # user_data, using the 'email' key as the uniquely identifying property, and
+    # update it if it exists and differs from user_data:
+    updated_user = session.persist('users', 'email', user_data, update=True)
 
-**Multiple update:** acknowledge all triggered incidents assigned to user with
-ID ``PHIJ789``. Note that to acknowledge, we need to set the ``From`` header.
-This example assumes that ``admin@example.com`` corresponds to a user in the
-PagerDuty account:
+Using multi-valued set filters: set the value in the ``params`` dict at the
+appropriate key to a list, and include ``[]`` at the end of the paramter name:
 
 .. code-block:: python
 
-    # Query incidents
+    # Query all open incidents assigned to a user:
+    incidents = session.list_all(
+        'incidents',
+        params={'user_ids[]':['PHIJ789'],'statuses[]':['triggered', 'acknowledged']}
+    )
+
+Performing multi-update (for endpoints that support it only):
+
+.. code-block:: python
+
+    # Acknowledge all triggered incidents assigned to a user:
     incidents = session.list_all(
         'incidents',
         params={'user_ids[]':['PHIJ789'],'statuses[]':['triggered']}
     )
-
-    # Change their state
     for i in incidents:
         i['status'] = 'acknowledged'
-
-    # PUT the updated list back up to the API
     updated_incidents = session.rput('incidents', json=incidents)
+
+
+Events API v2
+*************
+Trigger and resolve an alert, getting its deduplication key from the API:
+
+.. code-block:: python
+
+    dedup_key = events_session.trigger("Server is on fire", 'dusty.old.server.net')
+    # ...
+    events_session.resolve(dedup_key)
+
+
+Trigger an and acknowledge an alert, using a custom deduplication key:
+
+.. code-block:: python
+
+    events_session.trigger("Server is on fire", 'dusty.old.server.net',
+        dedup_key='abc123')
+    # ...
+    events_session.acknowledge('abc123')
+
+Submit a change event using a ``ChangeEventsAPISession`` instance:
+
+.. code-block:: python
+
+    change_events_session.submit("new build finished at latest HEAD",
+        source="automation")
 
 Logging and debugging
 *********************
@@ -703,68 +734,6 @@ before finally returning with the status 404 `requests.Response`_ object:
     session.sleep_timer_base = 2
     response = session.get('/users/PNOEXST')
 
-
-Events API
-**********
-
-As an added bonus, ``pdpyras`` provides an additional Session class for submitting
-alert data to the Events API and triggering incidents asynchronously:
-:class:`pdpyras.EventsAPISession`. It has most of the same features as
-:class:`pdpyras.APISession`:
-
-* Connection persistence
-* Automatic cooldown and retry in the event of rate limiting or a transient network error
-* Setting all required headers
-* Configurable HTTP retry logic
-
-To instantiate a session object, pass the constructor the routing key. Code
-samples in this section will assume a variable named ``session`` constructed in
-this way. For example, given an environment variable ``PD_API_KEY`` set to an
-events API v2 (or global event routing) API key:
-
-.. code-block:: python
-
-    import os
-    import pdpyras
-
-    routing_key = os.environ['PD_API_KEY']
-    session = pdpyras.EventsAPISession(routing_key)
-
-To transmit alerts and perform actions through the events API, one would use:
-
-* :attr:`pdpyras.EventsAPISession.trigger`
-* :attr:`pdpyras.EventsAPISession.acknowledge`
-* :attr:`pdpyras.EventsAPISession.resolve`
-
-
-**Example 1:** Trigger an event and use the PagerDuty-supplied deduplication key to resolve it later:
-
-.. code-block:: python
-
-    dedup_key = session.trigger("Server is on fire", 'dusty.old.server.net')
-    # ...
-    session.resolve(dedup_key)
-
-**Example 2:** Trigger an event, specifying a dedup key, and use it to later acknowledge the incident
-
-.. code-block:: python
-
-    session.trigger("Server is on fire", 'dusty.old.server.net',
-        dedup_key='abc123')
-    # ...
-    session.acknowledge('abc123')
-
-Change Events API
-*****************
-
-To submit a change event, create an instance of
-:class:`pdpyras.ChangeEventsAPISession`, passing an Events API v2 key to the
-class constructor as with :class:`EventsAPISession`. Then, call
-:attr:`pdpyras.ChangeEventsAPISession.submit`, i.e.
-
-.. code-block:: python
-
-    session.submit("new build finished at latest HEAD", source="automation")
 
 
 Contributing
