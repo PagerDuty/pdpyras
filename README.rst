@@ -101,67 +101,49 @@ Usage Guide
 Authentication
 **************
 
-All REST API examples included in this documentation assume that the variable
-``session`` is an instance of :class:`APISession`. When constructing an
-instance, the first argument, required, is always the API key used for `API
-authentication`_.
+The first step is to construct a session instance. The first argument to the
+constructor is the API key used to access the API:
 
-If the session will be used for API endpoints that require a ``From`` header,
-such as taking actions on incidents, and if using an account-level API key
-(created by an administrator via the "API Access Keys" page in the
-"Integrations" menu), it is recommended to also include the ``default_from``
-keyword argument, or HTTP 400 responses will result when attempting to
-use such endpoints.
+.. code-block:: python
+
+    import pdpyras
+
+    # REST API v2:
+    session = pdpyras.APISession(API_KEY)
+
+    # REST API v2 with an OAuth2 access token:
+    session_oauth = pdpyras.APISession(OAUTH_TOKEN, auth_type='oauth2')
+
+    # Events API v2:
+    events_session = pdpyras.EventsAPISession(ROUTING_KEY)
+
+    # A special session class for the change events API (part of Events API v2):
+    change_events_session = pdpyras.ChangeEventsAPISession(ROUTING_KEY)
+
+Session objects, being descendants of `requests.Session`_, can also be used as
+context managers. For example:
+
+.. code-block:: python
+
+    with pdpyras.APISession(API_KEY) as session:
+        do_application(session)
+
+If the `REST API v2`_ session will be used for API endpoints that require a
+``From`` header, such as those that take actions on incidents, and if it is
+using an account-level API key (created by an administrator via the "API Access
+Keys" page in the "Integrations" menu), it is recommended to also include the
+``default_from`` keyword argument. If one does not, or does not set the header
+in a keyword argument when making the request to such an API endpoint, a HTTP
+400 response will result.
 
 Otherwise, if using a user's API key (created under "API Access" in the "User
 Settings" tab of the user's profile), the user will be derived from the key
 itself and ``default_from`` is not necessary.
 
 When encountering status 401 (unauthorized), the client will immediately raise
-:class:`pdpyras.PDClientError`, as this can be considered a non-transient error
-under any circumstance.
+``pdpyras.PDClientError``, as this can be considered a non-transient error.
 
-Using a basic REST API key
-++++++++++++++++++++++++++
-
-For example, given an environment variable ``PD_API_KEY`` set to an
-account-wide REST API key, and a dummy user in the PagerDuty account with email
-address "api@example-company.com":
-
-.. code-block:: python
-
-    import os
-    from pdpyras import APISession
-
-    api_key = os.environ['PD_API_KEY']
-    session = APISession(api_key, default_from="api@example-company.com")
-
-Using an OAuth2 token
-+++++++++++++++++++++
-
-When using an OAuth2 token, pass the keyword argument ``auth_type='oauth2'``
-or ``auth_type='bearer'`` to the constructor. This tells the client to set the
-``Authorization`` header appropriately in order to use this type of API
-credential.
-
-Example:
-
-.. code-block:: python
-
-    session = APISession(oauth_token_here, auth_type='oauth2')
-
-Note, obtaining an access token via the OAuth 2 flow is outside the purview of
-an API client, and should be performed separately by your application.
-
-For further information on OAuth 2 authentication with PagerDuty, refer to the
-official documentation:
-
-* `OAuth 2 Functionality <https://v2.developer.pagerduty.com/docs/oauth-2-functionality>`_
-* `OAuth 2: PKCE Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-pkce>`_
-* `OAuth 2: Authorization Code Grant Flow <https://v2.developer.pagerduty.com/docs/oauth-2-functionality-client-secret>`_
-
-
-Basic usage
+Basic Usage
 ***********
 
 Some examples of usage:
