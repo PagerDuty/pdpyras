@@ -13,24 +13,23 @@ Also includes clients for the Events and Change Events APIs.
 
 About
 -----
-This library supplies a class :class:`pdpyras.APISession` extending
-`requests.Session`_ from the Requests_ HTTP library. It serves as a practical
-and simple-as-possible-but-no-simpler HTTP client for accessing the PagerDuty
-REST API and events API.
-
-It takes care of all of the most common prerequisites and necessities
-pertaining to accessing the API so that implementers can focus on the request
-and response body schemas of each particular resource (as documented in our
-`REST API Reference`_) and do what they need to get done.
+This library supplies classes extending `requests.Session`_ from the Requests_
+HTTP library that serve as Python interfaces to the `REST API v2`_ and `Events
+API v2`_ of PagerDuty. One might call it an opinionated wrapper library. It was
+designed with the philosophy that Requests_ is a perfectly adequate HTTP
+client, and that abstraction should focus only on the most generally applicable
+and frequently-implemented core features, requirements and tasks. Design
+decisions concerning how any particular PagerDuty resource is accessed or
+manipulated through APIs are left to the user or implementer to make.
 
 Features
 ********
 - Uses Requests' automatic HTTP connection pooling and persistence
 - Tested in / support for Python 3.5 through 3.9
+- Abstraction layer for authentication, pagination, scalar filtering and
+  wrapped entities
 - Configurable cooldown/reattempt logic for handling rate limiting and
   transient HTTP or network issues
-- Abstraction for `pagination`_, `wrapped entities`_, `API authentication`_ and
-  more
 
 History
 *******
@@ -52,7 +51,7 @@ control over how API calls were made.
 
 Copyright
 *********
-All the code in this distribution is Copyright (c) 2018 PagerDuty.
+All the code in this distribution is Copyright (c) 2023 PagerDuty.
 
 ``pdpyras`` is made available under the MIT License:
 
@@ -92,9 +91,9 @@ If ``pip`` is available, it can be installed via:
 
     pip install pdpyras
 
-Alternately, if requests_ has already been installed locally, and ``urllib3``
-is available, one can simply download `pdpyras.py`_ into the directory where it
-will be used.
+Alternately, if the Requests_ Python library has already been installed
+locally, one can simply download `pdpyras.py`_ into the directory where it will
+be used.
 
 Usage Guide
 -----------
@@ -904,6 +903,8 @@ local file tree is clean (has no uncommitted changes). Then run:
 .. References:
 .. -----------
 
+.. _`REST API v2`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUw-rest-api-v2-overview
+.. _`Events API v2`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgw-events-api-v2-overview
 .. _Requests: https://docs.python-requests.org/en/master/
 .. _`Errors`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors
 .. _`PagerDuty API Reference`: https://developer.pagerduty.com/api-reference/
