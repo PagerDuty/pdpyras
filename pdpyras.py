@@ -349,15 +349,11 @@ ENTITY_WRAPPER_CONFIG = {
     'POST /incidents/{id}/status_updates/subscribers': ('subscribers', 'subscriptions'),
     'POST /incidents/{id}/status_updates/unsubscribe': ('subscribers', None),
     'GET /incidents/{id}/business_services/impacts': 'services',
-    # No entity wrapping
     'PUT /incidents/{id}/business_services/{business_service_id}/impacts': None,
 
     # Incident Workflows
     'POST /incident_workflows/{id}/instances': 'incident_workflow_instance',
     'POST /incident_workflows/triggers/{id}/services': ('service', 'trigger'),
-    # This is an odd one. It issues 201 Created for success instead of 204 No
-    # Content as is customary, and the body includes the updated trigger object:
-    'DELETE /incident_workflows/triggers/{trigger_id}/services/{service_id}': (None, 'trigger'),
 
     # Response Plays
     'POST /response_plays/{response_play_id}/run': None, # (deprecated)
