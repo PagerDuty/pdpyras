@@ -276,8 +276,8 @@ CURSOR_BASED_PAGINATION_PATHS = [
 
 # Entity wrapper name configuration
 #
-# When trying to determine the entity wrapper name, this dictionary is checked
-# for keys that apply to a given endpoint based on a matching logic.
+# When trying to determine the entity wrapper name, the following dictionary is
+# checked for keys that apply to a given endpoint based on a matching logic.
 #
 # MODIFYING THIS GLOBAL CAN BREAK IMPLEMENTATIONS OF THE CLIENT. Be careful when
 # modifying the entity wrapper configuration for existing entries or adding
