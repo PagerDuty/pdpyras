@@ -670,7 +670,7 @@ def resource_envelope(method):
     """
     return wrapped_entities(method)
 
-def resource_path(method):
+def resource_url(method):
     """
     API call decorator that allows passing a resource dict as the path/URL
 
@@ -900,7 +900,8 @@ class PDSession(requests.Session):
     :param api_key:
         REST API access token to use for HTTP requests
     :param debug:
-        Sets :attr:`debug`. Set to True to enable verbose command line output.
+        Sets :attr:`print_debug`. Set to True to enable verbose command line
+        output.
     :type token: str
     :type debug: bool
     """
@@ -987,13 +988,14 @@ class PDSession(requests.Session):
     url = ""
 
     def __init__(self, api_key: str, name=None, debug=False):
+        if name is not None:
+            deprecated_kwarg('name', 'It has no effect and will be removed ' \
+                'in v5.1.0.')
         self.parent = super(PDSession, self)
         self.parent.__init__()
         self.api_key = api_key
         self.log = logging.getLogger(__name__)
-        if name is not None:
-            deprecated_kwarg('name')
-        self.debug = debug
+        self.print_debug = debug
         self.retry = {}
 
     def after_set_api_key(self):
@@ -1030,31 +1032,6 @@ class PDSession(requests.Session):
 
     def cooldown_factor(self):
         return self.sleep_timer_base*(1+self.stagger_cooldown*random())
-
-    @property
-    def debug(self):
-        """
-        If set to True, the logging level of :attr:`log` is set to
-        ``logging.DEBUG`` and all log messages are emitted to ``sys.stderr``.
-        If set to False, the logging level of :attr:`log` is set to
-        ``logging.NOTSET`` and the debugging log handler that prints messages to
-        ``sys.stderr`` is removed. This value thus can be toggled to enable and
-        disable verbose command line output.
-        """
-        return self._debug
-
-    @debug.setter
-    def debug(self, debug):
-        self._debug = debug
-        if debug and not hasattr(self, '_debugHandler'):
-            self.log.setLevel(logging.DEBUG)
-            self._debugHandler = logging.StreamHandler()
-            self.log.addHandler(self._debugHandler)
-        elif not debug and hasattr(self, '_debugHandler'):
-            self.log.setLevel(logging.NOTSET)
-            self.log.removeHandler(self._debugHandler)
-            delattr(self, '_debugHandler')
-        # else: no-op; only happens if debug is set to the same value twice
 
     def normalize_params(self, params):
         """
@@ -1101,6 +1078,36 @@ class PDSession(requests.Session):
         if user_headers:
             headers.update(user_headers)
         return headers
+
+    @property
+    def print_debug(self):
+        """
+        Printing debug flag
+
+        If set to True, the logging level of :attr:`log` is set to
+        ``logging.DEBUG`` and all log messages are emitted to ``sys.stderr``.
+        If set to False, the logging level of :attr:`log` is set to
+        ``logging.NOTSET`` and the debugging log handler that prints messages to
+        ``sys.stderr`` is removed. This value thus can be toggled to enable and
+        disable verbose command line output.
+
+        It is ``False`` by default and it is recommended to keep it that way in
+        production settings.
+        """
+        return self._debug
+
+    @print_debug.setter
+    def print_debug(self, debug):
+        self._debug = debug
+        if debug and not hasattr(self, '_debugHandler'):
+            self.log.setLevel(logging.DEBUG)
+            self._debugHandler = logging.StreamHandler()
+            self.log.addHandler(self._debugHandler)
+        elif not debug and hasattr(self, '_debugHandler'):
+            self.log.setLevel(logging.NOTSET)
+            self.log.removeHandler(self._debugHandler)
+            delattr(self, '_debugHandler')
+        # else: no-op; only happens if debug is set to the same value twice
 
     def request(self, method, url, **kwargs):
         """
@@ -1202,26 +1209,18 @@ class PDSession(requests.Session):
 
     @property
     @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
-        current_version=__version__,
-        details='Use require_complete_results instead.'
-    )
+        current_version=__version__)
     def raise_if_http_error(self):
         """
         (DEPRECATED) Raise an exception in iteration if there is a HTTP error.
-
-        As of v5.0, the REST API client behavior concerning pagination that was
-        previously covered by this property is controlled via
-        :attr:`APISession.require_complete_results`
         """
-        return self.require_complete_results
+        return True
 
     @raise_if_http_error.setter
     @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
-        current_version=__version__,
-        details='Use require_complete_results instead.'
-    )
+        current_version=__version__)
     def raise_if_http_error(self, val: bool):
-        self.require_complete_results = val
+        pass
 
     @property
     def stagger_cooldown(self):
@@ -1554,8 +1553,7 @@ class APISession(PDSession):
     :param api_key:
         REST API access token to use for HTTP requests
     :param name:
-        Optional name identifier for logging. If unspecified or ``None``, it
-        will be the last four characters of the REST API token.
+        Deprecated and has no effect as of v5.0.0
     :param default_from:
         The default email address to use in the ``From`` header when making
         API calls using an account-level API access key.
@@ -1585,15 +1583,6 @@ class APISession(PDSession):
     """
 
     permitted_methods = ('GET', 'POST', 'PUT', 'DELETE')
-
-    require_complete_results = True
-    """
-    Require pagination functions to validate that the full series is returned.
-
-    If True, an exception will be raised if the client cannot retrieve all
-    results of a series due to an error. If False, iteration will simply stop
-    when there is a HTTP error, and incomplete results will be returned.
-    """
 
     url = 'https://api.pagerduty.com'
     """Base URL of the REST API"""
@@ -1784,7 +1773,8 @@ class APISession(PDSession):
         :rtype: dict
         """
         if paginate is not None:
-            deprecated_kwarg('paginate')
+            deprecated_kwarg('paginate', details='It has no effect as of ' \
+                'v5.0.0 and will be removed in v5.1.0.')
         # Get entity wrapping and validate that the URL being requested is
         # likely to support pagination:
         path = canonical_path(self.url, url)
@@ -1887,35 +1877,28 @@ class APISession(PDSession):
 
     def iter_cursor(self, url, attribute=None, params=None, item_hook=None):
         """
-        Iterator for results from an endpoint supporting cursor-based pagination
-
-        This function allows the user to specify the entity wrapper and so does
-        not use unwrap.
+        Iterator for results from an endpoint using cursor-based pagination.
 
         :param url:
             The index endpoint URL to use.
         :param attribute:
-            The property in the JSON body, i.e. ``records`` for
-            ``/audit/records``, in which to find results. If None is specified,
-            a guess will be made as to the envelope name (that it is the same as
-            the last node in the URI path).
+            User-specified entity wrapper to use. Deprecated and has no effect
+            as of v5.0.0, and will be removed in v5.1.0.
         :param params:
             Query parameters to include in the request.
         :param item_hook:
             A callable object that accepts 3 positional arguments; see
-            `iter_all`_
         """
+        if attribute is not None:
+            deprecated_kwarg('attribute', details='It has no effect as of ' \
+                'v5.0.0 and will be removed in v5.1.0.')
         path = canonical_path(self.url, url)
         endpoint = f"GET {path}"
         if path not in CURSOR_BASED_PAGINATION_PATHS:
             raise URLError(
                 f"{endpoint} does not support cursor-based pagination."
             )
-        context = 'cursor-based pagination'
-        if type(attribute) is str:
-            wrapper = attribute
-        else:
-            _, wrapper = entity_wrappers('GET', path)
+        _, wrapper = entity_wrappers('GET', path)
         user_params = {}
         if isinstance(params, (dict, list)):
             # Override defaults with values given:
@@ -1946,44 +1929,41 @@ class APISession(PDSession):
             next_cursor = body.get('next_cursor', None)
             more = bool(next_cursor)
 
+    @resource_url
     @auto_json
-    def jget(self, path, **kw):
+    def jget(self, url, **kw):
         """
         Performs a GET request, returning the JSON-decoded body as a dictionary
-
-        :raises PDClientError: In the event of HTTP error
         """
-        return self.get(path, **kw)
+        return self.get(url, **kw)
 
+    @resource_url
     @auto_json
-    def jpost(self, path, **kw):
+    def jpost(self, url, **kw):
         """
         Performs a POST request, returning the JSON-decoded body as a dictionary
-
-        :raises PDClientError: In the event of HTTP error
         """
-        return self.post(path, **kw)
+        return self.post(url, **kw)
 
+    @resource_url
     @auto_json
-    def jput(self, path, **kw):
+    def jput(self, url, **kw):
         """
         Performs a PUT request, returning the JSON-decoded body as a dictionary
-
-        :rauses PDClientError: In the event of HTTP errror
         """
-        return self.put(path, **kw)
+        return self.put(url, **kw)
 
-    def list_all(self, path, **kw):
+    def list_all(self, url, **kw):
         """
         Returns a list of all objects from a given index endpoint.
 
         All keyword arguments passed to this function are also passed directly
         to :attr:`iter_all`; see the documentation on that method for details.
 
-        :param path:
+        :param url:
             The index endpoint URL to use.
         """
-        return list(self.iter_all(path, **kw))
+        return list(self.iter_all(url, **kw))
 
     def persist(self, resource, attr, values, update=False):
         """
@@ -2093,9 +2073,9 @@ class APISession(PDSession):
         path_str = '/'.join(tokenize_url_path(path, baseurl=self.url))
         return '%s:%s'%(method.lower(), path_str)+my_suffix
 
-    @resource_path
+    @resource_url
     @requires_success
-    def rdelete(self, resource, **kw):
+    def rdelete(self, resource, **kw) -> requests.Response:
         """
         Delete a resource.
 
@@ -2105,11 +2085,11 @@ class APISession(PDSession):
             whose value is the URL of the resource.
         :param \*\*kw:
             Keyword arguments to pass to ``requests.Session.delete``
-        :type path: str or dict
+        :type resource: str or dict
         """
-        self.delete(resource, **kw)
+        return self.delete(resource, **kw)
 
-    @resource_path
+    @resource_url
     @wrapped_entities
     def rget(self, resource, **kw):
         """
@@ -2148,7 +2128,7 @@ class APISession(PDSession):
         """
         return self.post(path, **kw)
 
-    @resource_path
+    @resource_url
     @wrapped_entities
     def rput(self, resource, **kw):
         """
