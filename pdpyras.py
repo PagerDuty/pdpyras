@@ -902,6 +902,8 @@ class PDSession(requests.Session):
     :param debug:
         Sets :attr:`print_debug`. Set to True to enable verbose command line
         output.
+    :param name:
+        Deprecated in v5.0.0; will be removed in v5.1.0.
     :type token: str
     :type debug: bool
     """
@@ -1543,7 +1545,7 @@ class ChangeEventsAPISession(PDSession):
 
 class APISession(PDSession):
     """
-    PagerDuty REST API session objects
+    PagerDuty REST API v2 session object class.
 
     Implements the most generic and oft-implemented aspects of PagerDuty's REST
     API v2 as an opinionated wrapper of `requests.Session`_.
