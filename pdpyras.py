@@ -983,8 +983,8 @@ class PDSession(requests.Session):
 
     timeout = TIMEOUT
     """
-    This is the value sent to `requests.Session.request`_ as the ``timeout``
-    parameter that determines the TCP read timeout.
+    This is the value sent to `Requests`_ as the ``timeout`` parameter that
+    determines the TCP read timeout.
     """
 
     url = ""
@@ -1062,7 +1062,7 @@ class PDSession(requests.Session):
         """
         Perform supplemental actions immediately after receiving a response.
 
-        This method is called by :func:`request` for all requests, and can be
+        This method is called once per request not including retries, and can be
         extended in child classes.
         """
         pass
@@ -1122,7 +1122,7 @@ class PDSession(requests.Session):
             The path/URL to request. If it does not start with the base URL, the
             base URL will be prepended.
         :param \*\*kwargs:
-            Additional keyword arguments to pass to `requests.Session.request`_
+            Additional keyword arguments to pass to `Requests`_
         :type method: str
         :type url: str
         :returns: the HTTP response object
@@ -1977,8 +1977,9 @@ class APISession(PDSession):
         persisted via the API (whether or not it already existed).
 
         :param resource:
-            The resource name. Must be a valid API resource that is supported by
-            the ``r*`` methods; see :ref:`Supported Endpoints`.
+            The URL to use when creating the new resource or searching for an
+            existing one. The underlying AP must support entity wrapping to use
+            this method with it.
         :param attr:
             Name of the attribute to use as the idempotency key. For instance,
             "email" when the resource is "users" will not create the user if a
@@ -2016,8 +2017,7 @@ class APISession(PDSession):
         Records performance information / request metadata about the API call.
 
         :param response:
-            The `requests.Response`_ object returned by
-            `requests.Session.request`_
+            The `requests.Response`_ object returned by the request method
         :param suffix:
             Optional suffix to append to the key
         :type method: str
