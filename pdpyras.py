@@ -1638,7 +1638,7 @@ class APISession(PDSession):
         return self._auth_type
 
     @auth_type.setter
-    def auth_type(self, value):
+    def auth_type(self, value: str):
         if value not in ('token', 'bearer', 'oauth2'):
             raise AttributeError("auth_type value must be \"token\" (default) "
                 "or \"bearer\" or \"oauth\" to use OAuth2 authentication.")
@@ -1680,7 +1680,7 @@ class APISession(PDSession):
         entry in the index endpoint schema's array of results. Otherwise, it
         will return ``None`` if no result is found or an error is encountered.
 
-        Works by querying a given `resource index`_ endpoint using the ``query``
+        Works by querying a given resource index endpoint using the ``query``
         parameter. To use this function on any given resource, the resource's
         index must support the ``query`` parameter; otherwise, the function may
         not work as expected. If the index ignores the parameter, for instance,
@@ -1788,11 +1788,11 @@ class APISession(PDSession):
             # parameter refers to a resource type versus a unique ID, we will
             # have to distinguish between types of path parameters somehow.
             raise URLError(f"Path {path} (URL={url}) is for accessing an " \
-                "individual resource and does not feature pagination.")
+                "individual resource, versus a resource collection, and as " \
+                "such does not feature pagination.")
         _, wrapper = entity_wrappers('GET', path)
         if wrapper is None:
-            raise URLError(f"Pagination is not supported for {path} " \
-                'because entity wrapping is disabled.')
+            raise URLError(f"Pagination is not supported for GET {path}.")
 
         # Short-circuit to cursor-based iteration:
         if path in CURSOR_BASED_PAGINATION_PATHS:
