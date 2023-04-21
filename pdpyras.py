@@ -447,7 +447,7 @@ def endpoint_matches(endpoint_pattern: str, method: str, path: str):
         is the HTTP method in uppercase or ``*`` to match all methods, and
         ``PATH`` is a canonical API path.
     :param m: The HTTP method
-    :param p: The canonical API path (i.e. as returned by `canonical_path`_)
+    :param p: The canonical API path (i.e. as returned by ``canonical_path``)
     :rtype: boolean
     """
     return (
@@ -603,25 +603,22 @@ def infer_entity_wrapper(method: str, path: str):
         return path_nodes[-1]
 
 
-def unwrap(body, wrapper, endpoint=None, response=None):
+def unwrap(response: requests.Response, wrapper):
     """
     Unwraps and returns a wrapped entity.
 
+    :param response: The `requests.Response`_ object
     :param body: The entire content of the response body after JSON-decoding
     :param wrapper: The wrapper
-    :param endpoint: The endpoint, for error handling
-    :param response: A class `requests.Response`_ object, for error handling
     :type wrapper: str or None
-    :type endpoint: str
     """
-    ep_msg = ''
-    if type(endpoint) is str:
-        ep_msg = " for {endpoint}"
+    body = try_decoding(response)
+    endpoint = "%s %s"%(response.request.method.upper(), response.request.url)
     if wrapper is not None:
         # There is a wrapped entity to unpack:
         bod_type = type(body)
-        error_msg = f"Expected response body{ep_msg} after JSON-decoding" \
-            f"to be a dict and have a key \"{wrapper}\", but %s."
+        error_msg = f"Expected response body for {endpoint} after JSON-" \
+            f"decoding to be a dict and have a key \"{wrapper}\", but %s."
         if bod_type is dict:
             if wrapper in body:
                 return body[wrapper]
@@ -738,7 +735,7 @@ def wrapped_entities(method):
         r = successful_response(method(self, url, **pass_kw))
 
         # Unpack the response:
-        return unwrap(try_decoding(r), res_w, endpoint=endpoint, response=r)
+        return unwrap(r, res_w)
     return call
 
 
@@ -1840,16 +1837,12 @@ class APISession(PDSession):
                 return
 
             # Make the request and validate/unpack the response:
-            context='numeric pagination'
-            r = self.get(url, params=data.copy())
-            if self.require_complete_results:
-                successful_response(r, context=context)
-            if not r.ok:
-                warn(http_error_message(r, context=context) + \
-                    '; results may be incomplete')
-                return
+            r = successful_response(
+                self.get(url, params=data.copy()),
+                context='classic pagination'
+            )
             body = try_decoding(r)
-            results = unwrap(body, wrapper, endpoint=endpoint, response=r)
+            results = unwrap(r, wrapper)
 
             # Validate and update pagination parameters
             #
@@ -1928,21 +1921,19 @@ class APISession(PDSession):
         more = True
         next_cursor = None
         total = 0
+
         while more:
             # Update parameters and request a new page:
             if next_cursor:
                 user_params.update({'cursor': next_cursor})
-            r = self.get(url, params=user_params)
-            if self.require_complete_results:
-                successful_response(r)
-            if not r.ok:
-                warn(http_error_message(r, context=context) + \
-                    '; results may be incomplete')
-                return
+            r = successful_response(
+                self.get(url, params=user_params),
+                context='cursor-based pagination',
+            )
 
             # Unpack and yield results
             body = try_decoding(r)
-            results = unwrap(body, wrapper, endpoint=endpoint, response=r)
+            results = unwrap(r, wrapper)
             for result in results:
                 total += 1
                 if hasattr(item_hook, '__call__'):
