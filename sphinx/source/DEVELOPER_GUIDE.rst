@@ -74,7 +74,7 @@ Request and Response Bodies
 ***************************
 To set the request body in a post or put request, set the ``json`` keyword
 argument; its type should be ``dict``. If using
-:attr:`pdpyras.APISession.rpost`_ or :attr:`pdpyras.APISession.rput`_, the
+:attr:`pdpyras.APISession.rpost` or :attr:`pdpyras.APISession.rput`, the
 supplied value may omit the wrapper (see "Entity Wrapping").
 
 To obtain the response from the API, if using  ``get``, ``post``, ``put`` or
@@ -89,7 +89,7 @@ dict object. Other metadata such as headers can also be obtained:
     # Support in the event of server errors (status 5xx):
     print(response.headers['x-request-id'])
 
-If using the ``j*`` methods, i.e. :attr:`APISession.jget`_, the return value
+If using the ``j*`` methods, i.e. :attr:`APISession.jget`, the return value
 will be the full body of the response from the API after JSON-decoding. These
 methods accept the same arguments as the body of the API response if
 successful; otherwise :class:`PDClientError` will be raised.
@@ -151,7 +151,7 @@ Resource schemas
 Main article: `Resource Schemas <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU5-resource-schemas>`_
 
 The details of any given resource's schema can be found in the request and
-response examples from the `REST API Reference`_ pages for the resource's
+response examples from the `PagerDuty API Reference`_ pages for the resource's
 respective API, as well as the page documenting the resource type itself.
 
 Entity Wrapping

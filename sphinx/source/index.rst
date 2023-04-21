@@ -1,6 +1,6 @@
 .. include:: ../../README.rst
 .. include:: DEVELOPER_GUIDE.rst
-.. include:: ADVANCED_TOPICS
+.. include:: ADVANCED_TOPICS.rst
 .. include:: RELEASING.rst
 
 
@@ -16,18 +16,17 @@ API Client Classes
 .. autoclass:: pdpyras.PDSession
     :members:
 
+
 .. autoclass:: pdpyras.APISession
     :members:
-    .. automethod:: rdelete(self, path, \*\*kw)
-    .. automethod:: rget(self, path, \*\*kw)
-    .. automethod:: rpost(self, path, \*\*kw)
-    .. automethod:: rput(self, path, \*\*kw)
 
 .. autoclass:: pdpyras.EventsAPISession
     :members:
 
+
 .. autoclass:: pdpyras.ChangeEventsAPISession
     :members:
+
 
 Errors
 ******

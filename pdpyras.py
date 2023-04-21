@@ -666,7 +666,7 @@ def resource_envelope(method):
     """
     Convenience and consistency decorator for HTTP verb functions.
 
-    DEPRECATED. Use `wrapped_entities`_ instead.
+    DEPRECATED. Use wrapped_entities instead.
     """
     return wrapped_entities(method)
 
