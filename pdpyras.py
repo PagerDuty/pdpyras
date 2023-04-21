@@ -743,14 +743,17 @@ def wrapped_entities(method):
 ### HELPER FUNCTIONS ###
 ########################
 
-def deprecated_kwarg(deprecated_name: str, new_name=None):
-    """Raises a `DeprecatedWarning`_"""
-    new_name_msg = ''
-    if new_name is not None:
-        new_name_msg = f" Use \"{new_name}\" instead."
-    raise DeprecatedWarning(
-        f"Keyword argument \"{deprecated_name}\" is deprecated.{new_name_msg}"
-    )
+def deprecated_kwarg(deprecated_name: str, details=None):
+    """
+    Raises a warning if a deprecated keyword argument is used.
+
+    :param deprecated_name: The name of the deprecated function
+    :param details: An optional message to append to the deprecation message
+    """
+    details_msg = ''
+    if details is not None:
+        details_msg = f" {details}"
+    warn(f"Keyword argument \"{deprecated_name}\" is deprecated.{details_msg}")
 
 def http_error_message(r: requests.Response, context=None):
     """
