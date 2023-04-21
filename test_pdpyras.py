@@ -54,14 +54,11 @@ class Response(object):
             self.url = 'https://api.pagerduty.com'
         self.elapsed = datetime.timedelta(0,1.5)
         self.request = Mock(url=self.url)
-
-
         self.headers = {'date': 'somedate',
             'x-request-id': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'}
         self.request.method = method
         self.json = MagicMock()
         self.json.return_value = json.loads(text)
-
 
 class URLHandlingTest(unittest.TestCase):
 
@@ -172,8 +169,21 @@ class EntityWrappingTest(unittest.TestCase):
                 pdpyras.infer_entity_wrapper(*method_path),
             )
 
-class FunctionDecoratorsTest(unittest.TestCase):
+    def test_unwrap(self):
+        # Response has unexpected type, raise:
+        r = Response(200, json.dumps([]))
+        self.assertRaises(pdpyras.PDServerError, pdpyras.unwrap, r, 'foo')
+        # Response has unexpected structure, raise:
+        r = Response(200, json.dumps({'foo_1': {'bar':1}, 'foo_2': 'bar2'}))
+        self.assertRaises(pdpyras.PDServerError, pdpyras.unwrap, r, 'foo')
+        # Response has the expected structure, return the wrapped entity:
+        foo_entity = {'type':'foo_reference', 'id': 'PFOOBAR'}
+        r = Response(200, json.dumps({'foo': foo_entity}))
+        self.assertEqual(foo_entity, pdpyras.unwrap(r, 'foo'))
+        # Disabled entity wrapping (wrapper=None), return body as-is
+        self.assertEqual({'foo': foo_entity}, pdpyras.unwrap(r, None))
 
+class FunctionDecoratorsTest(unittest.TestCase):
     @patch.object(pdpyras.APISession, 'put')
     def test_resource_path(self, put_method):
         sess = pdpyras.APISession('some-key')
@@ -401,15 +411,6 @@ class EventsSessionTest(SessionTest):
 
 class APISessionTest(SessionTest):
 
-    def debug(self, sess):
-        """
-        Enables debug level logging to stderr in order to see logging
-        """
-        sh = logging.StreamHandler()
-        sh.setLevel(logging.DEBUG)
-        sess.log.addHandler(sh)
-        sess.log.setLevel(logging.DEBUG)
-
     def test_oauth_headers(self):
         secret = 'randomly generated lol'
         for authtype in 'oauth2', 'bearer':
@@ -419,14 +420,14 @@ class APISessionTest(SessionTest):
                 "Bearer "+secret
             )
 
-    def test_debug(self):
+    def test_print_debug(self):
         sess = pdpyras.APISession('token')
         log = Mock()
         log.setLevel = Mock()
         log.addHandler = Mock()
         sess.log = log
         # Enable:
-        sess.debug = True
+        sess.print_debug = True
         log.setLevel.assert_called_once_with(logging.DEBUG)
         self.assertEqual(1, len(log.addHandler.call_args_list))
         self.assertTrue(isinstance(
@@ -436,7 +437,7 @@ class APISessionTest(SessionTest):
         # Disable:
         log.setLevel.reset_mock()
         log.removeHandler = Mock()
-        sess.debug = False
+        sess.print_debug = False
         log.setLevel.assert_called_once_with(logging.NOTSET)
         self.assertEqual(1, len(log.removeHandler.call_args_list))
         self.assertTrue(isinstance(
@@ -447,11 +448,11 @@ class APISessionTest(SessionTest):
         sess = pdpyras.APISession('token', debug=True)
         self.assertTrue(isinstance(sess._debugHandler, logging.StreamHandler))
         # Setter should be idempotent:
-        sess.debug = False
-        sess.debug = False
+        sess.print_debug = False
+        sess.print_debug = False
         self.assertFalse(hasattr(sess, '_debugHandler'))
-        sess.debug = True
-        sess.debug = True
+        sess.print_debug = True
+        sess.print_debug = True
         self.assertTrue(hasattr(sess, '_debugHandler'))
 
     @patch.object(pdpyras.APISession, 'iter_all')
@@ -471,7 +472,26 @@ class APISessionTest(SessionTest):
     @patch.object(pdpyras.APISession, 'get')
     def test_iter_all(self, get):
         sess = pdpyras.APISession('token')
-        sess.log = MagicMock() # Or go with self.debug(sess) to see output
+        sess.log = MagicMock()
+
+        # Test: user tries to use iter_all on a singular resource, raise error:
+        self.assertRaises(
+            pdpyras.URLError,
+            lambda p: list(sess.iter_all(p)),
+            'users/PABC123'
+        )
+        # Test: user tries to use iter_all on an endpoint that doesn't actually
+        # support pagination, raise error:
+        self.assertRaises(
+            pdpyras.URLError,
+            lambda p: list(sess.iter_all(p)),
+            '/analytics/raw/incidents/Q3R8ZN19Z8K083/responses'
+        )
+
+        # Generate a dummy page. This deliberately returns results 10 at a time
+        # and not the limit property in order to verify we are not using the
+        # response properties but rather the count of results to increment
+        # the limit:
         page = lambda n, t, l: {
             'users': [{'id':i} for i in range(10*n, 10*(n+1))],
             'total': t,
@@ -510,14 +530,6 @@ class APISessionTest(SessionTest):
             Response(200, json.dumps(page(4, 50, 10))),
         ]
         get.side_effect = copy.deepcopy(error_encountered)
-        sess.require_complete_results = False
-        new_items = list(sess.iter_all(weirdurl))
-        self.assertEqual(items, new_items)
-
-        # Now test raising an exception:
-        get.reset_mock()
-        get.side_effect = copy.deepcopy(error_encountered)
-        sess.require_complete_results = True
         self.assertRaises(pdpyras.PDClientError, list, sess.iter_all(weirdurl))
 
         # Test reaching the iteration limit:
@@ -547,25 +559,33 @@ class APISessionTest(SessionTest):
     @patch.object(pdpyras.APISession, 'get')
     def test_iter_cursor(self, get):
         sess = pdpyras.APISession('token')
-        sess.log = MagicMock() # Or go with self.debug(sess) to see output
-        page = lambda e, r, c: json.dumps({
-            e: r,
-            'next_cursor': c
+        sess.log = MagicMock()
+        # Generate a dummy response dict
+        page = lambda wrapper, results, cursor: json.dumps({
+            wrapper: results,
+            'next_cursor': cursor
         })
+        # Test: user tries to use iter_cursor where it won't work, raise:
+        self.assertRaises(
+            pdpyras.URLError,
+            lambda p: list(sess.iter_cursor(p)),
+            'incidents', # Maybe some glorious day, but not as of this writing
+        )
+
+        # Note, for this next test and the one after it, we must send a lambda
+        # to assertRaises because the method returns a generator
+        # Test: guessing the envelope name, incorrect
         wrong_envelope_name = [
             Response(200, page('audit_records', [1, 2, 3], None))
         ]
         get.side_effect = wrong_envelope_name
-        # Note, for this next test and the one after it, we must send a lambda
-        # to assertRaises because the method returns a generator
-        #
-        # Test: guessing the envelope name, incorrect
         self.assertRaises(
             pdpyras.PDClientError,
             lambda p: list(sess.iter_cursor(p)),
             '/audit/records'
         )
         get.reset_mock()
+
         # Test: taking user's input for the envelope name, incorrect
         get.side_effect = wrong_envelope_name
         self.assertRaises(
@@ -574,6 +594,7 @@ class APISessionTest(SessionTest):
             '/audit/records'
         )
         get.reset_mock()
+
         # Test: guessing the wrapper name, correct guess, cursor parameter
         # exchange, stop iteration when records run out, etc. This isn't what
         # the schema of the audit records API actually looks like apart from the
@@ -590,6 +611,7 @@ class APISessionTest(SessionTest):
         # It should send the next_cursor body parameter from the second to
         # last response as the cursor query parameter in the final request
         self.assertEqual(get.mock_calls[-1][2]['params']['cursor'], 5)
+
 
 
     @patch.object(pdpyras.APISession, 'rput')
@@ -943,7 +965,6 @@ class ChangeEventsSessionTest(SessionTest):
 
 def main():
     ap=argparse.ArgumentParser()
-    ap.add_argument('-d', dest='debug', action='store_true', default=0)
     unittest.main()
 
 if __name__ == '__main__':
