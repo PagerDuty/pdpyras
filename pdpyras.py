@@ -535,7 +535,7 @@ def entity_wrappers(method: str, path: str):
     body object unmodified.
 
     :param method: The HTTP method
-    :param path: A canonical API path i.e. as returned by `canonical_path`_
+    :param path: A canonical API path i.e. as returned by ``canonical_path``
     :rtype: tuple
     """
     m = method.upper()
@@ -585,7 +585,7 @@ def infer_entity_wrapper(method: str, path: str):
     given path in ENTITY_WRAPPER_CONFIG
 
     :param method: The HTTP method
-    :param path: A canonical API path i.e. as returned by `canonical_path`_
+    :param path: A canonical API path i.e. as returned by ``canonical_path``
     :rtype str:
     """
     m = method.upper()
@@ -1579,7 +1579,7 @@ class APISession(PDSession):
     default_page_size = 100
     """
     This will be the default number of results requested in each page when
-    iterating/querying an index (the ``limit`` parameter). See: `pagination`_.
+    iterating/querying an index (the ``limit`` parameter).
     """
 
     permitted_methods = ('GET', 'POST', 'PUT', 'DELETE')
