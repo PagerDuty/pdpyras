@@ -92,8 +92,8 @@ If ``pip`` is available, it can be installed via:
     pip install pdpyras
 
 Alternately, if the Requests_ Python library has already been installed
-locally, one can simply download `pdpyras.py`_ into the directory where it will
-be used.
+locally, one can simply download ``pdpyras.py`` into the directory where it
+will be used.
 
 Basic Usage
 -----------
@@ -297,17 +297,13 @@ in the commit message.
 .. References:
 .. -----------
 
-.. _`REST API v2`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUw-rest-api-v2-overview
-.. _`Events API v2`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgw-events-api-v2-overview
-.. _Requests: https://docs.python-requests.org/en/master/
+.. _`Requests`: https://docs.python-requests.org/en/master/
 .. _`Errors`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors
+.. _`Events API v2`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgw-events-api-v2-overview
 .. _`PagerDuty API Reference`: https://developer.pagerduty.com/api-reference/
-.. _`PagerDuty Developer Platform Documentation`: https://developer.pagerduty.com/docs/
+.. _`REST API v2`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUw-rest-api-v2-overview
 .. _`setuptools`: https://pypi.org/project/setuptools/
-.. _make: https://www.gnu.org/software/make/
-.. _requests.Response.json: https://docs.python-requests.org/en/master/api/#requests.Response.json
 .. _requests.Response: https://docs.python-requests.org/en/master/api/#requests.Response
-.. _requests.Session.request: https://docs.python-requests.org/en/master/api/#requests.Session.request
 .. _requests.Session: https://docs.python-requests.org/en/master/api/#request-sessions
 
 .. |circleci-build| image:: https://circleci.com/gh/PagerDuty/pdpyras.svg?style=svg
