@@ -36,11 +36,40 @@
             
   <section id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Permalink to this heading">¶</a></h1>
-<p><strong>2022-12-X: Version 4.6.0:</strong></p>
+<p><strong>2023-05-X: Version 5.0.0:</strong></p>
 <ul class="simple">
-<li><p>New property <code class="xref py py-attr docutils literal notranslate"><span class="pre">APISession.debug</span></code> to enable printing log messages to stderr</p></li>
-<li><p>Removal of deprecated <code class="docutils literal notranslate"><span class="pre">set_api_key</span></code> method</p></li>
-<li><p>Deprecation of optional <code class="docutils literal notranslate"><span class="pre">name</span></code> keyword argument to constructor (this only affected the name of the logger)</p></li>
+<li><dl class="simple">
+<dt><strong>New features:</strong></dt><dd><ul>
+<li><p>Methods that assume entity wrapping like <code class="docutils literal notranslate"><span class="pre">rget</span></code> and <code class="docutils literal notranslate"><span class="pre">iter_all</span></code> now support all API endpoints</p></li>
+<li><p>Property <code class="docutils literal notranslate"><span class="pre">PDSession.print_debug</span></code> enables printing verbose log messages to <code class="docutils literal notranslate"><span class="pre">sys.stderr</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Breaking Changes:</strong></dt><dd><ul>
+<li><p>Removal of the deprecated method <code class="docutils literal notranslate"><span class="pre">PDSession.set_api_key</span></code></p></li>
+<li><p>End support for <a class="reference external" href="https://www.python.org/downloads/release/python-350/">Python v3.5</a>, which has reached end-of-life.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Deprecations:</strong> the following will be removed in the next minor release, and use of them in v5.0.0 will trigger warnings:</dt><dd><ul>
+<li><p>Keyword argument <code class="docutils literal notranslate"><span class="pre">name</span></code> of the session constructor: this previously set the name of the logger; now it has no effect.</p></li>
+<li><p>Keyword argument <code class="docutils literal notranslate"><span class="pre">paginate</span></code> of <code class="docutils literal notranslate"><span class="pre">APISession.iter_all</span></code>: this previously could be set to <code class="docutils literal notranslate"><span class="pre">False</span></code> to make <code class="docutils literal notranslate"><span class="pre">iter_all</span></code> stop iteration after the first page of results; now it has no effect.</p></li>
+<li><p>Keyword argument <code class="docutils literal notranslate"><span class="pre">attribute</span></code> of <code class="docutils literal notranslate"><span class="pre">APISession.iter_all</span></code>: this previously could be used to specify the entity wrapper name of results. The wrapper is now determined automatically and this argument has no effect.</p></li>
+<li><p>Function <code class="docutils literal notranslate"><span class="pre">tokenize_url_path</span></code></p></li>
+<li><p>Function (decorator) <code class="docutils literal notranslate"><span class="pre">resource_envelope</span></code></p></li>
+<li><p>Function <code class="docutils literal notranslate"><span class="pre">object_type</span></code></p></li>
+<li><p>Function <code class="docutils literal notranslate"><span class="pre">raise_on_error</span></code></p></li>
+<li><p>Function <code class="docutils literal notranslate"><span class="pre">resource_name</span></code></p></li>
+<li><p>Property <code class="docutils literal notranslate"><span class="pre">APISession.raise_if_http_error</span></code>: this previously allowed partial results to be returned from <code class="docutils literal notranslate"><span class="pre">iter_all</span></code> in the case of HTTP errors; now it has no effect.</p></li>
+<li><p>Function <code class="docutils literal notranslate"><span class="pre">APISession.profiler_key</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
 </ul>
 <p><strong>2022-10-13: Version 4.5.2</strong></p>
 <ul class="simple">

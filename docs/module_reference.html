@@ -36,10 +36,9 @@
           <div class="body" role="main">
             
   <section id="module-reference">
-<h1>Module Reference<a class="headerlink" href="#module-reference" title="Permalink to this heading">¶</a></h1>
-<p>API client classes supplied by this library are not intended as replacements
-for API documentation or wrappers of PagerDuty’s APIs, but rather wrappers of the
-HTTP client (<a class="reference external" href="https://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>) that make it easier to use PagerDuty’s APIs.</p>
+<span id="id1"></span><h1>Module Reference<a class="headerlink" href="#module-reference" title="Permalink to this heading">¶</a></h1>
+<p>This page covers the documentation of individual methods and classes provided
+by the module. For general usage and examples, refer to the <a class="reference internal" href="user_guide.html#user-guide"><span class="std std-ref">User Guide</span></a>.</p>
 <section id="api-client-classes">
 <h2>API Client Classes<a class="headerlink" href="#api-client-classes" title="Permalink to this heading">¶</a></h2>
 <dl class="py class">
@@ -840,18 +839,16 @@ was recevied from the API.</p>
     <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s1">&#39;/users/PABC123&#39;</span><span class="p">)</span>
 <span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
     <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;HTTP error: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;HTTP error: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">))</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">e</span>
 </pre></div>
 </div>
 <p>one could write this:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
     <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s1">&#39;/users/PABC123&#39;</span><span class="p">)</span>
-<span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDHTTPErrror</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;HTTP error: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
-<span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDHTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;HTTP error: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">))</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -860,8 +857,10 @@ was recevied from the API.</p>
 <dt class="sig sig-object py" id="pdpyras.PDServerError">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">PDServerError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Response</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDServerError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Error class representing failed expectations made of the server</p>
-<p>This is raised in cases where the response schema changes because of some
-bug, or because it’s an early access endpoint, or HTTP status 5xx.</p>
+<p>This is raised in cases where the response schema differs from the expected
+schema because of an API bug, or because it’s an early access endpoint and
+changes before GA, or in cases of HTTP status 5xx where a successful
+response is required.</p>
 </dd></dl>
 
 <dl class="py class">
@@ -976,7 +975,7 @@ body object unmodified.</p>
 the v2 REST API, where the wrapper name is predictable from the path and
 method. This is the default logic applied to determine the wrapper name
 based on the path if there is no explicit entity wrapping defined for the
-given path in ENTITY_WRAPPER_CONFIG</p>
+given path in <code class="docutils literal notranslate"><span class="pre">pdpyras.ENTITY_WRAPPER_CONFIG</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1132,7 +1131,7 @@ need to re-construct the resource URL or hold it in a temporary variable.</p>
 previous to v5.0.0. It is based on assumptions of patterns that are no
 longer universal in REST API v2 but were once much more common.</p>
 <div class="deprecated">
-<p><span class="versionmodified deprecated">Deprecated since version 5.0.0: </span>This will be removed in 5.1.0. Use canonical_path to identify URLs instead. This method now returns the nodes of the canonical path as a tuple and only supports explicitly supported URLs (listed in pdpyras.CANONICAL_PATHS)</p>
+<p><span class="versionmodified deprecated">Deprecated since version 5.0.0: </span>This will be removed in 5.1.0. Use canonical_path instead to identify and classify URLs.</p>
 </div>
 </dd></dl>
 
@@ -1156,7 +1155,7 @@ otherwise.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>response</strong> – The <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object</p></li>
+<li><p><strong>response</strong> – A <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object</p></li>
 <li><p><strong>body</strong> – The entire content of the response body after JSON-decoding</p></li>
 <li><p><strong>wrapper</strong> (<em>str</em><em> or </em><em>None</em>) – The wrapper</p></li>
 </ul>

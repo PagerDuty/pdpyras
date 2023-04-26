@@ -36,82 +36,14 @@
             
   <section id="pdpyras-pagerduty-python-rest-api-sessions">
 <h1>PDPYRAS: PagerDuty Python REST API Sessions<a class="headerlink" href="#pdpyras-pagerduty-python-rest-api-sessions" title="Permalink to this heading">¶</a></h1>
-<p>A lightweight Python client for the PagerDuty REST API.</p>
-<p>Also includes client classes for the Events and Change Events APIs.</p>
-<p><a class="reference external" href="https://circleci.com/gh/PagerDuty/pdpyras"><img alt="circleci-build" src="https://circleci.com/gh/PagerDuty/pdpyras.svg?style=svg" /></a></p>
+<section id="external-resources">
+<h2>External Resources<a class="headerlink" href="#external-resources" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference external" href="https://pagerduty.github.io/pdpyras">Documentation</a></p></li>
-<li><p><a class="reference external" href="https://github.com/PagerDuty/pdpyras">GitHub</a></p></li>
-<li><p><a class="reference external" href="https://github.com/PagerDuty/pdpyras/tree/master/CHANGELOG.rst">Changelog</a></p></li>
+<li><p><a class="reference external" href="https://github.com/PagerDuty/pdpyras">GitHub Repository</a></p></li>
+<li><p><a class="reference external" href="https://pypi.org/project/pdpyras/">PyPI Project Page</a></p></li>
+<li><p><strong>PagerDuty REST API v2:</strong> <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUw-rest-api-v2-overview">Documentation</a> / <a class="reference external" href="https://developer.pagerduty.com/api-reference/e65c5833eeb07-pager-duty-api">API Reference</a></p></li>
+<li><p><strong>PagerDuty Events API v2:</strong> <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgw-events-api-v2-overview">Documentation</a> / <a class="reference external" href="https://developer.pagerduty.com/api-reference/YXBpOjI3NDgyNjU-pager-duty-v2-events-api">API Reference</a></p></li>
 </ul>
-<p>This library supplies classes extending <a class="reference external" href="https://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a> from the <a class="reference external" href="https://docs.python-requests.org/en/master/">Requests</a>
-HTTP library that serve as Python interfaces to the <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUw-rest-api-v2-overview">REST API v2</a> and <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgw-events-api-v2-overview">Events
-API v2</a> of PagerDuty. One might call it an opinionated wrapper library. It was
-designed with the philosophy that <a class="reference external" href="https://docs.python-requests.org/en/master/">Requests</a> is a perfectly adequate HTTP
-client, and that abstraction should focus only on the most generally applicable
-and frequently-implemented core features, requirements and tasks. Design
-decisions concerning how any particular PagerDuty resource is accessed or
-manipulated through APIs are left to the user or implementer to make.</p>
-<section id="features">
-<h2>Features<a class="headerlink" href="#features" title="Permalink to this heading">¶</a></h2>
-<ul class="simple">
-<li><p>Uses Requests’ automatic HTTP connection pooling and persistence</p></li>
-<li><p>Tested in / support for Python 3.5 through 3.9</p></li>
-<li><p>Abstraction layer for authentication, pagination, filtering and wrapped
-entities</p></li>
-<li><p>Configurable cooldown/reattempt logic for handling rate limiting and
-transient HTTP or network issues</p></li>
-</ul>
-</section>
-<section id="history">
-<h2>History<a class="headerlink" href="#history" title="Permalink to this heading">¶</a></h2>
-<p>This module was borne of necessity for a basic API client to eliminate code
-duplication in some of PagerDuty Support’s internal Python-based API tooling.</p>
-<p>We found ourselves frequently performing REST API requests using beta or
-non-documented API endpoints for one reason or another, so we needed the client
-that provided easy access to features of the underlying HTTP library (i.e. to
-obtain the response headers, or set special request headers). We also needed
-something that eliminated tedious tasks like querying objects by name,
-pagination and authentication. Finally, we discovered that the way we were
-using <a class="reference external" href="https://docs.python-requests.org/en/master/">Requests</a> wasn’t making use of its connection pooling feature, and
-wanted a way to easily enforce this as a standard practice.</p>
-<p>We evaluated at the time a few other open-source API libraries and deemed them
-to be either overkill for our purposes or not giving the implementer enough
-control over how API calls were made.</p>
-</section>
-<section id="license">
-<h2>License<a class="headerlink" href="#license" title="Permalink to this heading">¶</a></h2>
-<p>All the code in this distribution is Copyright (c) 2023 PagerDuty.</p>
-<p><code class="docutils literal notranslate"><span class="pre">pdpyras</span></code> is made available under the MIT License:</p>
-<blockquote>
-<div><p>Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the “Software”), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:</p>
-<p>The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.</p>
-<p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.</p>
-</div></blockquote>
-</section>
-<section id="warranty">
-<h2>Warranty<a class="headerlink" href="#warranty" title="Permalink to this heading">¶</a></h2>
-<blockquote>
-<div><p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.</p>
-</div></blockquote>
 </section>
 <section id="table-of-contents">
 <h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Permalink to this heading">¶</a></h2>

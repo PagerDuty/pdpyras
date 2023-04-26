@@ -37,6 +37,8 @@
             
   <section id="user-guide">
 <span id="id1"></span><h1>User Guide<a class="headerlink" href="#user-guide" title="Permalink to this heading">¶</a></h1>
+<p>This is a topical guide to general API client usage. <a class="reference internal" href="module_reference.html#module-reference"><span class="std std-ref">Module Reference</span></a>
+has in-depth documentation on client classes and methods.</p>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
 <p>If <code class="docutils literal notranslate"><span class="pre">pip</span></code> is available, it can be installed via:</p>
@@ -95,7 +97,7 @@ and having them represented as a dictionary object using three different methods
 <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;/users/PABC123&#39;</span><span class="p">)</span>
 <span class="n">user</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
-  <span class="n">user</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>
 
 <span class="c1"># Using jget (return the full body after decoding):</span>
 <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">jget</span><span class="p">(</span><span class="s1">&#39;/users/PABC123&#39;</span><span class="p">)[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>
@@ -118,12 +120,18 @@ and having them represented as a dictionary object using three different methods
 converted to URL query parameters by <a class="reference external" href="https://docs.python-requests.org/en/master/.._`Errors`:https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors">Requests</a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get a list of all services with &quot;SN&quot; in their name:</span>
 <span class="n">services</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">list_all</span><span class="p">(</span><span class="s1">&#39;services&#39;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;query&#39;</span><span class="p">:</span> <span class="s1">&#39;SN&#39;</span><span class="p">})</span>
+
+<span class="c1"># &gt;&gt;&gt; services</span>
+<span class="c1"># [{&#39;type&#39;:&#39;service&#39;, ...}, ...]</span>
 </pre></div>
 </div>
 <p><strong>Searching resource collections:</strong> use <code class="docutils literal notranslate"><span class="pre">find</span></code> to look up a resource exactly
 matching a string using the <code class="docutils literal notranslate"><span class="pre">query</span></code> parameter on an index endpoint:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find the user with email address &quot;jane@example35.com&quot;</span>
 <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="s1">&#39;jane@example35.com&#39;</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s1">&#39;email&#39;</span><span class="p">)</span>
+
+<span class="c1"># &gt;&gt;&gt; user</span>
+<span class="c1"># {&#39;type&#39;: &#39;user&#39;, &#39;email&#39;: &#39;jane@example35.com&#39;, ...}</span>
 </pre></div>
 </div>
 <p><strong>Updating a resource:</strong> use the <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument to set the body:</p>
@@ -139,24 +147,25 @@ matching a string using the <code class="docutils literal notranslate"><span cla
     <span class="p">}</span>
 <span class="p">})</span>
 <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
-  <span class="n">updated_user</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>
+    <span class="n">updated_user</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>
 
 <span class="c1"># (2) using rput:</span>
 <span class="c1">#   - The URL argument can be the dictionary representation</span>
 <span class="c1">#   - The json argument doesn&#39;t have to include the &quot;user&quot; wrapper dict</span>
 <span class="k">try</span><span class="p">:</span>
-  <span class="n">updated_user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rput</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span>
-      <span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;user&#39;</span><span class="p">,</span>
-      <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Jane Doe&#39;</span>
-  <span class="p">})</span>
+    <span class="n">updated_user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rput</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;user&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Jane Doe&#39;</span>
+    <span class="p">})</span>
 <span class="k">except</span> <span class="n">PDClientError</span><span class="p">:</span>
-  <span class="n">updated_user</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">updated_user</span> <span class="o">=</span> <span class="kc">None</span>
 </pre></div>
 </div>
 <p>Updating/creating using <code class="docutils literal notranslate"><span class="pre">persist</span></code>, an idempotent create/update function:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a user if one doesn&#39;t already exist based on the dictionary object</span>
 <span class="c1"># user_data, using the &#39;email&#39; key as the uniquely identifying property, and</span>
 <span class="c1"># update it if it exists and differs from user_data:</span>
+<span class="n">user_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;email&#39;</span><span class="p">:</span> <span class="s1">&#39;user123@example.com&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;User McUserson&#39;</span><span class="p">}</span>
 <span class="n">updated_user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">persist</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="s1">&#39;email&#39;</span><span class="p">,</span> <span class="n">user_data</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -206,13 +215,17 @@ name:</p>
 </section>
 <section id="generic-client-features">
 <h2>Generic Client Features<a class="headerlink" href="#generic-client-features" title="Permalink to this heading">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">get</span></code>, <code class="docutils literal notranslate"><span class="pre">post</span></code>, <code class="docutils literal notranslate"><span class="pre">put</span></code> and <code class="docutils literal notranslate"><span class="pre">delete</span></code> methods of REST/Events API
-session classes are similar to the analogous functions in <a class="reference external" href="https://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>
-in terms of their arguments and how they return <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> objects.</p>
-<p>Moreover, all of the features of <a class="reference external" href="https://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a> are available to the user
+<p>Generally, all of the features of <a class="reference external" href="https://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a> are available to the user
 as they would be if using the Requests Python library directly, since
 <a class="reference internal" href="module_reference.html#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDSession</span></code></a> and its subclasses for the REST/Events APIs are
 descendants of it.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">get</span></code>, <code class="docutils literal notranslate"><span class="pre">post</span></code>, <code class="docutils literal notranslate"><span class="pre">put</span></code> and <code class="docutils literal notranslate"><span class="pre">delete</span></code> methods of REST/Events API
+session classes are similar to the analogous functions in <a class="reference external" href="https://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>.
+The arguments they accept are the same and they all return <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a>
+objects.</p>
+<p>Any keyword arguments passed to the <code class="docutils literal notranslate"><span class="pre">j*</span></code> or <code class="docutils literal notranslate"><span class="pre">r*</span></code> methods will be passed
+through to the analogous method in <a class="reference external" href="https://docs.python-requests.org/en/master/.._`Errors`:https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors">Requests</a>, though in some cases the
+arguments (i.e. <code class="docutils literal notranslate"><span class="pre">json</span></code>) are first modified.</p>
 <p>For documentation on any generic HTTP client features that are available, refer
 to the <a class="reference external" href="https://docs.python-requests.org/en/master/.._`Errors`:https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors">Requests</a> documentation.</p>
 </section>
@@ -253,7 +266,7 @@ then <code class="docutils literal notranslate"><span class="pre">[]</span></cod
 <span class="c1"># them as a list:</span>
 <span class="n">foo_services</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">list_all</span><span class="p">(</span><span class="s1">&#39;services&#39;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span>
     <span class="s1">&#39;query&#39;</span><span class="p">:</span> <span class="s1">&#39;foo&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;include[]&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;escalation_policies&#39;</span><span class="p">,</span> <span class="s1">&#39;teams&#39;</span><span class="p">],</span>
+    <span class="s1">&#39;include&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;escalation_policies&#39;</span><span class="p">,</span> <span class="s1">&#39;teams&#39;</span><span class="p">],</span>
     <span class="s1">&#39;limit&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
 <span class="p">})</span>
 <span class="c1"># GET https://api.pagerduty.com/services?query=foo&amp;include%5B%5D=escalation_policies&amp;include%5B%5D=teams&amp;limit=50&amp;offset=0</span>
@@ -268,8 +281,9 @@ then <code class="docutils literal notranslate"><span class="pre">[]</span></cod
 argument an object that will be JSON-encoded as the body.</p>
 <p>To obtain the response from the API, if using plain <code class="docutils literal notranslate"><span class="pre">get</span></code>, <code class="docutils literal notranslate"><span class="pre">post</span></code>, <code class="docutils literal notranslate"><span class="pre">put</span></code>
 or <code class="docutils literal notranslate"><span class="pre">delete</span></code>, use the returned <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object. That object’s
-<code class="docutils literal notranslate"><span class="pre">json()</span></code> method will return the response body decoded from JSON as a Python
-dict object. Other metadata such as headers can also be obtained:</p>
+<code class="docutils literal notranslate"><span class="pre">json()</span></code> method will return the result of JSON-decoding the response body (it
+will typically of type <code class="docutils literal notranslate"><span class="pre">dict</span></code>). Other metadata such as headers can also be
+obtained:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;incidents&#39;</span><span class="p">)</span>
 <span class="c1"># The UUID of the API request, which can be supplied to PagerDuty Customer</span>
 <span class="c1"># Support in the event of server errors (status 5xx):</span>
@@ -279,11 +293,10 @@ dict object. Other metadata such as headers can also be obtained:</p>
 <p>If using the <code class="docutils literal notranslate"><span class="pre">j*</span></code> methods, i.e. <code class="xref py py-attr docutils literal notranslate"><span class="pre">APISession.jget</span></code>, the return value
 will be the full body of the response from the API after JSON-decoding, and
 the <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument is not modified.</p>
-<p>Finally, when using the <code class="docutils literal notranslate"><span class="pre">r*</span></code> methods, the <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument is
-modified before sending to <a class="reference external" href="https://docs.python-requests.org/en/master/.._`Errors`:https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors">Requests</a>, if necessary, to encapsulate the body
-inside an entity wrapper.  The response is the decoded body after unwrapping,
-if the API endpoint returns wrapped entities. For more details, refer to
-<a class="reference internal" href="#wrapping"><span class="std std-ref">Entity Wrapping</span></a>.</p>
+<p>When using the <code class="docutils literal notranslate"><span class="pre">r*</span></code> methods, the <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument is modified before
+sending to <a class="reference external" href="https://docs.python-requests.org/en/master/.._`Errors`:https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors">Requests</a>, if necessary, to encapsulate the body inside an entity
+wrapper.  The response is the decoded body after unwrapping, if the API
+endpoint returns wrapped entities. For more details, refer to <a class="reference internal" href="#wrapping"><span class="std std-ref">Entity Wrapping</span></a>.</p>
 <section id="data-types">
 <h3>Data types<a class="headerlink" href="#data-types" title="Permalink to this heading">¶</a></h3>
 <p>Main article: <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types">Types</a></p>
@@ -311,17 +324,17 @@ assuming the variable <code class="docutils literal notranslate"><span class="pr
 dictionary object and then append it to the <code class="docutils literal notranslate"><span class="pre">escalation</span> <span class="pre">rules</span></code> property.
 Using the example given in the API reference page:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">new_rule</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="s2">&quot;escalation_delay_in_minutes&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>
-  <span class="s2">&quot;targets&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;PAM4FGS&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;user_reference&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;PI7DH85&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;schedule_reference&quot;</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
+    <span class="s2">&quot;escalation_delay_in_minutes&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>
+    <span class="s2">&quot;targets&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;PAM4FGS&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;user_reference&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;PI7DH85&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;schedule_reference&quot;</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
 <span class="p">}</span>
 <span class="n">ep</span><span class="p">[</span><span class="s1">&#39;escalation_rules&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_rule</span><span class="p">)</span>
 <span class="c1"># Save changes:</span>
@@ -340,10 +353,11 @@ respective API, as well as the page documenting the resource type itself.</p>
 <section id="entity-wrapping">
 <span id="wrapping"></span><h2>Entity Wrapping<a class="headerlink" href="#entity-wrapping" title="Permalink to this heading">¶</a></h2>
 <p>See also: <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYx-wrapped-entities">Wrapped Entities</a>.
-Most of PagerDuty’s REST API v2 endpoints respond with their content inside of a
-key at the root level of the JSON-encoded response body, and/or require the
-request body be wrapped in another object that contains a single key. Endpoints
-with such request/response schemas are said to wrap entities.</p>
+Most of PagerDuty’s REST API v2 endpoints respond with their content wrapped
+inside of another object with a single key at the root level of the
+(JSON-encoded) response body, and/or require the request body be wrapped in
+another object that contains a single key. Endpoints with such request/response
+schemas are said to wrap entities.</p>
 <p>The following methods will automatically extract and return the wrapped content
 of API responses, and wrap request entities for the user as appropriate:</p>
 <ul class="simple">
@@ -360,24 +374,61 @@ of API responses, and wrap request entities for the user as appropriate:</p>
 <p>Typically (but not for all endpoints), the key (“wrapper name”) is named after
 the last or second to last node of the URL’s path. The wrapper name is a
 singular noun for an individual resource or plural for a collection of
-resources. As of v5.0.0, the above methods support non-conformal endpoints,
-i.e. where that pattern does not apply. In versions prior to v5.0.0, they
-may only be used on APIs that follow these conventions, and will run
-into <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> when used on endpoints that do not.</p>
-<p>On some endpoints, however, entity wrapping is disabled, and the results for a
-given <code class="docutils literal notranslate"><span class="pre">r*</span></code> method would be the same if using the equivalent <code class="docutils literal notranslate"><span class="pre">j*</span></code> method.</p>
+resources. As of v5.0.0, the above methods support endpoints where that pattern
+does not apply. In versions prior to v5.0.0, they may only be used on APIs that
+follow these conventions, and will run into <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> when used on endpoints
+that do not.</p>
+<p>On endpoints that do not wrap entities, however, the results for a given <code class="docutils literal notranslate"><span class="pre">r*</span></code>
+method would be the same if using the equivalent <code class="docutils literal notranslate"><span class="pre">j*</span></code> method. This is
+necessary to avoid discarding features of the response schema.</p>
 <p>The configuration that this client uses to decide if entity wrapping is enabled
-for an endpoint or not are stored in the module variable
-<code class="docutils literal notranslate"><span class="pre">pdpyras.ENTITY_WRAPPER_CONFIG</span></code> and generally follows this rule: <strong>If the
+for an endpoint or not is stored in the module variable
+<code class="docutils literal notranslate"><span class="pre">pdpyras.ENTITY_WRAPPER_CONFIG</span></code> and generally follows this rule: <em>If the
 endpoint’s response body or expected request body contains only one property
-that points to all the content of the requested resource, or if it is a request
-made to an endpoint that features pagination, entity wrapping is enabled for
-the endpoint.</strong></p>
+that points to all the content of the requested resource, entity wrapping is
+enabled for the endpoint.</em> The only exception is for resource collection
+endpoints that support pagination, where response bodies have additional
+pagination control properties like <code class="docutils literal notranslate"><span class="pre">more</span></code> but no content-bearing properties.</p>
+<p>This rule also applies to endpoints like <code class="docutils literal notranslate"><span class="pre">POST</span>
+<span class="pre">/business_services/{id}/subscribers</span></code> where the response is wrapped differently
+than the request. One can still pass the content to be wrapped via the <code class="docutils literal notranslate"><span class="pre">json</span></code>
+argument without the <code class="docutils literal notranslate"><span class="pre">subscribers</span></code> wrapper, while the return value is the
+list representing the content inside of the <code class="docutils literal notranslate"><span class="pre">subscriptions</span></code> wrapper in the
+response, and there is no need to incorporate any particular endpoint’s wrapper
+name into the implementation.</p>
 <p>Some endpoints are unusual in that the request must be wrapped but the response
 is not wrapped or vice versa, i.e. creating Schedule overrides (<code class="docutils literal notranslate"><span class="pre">POST</span>
 <span class="pre">/schedules/{id}/overrides</span></code>) or to create a status update on an incient (<code class="docutils literal notranslate"><span class="pre">POST</span>
-<span class="pre">/incidents/{id}/status_updates</span></code>). In all such cases, the above rule still
-applies, albeit differently for the request as for the response.</p>
+<span class="pre">/incidents/{id}/status_updates</span></code>). In all such cases, the user still does not
+need to account for this, as the content will be returned and the request
+entity is wrapped as appropriate. For instance:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">created_overrides</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rpost</span><span class="p">(</span><span class="s1">&#39;/schedules/PGHI789/overrides&#39;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="s2">&quot;2023-07-01T00:00:00-04:00&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="s2">&quot;2023-07-02T00:00:00-04:00&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;PEYSGVA&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;user_reference&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;time_zone&quot;</span><span class="p">:</span> <span class="s2">&quot;UTC&quot;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="s2">&quot;2023-07-03T00:00:00-04:00&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="s2">&quot;2023-07-01T00:00:00-04:00&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;PEYSGVF&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;user_reference&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;time_zone&quot;</span><span class="p">:</span> <span class="s2">&quot;UTC&quot;</span>
+    <span class="p">}</span>
+<span class="p">])</span>
+<span class="c1"># &gt;&gt;&gt; created_overrides</span>
+<span class="c1"># [</span>
+<span class="c1">#     {&#39;status&#39;: 201, &#39;override&#39;: {...}},</span>
+<span class="c1">#     {&#39;status&#39;: 400, errors: [&#39;Override must end after its start&#39;], &#39;override&#39;: {...}}</span>
+<span class="c1"># ]</span>
+</pre></div>
+</div>
 </section>
 <section id="pagination">
 <h2>Pagination<a class="headerlink" href="#pagination" title="Permalink to this heading">¶</a></h2>
@@ -418,17 +469,17 @@ number of results is higher.</p>
 <p>Moreover, if these methods are used to fetch a very large volume of data, and
 an error is encountered when this happens, the partial data set will be
 discarded when the exception is raised. To make use of partial results, use
-<code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.iter_all`</span></code> and perform actions on each result
-yielded, and catch exceptions raised as desired.</p>
+<a class="reference internal" href="module_reference.html#pdpyras.APISession.iter_all" title="pdpyras.APISession.iter_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.iter_all</span></code></a>, perform actions on each result
+yielded, and catch/handle exceptions as desired.</p>
 </section>
 <section id="updating-creating-or-deleting-while-paginating">
 <h3>Updating, creating or deleting while paginating<a class="headerlink" href="#updating-creating-or-deleting-while-paginating" title="Permalink to this heading">¶</a></h3>
-<p>If performing page-wise operations, i.e. making changes immediately after
-fetching each page of results, rather than pre-fetching all objects and then
-operating on them (i.e. with <a class="reference internal" href="module_reference.html#pdpyras.APISession.list_all" title="pdpyras.APISession.list_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.list_all</span></code></a>), an erroneous
-condition can result if there is any change to the resources in the result set
-that would affect their presence or position in the set. For example, creating
-objects, deleting them, or changing the attribute being used for sorting or filtering.</p>
+<p>If performing page-wise write operations, i.e. making persistent changes to the
+PagerDuty application state immediately after fetching each page of results, an
+erroneous condition can result if there is any change to the resources in the
+result set that would affect their presence or position in the set. For
+example, creating objects, deleting them, or changing the attribute being used
+for sorting or filtering.</p>
 <p>This is because the contents are updated in real time, and pagination contents
 are recalculated based on the state of the PagerDuty application at the time of
 each request for a page of results. Therefore, records may be skipped or
@@ -451,75 +502,74 @@ returned more than once, because they get bumped to the next group of 100 pages.
 </section>
 <section id="multi-updating">
 <h2>Multi-updating<a class="headerlink" href="#multi-updating" title="Permalink to this heading">¶</a></h2>
-<p>Introduced in version 2.1 is support for multi-update actions using <code class="docutils literal notranslate"><span class="pre">rput</span></code>.
-As of this writing, multi-update support includes the following endpoints:</p>
+<p>Multi-update actions can be performed using <code class="docutils literal notranslate"><span class="pre">rput</span></code>. As of this writing,
+multi-update support includes the following endpoints:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://developer.pagerduty.com/api-reference/b3A6Mjc0ODEzOQ-manage-incidents">PUT /incidents</a></p></li>
 <li><p><a class="reference external" href="https://developer.pagerduty.com/api-reference/b3A6Mjc0ODE0NA-manage-alerts">PUT /incidents/{id}/alerts</a></p></li>
-<li><p>PUT /priorities (documentation not yet published as of 2022-03-15, but the endpoint is functional)</p></li>
+<li><p>PUT /priorities (documentation not yet published as of 2023-04-26, but the endpoint is functional)</p></li>
 </ul>
 <p>For instance, to resolve two incidents with IDs <code class="docutils literal notranslate"><span class="pre">PABC123</span></code> and <code class="docutils literal notranslate"><span class="pre">PDEF456</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">session</span><span class="o">.</span><span class="n">rput</span><span class="p">(</span>
     <span class="s2">&quot;incidents&quot;</span><span class="p">,</span>
     <span class="n">json</span><span class="o">=</span><span class="p">[</span>
-      <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span><span class="s1">&#39;PABC123&#39;</span><span class="p">,</span><span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;incident_reference&#39;</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">:</span><span class="s1">&#39;resolved&#39;</span><span class="p">},</span>
-      <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span><span class="s1">&#39;PDEF456&#39;</span><span class="p">,</span><span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;incident_reference&#39;</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">:</span><span class="s1">&#39;resolved&#39;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span><span class="s1">&#39;PABC123&#39;</span><span class="p">,</span><span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;incident_reference&#39;</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">:</span><span class="s1">&#39;resolved&#39;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span><span class="s1">&#39;PDEF456&#39;</span><span class="p">,</span><span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;incident_reference&#39;</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">:</span><span class="s1">&#39;resolved&#39;</span><span class="p">},</span>
     <span class="p">],</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 <p>In this way, a single API request can more efficiently perform multiple update
 actions.</p>
-<p>It is important to note, however, that certain actions such as updating
-incidents require the <code class="docutils literal notranslate"><span class="pre">From</span></code> header, which should be the login email address
-of a valid PagerDuty user. To set this, pass it through using the <code class="docutils literal notranslate"><span class="pre">headers</span></code>
-keyword argument, or set the <a class="reference internal" href="module_reference.html#pdpyras.APISession.default_from" title="pdpyras.APISession.default_from"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.default_from</span></code></a> property,
-or pass the email address as the <code class="docutils literal notranslate"><span class="pre">default_from</span></code> keyword argument when
-constructing the session initially.</p>
+<p>It is important to note, however, that updating incidents requires using a
+user-scoped access token or setting the <code class="docutils literal notranslate"><span class="pre">From</span></code> header to the login email
+address of a valid PagerDuty user. To set this, pass it through using the
+<code class="docutils literal notranslate"><span class="pre">headers</span></code> keyword argument, or set the
+<a class="reference internal" href="module_reference.html#pdpyras.APISession.default_from" title="pdpyras.APISession.default_from"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.default_from</span></code></a> property, or pass the email address as
+the <code class="docutils literal notranslate"><span class="pre">default_from</span></code> keyword argument when constructing the session initially.</p>
 </section>
 <section id="error-handling">
 <h2>Error Handling<a class="headerlink" href="#error-handling" title="Permalink to this heading">¶</a></h2>
 <p>For any of the methods that do not return <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a>, when the API
-responds with a non-success HTTP status other than rate limiting, the method
-will not return the decoded body. Instead, when this happens, a
-<a class="reference internal" href="module_reference.html#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code></a> exception is raised. This way, methods can
-always be expected to return the same structure of data based on the API being
-used. If there is a break in this expectation, the flow is appropriately
-interrupted.</p>
-<p>This exception class has the <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object as its <code class="docutils literal notranslate"><span class="pre">response</span></code>
-property (whenever the exception pertains to a HTTP error). One can thus define
+responds with a non-success HTTP status, the method will raise a
+<a class="reference internal" href="module_reference.html#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code></a> exception. This way, these methods can always be
+expected to return the same structure of data based on the API being used, and
+there is no need to differentiate between the response schema for a successful
+request and one for an error response.</p>
+<p>The exception class has the <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object as its <code class="docutils literal notranslate"><span class="pre">response</span></code>
+property whenever the exception pertains to a HTTP error. One can thus define
 specialized error handling logic in which the REST API response data (i.e.
-headers, code and body) are directly available.</p>
+headers, code and body) are available in the catching scope.</p>
 <p>For instance, the following code prints “User not found” in the event of a 404,
 prints out the user’s email if the user exists, raises the underlying
 exception if it’s any other HTTP error code, and prints an error otherwise:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
-  <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s2">&quot;/users/PJKL678&quot;</span><span class="p">)</span>
-  <span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">])</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s2">&quot;/users/PJKL678&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">])</span>
 
 <span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-  <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
-      <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;User not found&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;User not found&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span>
     <span class="k">else</span><span class="p">:</span>
-      <span class="k">raise</span> <span class="n">e</span>
-  <span class="k">else</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Non-transient network or client error&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Non-transient network or client error&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Version 4.4.0 introduced a new error subclass, PDHTTPError, in which it can be
-assumed that the error pertains to a HTTP request:</p>
+assumed that the error pertains to a HTTP request and the <code class="docutils literal notranslate"><span class="pre">response</span></code> property
+is not <code class="docutils literal notranslate"><span class="pre">None</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
-  <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s2">&quot;/users/PJKL678&quot;</span><span class="p">)</span>
-  <span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">])</span>
-
+    <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s2">&quot;/users/PJKL678&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">])</span>
 <span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDHTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-  <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;User not found&quot;</span><span class="p">)</span>
-  <span class="k">else</span><span class="p">:</span>
-    <span class="k">raise</span> <span class="n">e</span>
+    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;User not found&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">e</span>
 <span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-  <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Non-transient network or client error&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Non-transient network or client error&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -533,7 +583,7 @@ is created as follows:</p>
 level of the parent logger. The parent is the root logger unless specified
 otherwise (see <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging-levels">Logging Levels</a>).</p></li>
 <li><p>The logger is initially not configured with any handlers. Configuring
-handlers is left to the discretion of the implementer (see <a class="reference external" href="https://docs.python.org/3/library/logging.handlers.html">logging.handlers</a>)</p></li>
+handlers is left to the discretion of the user (see <a class="reference external" href="https://docs.python.org/3/library/logging.handlers.html">logging.handlers</a>)</p></li>
 <li><p>The logger can be accessed and set through the property
 <a class="reference internal" href="module_reference.html#pdpyras.PDSession.log" title="pdpyras.PDSession.log"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.log</span></code></a>.</p></li>
 </ul>
