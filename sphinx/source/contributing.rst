@@ -40,11 +40,7 @@ Updating Documentation
 ----------------------
 
 The ``.rst`` files in ``sphinx/source`` are where most of the documentation
-lives. The files ``CHANGELOG.rst`` and ``README.rst`` in the root of the
-repository also contain content that is included when the HTML documentation is
-built.
-
-To rebuild the HTML documentation from the source, run:
+lives. To rebuild the HTML documentation from the source, run:
 
 .. code-block:: shell
 

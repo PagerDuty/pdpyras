@@ -4,6 +4,9 @@
 User Guide
 ==========
 
+This is a topical guide to general API client usage. :ref:`module_reference`
+has in-depth documentation on client classes and methods.
+
 Installation
 ------------
 If ``pip`` is available, it can be installed via:
@@ -103,6 +106,9 @@ converted to URL query parameters by Requests_:
     # Get a list of all services with "SN" in their name:
     services = session.list_all('services', params={'query': 'SN'})
 
+    # >>> services
+    # [{'type':'service', ...}, ...]
+
 **Searching resource collections:** use ``find`` to look up a resource exactly
 matching a string using the ``query`` parameter on an index endpoint:
 
@@ -110,6 +116,9 @@ matching a string using the ``query`` parameter on an index endpoint:
 
     # Find the user with email address "jane@example35.com"
     user = session.find('users', 'jane@example35.com', attribute='email')
+
+    # >>> user
+    # {'type': 'user', 'email': 'jane@example35.com', ...}
 
 **Updating a resource:** use the ``json`` keyword argument to set the body:
 
@@ -127,18 +136,18 @@ matching a string using the ``query`` parameter on an index endpoint:
         }
     })
     if response.ok:
-      updated_user = response.json()['user']
+        updated_user = response.json()['user']
 
     # (2) using rput:
     #   - The URL argument can be the dictionary representation
     #   - The json argument doesn't have to include the "user" wrapper dict
     try:
-      updated_user = session.rput(user, json={
-          'type':'user',
-          'name': 'Jane Doe'
-      })
+        updated_user = session.rput(user, json={
+            'type':'user',
+            'name': 'Jane Doe'
+        })
     except PDClientError:
-      updated_user = None
+        updated_user = None
 
 Updating/creating using ``persist``, an idempotent create/update function:
 
@@ -147,6 +156,7 @@ Updating/creating using ``persist``, an idempotent create/update function:
     # Create a user if one doesn't already exist based on the dictionary object
     # user_data, using the 'email' key as the uniquely identifying property, and
     # update it if it exists and differs from user_data:
+    user_data = {'email': 'user123@example.com', 'name': 'User McUserson'}
     updated_user = session.persist('users', 'email', user_data, update=True)
 
 Using multi-valued set filters: set the value in the ``params`` dictionary at
@@ -202,14 +212,19 @@ Submit a change event using a :class:`ChangeEventsAPISession` instance:
 
 Generic Client Features
 -----------------------
-The ``get``, ``post``, ``put`` and ``delete`` methods of REST/Events API
-session classes are similar to the analogous functions in `requests.Session`_
-in terms of their arguments and how they return `requests.Response`_ objects.
-
-Moreover, all of the features of `requests.Session`_ are available to the user
+Generally, all of the features of `requests.Session`_ are available to the user
 as they would be if using the Requests Python library directly, since
 :class:`pdpyras.PDSession` and its subclasses for the REST/Events APIs are
 descendants of it. 
+
+The ``get``, ``post``, ``put`` and ``delete`` methods of REST/Events API
+session classes are similar to the analogous functions in `requests.Session`_.
+The arguments they accept are the same and they all return `requests.Response`_
+objects.
+
+Any keyword arguments passed to the ``j*`` or ``r*`` methods will be passed
+through to the analogous method in Requests_, though in some cases the
+arguments (i.e. ``json``) are first modified.
 
 For documentation on any generic HTTP client features that are available, refer
 to the Requests_ documentation.
@@ -258,7 +273,7 @@ then ``[]`` will be automatically appended to the parameter name.
     # them as a list:
     foo_services = session.list_all('services', params={
         'query': 'foo',
-        'include[]': ['escalation_policies', 'teams'],
+        'include': ['escalation_policies', 'teams'],
         'limit': 50,
     })
     # GET https://api.pagerduty.com/services?query=foo&include%5B%5D=escalation_policies&include%5B%5D=teams&limit=50&offset=0
@@ -273,8 +288,9 @@ argument an object that will be JSON-encoded as the body.
 
 To obtain the response from the API, if using plain ``get``, ``post``, ``put``
 or ``delete``, use the returned `requests.Response`_ object. That object's
-``json()`` method will return the response body decoded from JSON as a Python
-dict object. Other metadata such as headers can also be obtained:
+``json()`` method will return the result of JSON-decoding the response body (it
+will typically of type ``dict``). Other metadata such as headers can also be
+obtained:
 
 .. code-block:: python
 
@@ -287,11 +303,10 @@ If using the ``j*`` methods, i.e. :attr:`APISession.jget`, the return value
 will be the full body of the response from the API after JSON-decoding, and
 the ``json`` keyword argument is not modified.
 
-Finally, when using the ``r*`` methods, the ``json`` keyword argument is
-modified before sending to Requests_, if necessary, to encapsulate the body
-inside an entity wrapper.  The response is the decoded body after unwrapping,
-if the API endpoint returns wrapped entities. For more details, refer to
-:ref:`wrapping`.
+When using the ``r*`` methods, the ``json`` keyword argument is modified before
+sending to Requests_, if necessary, to encapsulate the body inside an entity
+wrapper.  The response is the decoded body after unwrapping, if the API
+endpoint returns wrapped entities. For more details, refer to :ref:`wrapping`.
 
 Data types
 **********
@@ -355,10 +370,11 @@ respective API, as well as the page documenting the resource type itself.
 Entity Wrapping
 ---------------
 See also: `Wrapped Entities <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYx-wrapped-entities>`_.
-Most of PagerDuty's REST API v2 endpoints respond with their content inside of a
-key at the root level of the JSON-encoded response body, and/or require the
-request body be wrapped in another object that contains a single key. Endpoints
-with such request/response schemas are said to wrap entities.
+Most of PagerDuty's REST API v2 endpoints respond with their content wrapped
+inside of another object with a single key at the root level of the
+(JSON-encoded) response body, and/or require the request body be wrapped in
+another object that contains a single key. Endpoints with such request/response
+schemas are said to wrap entities.
 
 The following methods will automatically extract and return the wrapped content
 of API responses, and wrap request entities for the user as appropriate:
@@ -381,23 +397,33 @@ does not apply. In versions prior to v5.0.0, they may only be used on APIs that
 follow these conventions, and will run into ``KeyError`` when used on endpoints
 that do not.
 
-On some endpoints, however, entity wrapping is disabled, and the results for a
-given ``r*`` method would be the same if using the equivalent ``j*`` method.
-This is essential to avoid discarding features of the response schema.
+On endpoints that do not wrap entities, however, the results for a given ``r*``
+method would be the same if using the equivalent ``j*`` method. This is
+necessary to avoid discarding features of the response schema.
 
 The configuration that this client uses to decide if entity wrapping is enabled
-for an endpoint or not are stored in the module variable
-``pdpyras.ENTITY_WRAPPER_CONFIG`` and generally follows this rule: **If the
+for an endpoint or not is stored in the module variable
+``pdpyras.ENTITY_WRAPPER_CONFIG`` and generally follows this rule: *If the
 endpoint's response body or expected request body contains only one property
-that points to all the content of the requested resource, or if it is a request
-made to an endpoint that features pagination, entity wrapping is enabled for
-the endpoint.**
+that points to all the content of the requested resource, entity wrapping is
+enabled for the endpoint.* The only exception is for resource collection
+endpoints that support pagination, where response bodies have additional
+pagination control properties like ``more`` but no content-bearing properties.
+
+This rule also applies to endpoints like ``POST
+/business_services/{id}/subscribers`` where the response is wrapped differently
+than the request. One can still pass the content to be wrapped via the ``json``
+argument without the ``subscribers`` wrapper, while the return value is the
+list representing the content inside of the ``subscriptions`` wrapper in the
+response, and there is no need to incorporate any particular endpoint's wrapper
+name into the implementation.
 
 Some endpoints are unusual in that the request must be wrapped but the response
 is not wrapped or vice versa, i.e. creating Schedule overrides (``POST
 /schedules/{id}/overrides``) or to create a status update on an incient (``POST
-/incidents/{id}/status_updates``). In all such cases, the above rule still
-applies, albeit differently for the request as for the response. For instance:
+/incidents/{id}/status_updates``). In all such cases, the user still does not
+need to account for this, as the content will be returned and the request
+entity is wrapped as appropriate. For instance:
 
 .. code-block:: python
 
@@ -426,7 +452,6 @@ applies, albeit differently for the request as for the response. For instance:
     #     {'status': 201, 'override': {...}},
     #     {'status': 400, errors: ['Override must end after its start'], 'override': {...}}
     # ]
-
 
 Pagination
 ----------
@@ -472,17 +497,17 @@ number of results is higher.
 Moreover, if these methods are used to fetch a very large volume of data, and
 an error is encountered when this happens, the partial data set will be
 discarded when the exception is raised. To make use of partial results, use
-:attr:`pdpyras.APISession.iter_all`` and perform actions on each result
-yielded, and catch exceptions raised as desired.
+:attr:`pdpyras.APISession.iter_all`, perform actions on each result
+yielded, and catch/handle exceptions as desired.
 
 Updating, creating or deleting while paginating
 ***********************************************
-If performing page-wise operations, i.e. making changes immediately after
-fetching each page of results, rather than pre-fetching all objects and then
-operating on them (i.e. with :attr:`pdpyras.APISession.list_all`), an erroneous
-condition can result if there is any change to the resources in the result set
-that would affect their presence or position in the set. For example, creating
-objects, deleting them, or changing the attribute being used for sorting or filtering.
+If performing page-wise write operations, i.e. making persistent changes to the
+PagerDuty application state immediately after fetching each page of results, an
+erroneous condition can result if there is any change to the resources in the
+result set that would affect their presence or position in the set. For
+example, creating objects, deleting them, or changing the attribute being used
+for sorting or filtering.
 
 This is because the contents are updated in real time, and pagination contents
 are recalculated based on the state of the PagerDuty application at the time of
@@ -506,12 +531,12 @@ returned more than once, because they get bumped to the next group of 100 pages.
 
 Multi-updating
 --------------
-Introduced in version 2.1 is support for multi-update actions using ``rput``.
-As of this writing, multi-update support includes the following endpoints:
+Multi-update actions can be performed using ``rput``. As of this writing,
+multi-update support includes the following endpoints:
 
 * `PUT /incidents <https://developer.pagerduty.com/api-reference/b3A6Mjc0ODEzOQ-manage-incidents>`_
 * `PUT /incidents/{id}/alerts <https://developer.pagerduty.com/api-reference/b3A6Mjc0ODE0NA-manage-alerts>`_
-* PUT /priorities (documentation not yet published as of 2022-03-15, but the endpoint is functional)
+* PUT /priorities (documentation not yet published as of 2023-04-26, but the endpoint is functional)
 
 For instance, to resolve two incidents with IDs ``PABC123`` and ``PDEF456``:
 
@@ -528,27 +553,26 @@ For instance, to resolve two incidents with IDs ``PABC123`` and ``PDEF456``:
 In this way, a single API request can more efficiently perform multiple update
 actions.
 
-It is important to note, however, that certain actions such as updating
-incidents require the ``From`` header, which should be the login email address
-of a valid PagerDuty user. To set this, pass it through using the ``headers``
-keyword argument, or set the :attr:`pdpyras.APISession.default_from` property,
-or pass the email address as the ``default_from`` keyword argument when
-constructing the session initially.
+It is important to note, however, that updating incidents requires using a
+user-scoped access token or setting the ``From`` header to the login email
+address of a valid PagerDuty user. To set this, pass it through using the
+``headers`` keyword argument, or set the
+:attr:`pdpyras.APISession.default_from` property, or pass the email address as
+the ``default_from`` keyword argument when constructing the session initially.
 
 Error Handling
 --------------
 For any of the methods that do not return `requests.Response`_, when the API
-responds with a non-success HTTP status other than rate limiting, the method
-will not return the decoded body. Instead, when this happens, a
-:class:`pdpyras.PDClientError` exception is raised. This way, methods can
-always be expected to return the same structure of data based on the API being
-used. If there is a break in this expectation, the flow is appropriately
-interrupted.
+responds with a non-success HTTP status, the method will raise a
+:class:`pdpyras.PDClientError` exception. This way, these methods can always be
+expected to return the same structure of data based on the API being used, and
+there is no need to differentiate between the response schema for a successful
+request and one for an error response.
 
-This exception class has the `requests.Response`_ object as its ``response``
-property (whenever the exception pertains to a HTTP error). One can thus define
+The exception class has the `requests.Response`_ object as its ``response``
+property whenever the exception pertains to a HTTP error. One can thus define
 specialized error handling logic in which the REST API response data (i.e.
-headers, code and body) are directly available.
+headers, code and body) are available in the catching scope.
 
 For instance, the following code prints "User not found" in the event of a 404,
 prints out the user's email if the user exists, raises the underlying
@@ -557,34 +581,34 @@ exception if it's any other HTTP error code, and prints an error otherwise:
 .. code-block:: python
 
     try:
-      user = session.rget("/users/PJKL678")
-      print(user['email'])
+        user = session.rget("/users/PJKL678")
+        print(user['email'])
 
     except pdpyras.PDClientError as e:
-      if e.response:
-        if e.response.status_code == 404:
-          print("User not found")
+        if e.response:
+            if e.response.status_code == 404:
+                print("User not found")
+            else:
+                raise e
         else:
-          raise e
-      else:
-        print("Non-transient network or client error")
+            print("Non-transient network or client error")
 
 Version 4.4.0 introduced a new error subclass, PDHTTPError, in which it can be
-assumed that the error pertains to a HTTP request:
+assumed that the error pertains to a HTTP request and the ``response`` property
+is not ``None``:
 
 .. code-block:: python
 
     try:
-      user = session.rget("/users/PJKL678")
-      print(user['email'])
-
+        user = session.rget("/users/PJKL678")
+        print(user['email'])
     except pdpyras.PDHTTPError as e:
-      if e.response.status_code == 404:
-        print("User not found")
-      else:
-        raise e
+        if e.response.status_code == 404:
+            print("User not found")
+        else:
+            raise e
     except pdpyras.PDClientError as e:
-      print("Non-transient network or client error")
+        print("Non-transient network or client error")
 
 Logging
 -------
@@ -597,7 +621,7 @@ is created as follows:
   otherwise (see `Logging Levels
   <https://docs.python.org/3/library/logging.html#logging-levels>`_).
 * The logger is initially not configured with any handlers. Configuring
-  handlers is left to the discretion of the implementer (see `logging.handlers
+  handlers is left to the discretion of the user (see `logging.handlers
   <https://docs.python.org/3/library/logging.handlers.html>`_)
 * The logger can be accessed and set through the property
   :attr:`pdpyras.PDSession.log`.

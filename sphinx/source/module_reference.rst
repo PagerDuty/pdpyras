@@ -1,6 +1,11 @@
+.. _module_reference:
+
 ================
 Module Reference
 ================
+
+This page covers the documentation of individual methods and classes provided
+by the module. For general usage and examples, refer to the :ref:`user_guide`.
 
 API Client Classes
 ------------------

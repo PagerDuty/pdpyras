@@ -1,16 +1,15 @@
 ===========================================
 PDPYRAS: PagerDuty Python REST API Sessions
 ===========================================
-A lightweight Python client for the PagerDuty REST API.
+A module that supplies lightweight Python clients for the PagerDuty REST API v2 and Events API v2.
 
-Also includes client classes for the Events and Change Events APIs.
+For how-to, refer to the `User Guide
+<https://pagerduty.github.io/pdpyras/user_guide.html>`_.
 
 |circleci-build|
 
-* `Documentation <https://pagerduty.github.io/pdpyras>`_
-* `GitHub <https://github.com/PagerDuty/pdpyras>`_
-* `Changelog <https://github.com/PagerDuty/pdpyras/tree/master/CHANGELOG.rst>`_
-
+Overview
+--------
 This library supplies classes extending `requests.Session`_ from the Requests_
 HTTP library that serve as Python interfaces to the `REST API v2`_ and `Events
 API v2`_ of PagerDuty. One might call it an opinionated wrapper library. It was
