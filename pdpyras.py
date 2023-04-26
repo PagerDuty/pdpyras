@@ -282,7 +282,7 @@ CURSOR_BASED_PAGINATION_PATHS = [
 # MODIFYING THIS GLOBAL CAN BREAK IMPLEMENTATIONS OF THE CLIENT. Be careful when
 # modifying the entity wrapper configuration for existing entries or adding
 # entries where the conventional patterns (where wrapping can be inferred)
-# apply; that should ot be necessary unless the endpoint responses themselves
+# apply; that should not be necessary unless the endpoint responses themselves
 # change or the wrapping configuration is already broken. This is because it
 # directly affects how the API response data is (re)structured when it is
 # returned to or taken from the implementer's scope.
@@ -487,10 +487,8 @@ def normalize_url(base_url: str, url: str):
         )
 
 @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
-        current_version=__version__, details='Use canonical_path to identify '\
-            'URLs instead. This method now returns the nodes of the ' \
-            'canonical path as a tuple and only supports explicitly ' \
-            'supported URLs (listed in pdpyras.CANONICAL_PATHS)')
+        current_version=__version__, details='Use canonical_path instead '\
+            'to identify and classify URLs.')
 def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
     """Return a tuple of path nodes.
 
@@ -566,13 +564,15 @@ def entity_wrappers(method: str, path: str):
                 raise Exception(invalid_config_error)
             return wrapper
     elif len(match) == 0:
-        # Derive the wrapper name from the URL:
+        # Nothing in entity wrapper config matches. In this case it is assumed
+        # that the endpoint follows classic API patterns and the wrapper name
+        # can be inferred from the URL and request method:
         wrapper = infer_entity_wrapper(method, path)
         return (wrapper, wrapper)
     else:
         matches_str = ', '.join(match)
         raise Exception(f"{endpoint} matches more than one pattern:" + \
-            f"{matches_str}; this is most likely a bug.")
+            f"{matches_str}; this is most likely a bug in pdpyras.")
 
 def infer_entity_wrapper(method: str, path: str):
     """
@@ -582,7 +582,7 @@ def infer_entity_wrapper(method: str, path: str):
     the v2 REST API, where the wrapper name is predictable from the path and
     method. This is the default logic applied to determine the wrapper name
     based on the path if there is no explicit entity wrapping defined for the
-    given path in ENTITY_WRAPPER_CONFIG
+    given path in ``pdpyras.ENTITY_WRAPPER_CONFIG``.
 
     :param method: The HTTP method
     :param path: A canonical API path i.e. as returned by ``canonical_path``
@@ -592,7 +592,8 @@ def infer_entity_wrapper(method: str, path: str):
     path_nodes = path.split('/')
     if is_path_param(path_nodes[-1]):
         # Singular if it's an individual resource's URL for read/update/delete
-        # (named similarly to the second to last node, as the last is its ID):
+        # (named similarly to the second to last node, as the last is its ID and
+        # the second to last denotes the API resource collection it is part of):
         return singular_name(path_nodes[-2])
     elif m == 'POST':
         # Singular if creating a new resource by POSTing to the index containing
@@ -602,12 +603,11 @@ def infer_entity_wrapper(method: str, path: str):
         # Plural if listing via GET to the index endpoint, or doing a multi-put:
         return path_nodes[-1]
 
-
 def unwrap(response: requests.Response, wrapper):
     """
     Unwraps and returns a wrapped entity.
 
-    :param response: The `requests.Response`_ object
+    :param response: A `requests.Response`_ object
     :param body: The entire content of the response body after JSON-decoding
     :param wrapper: The wrapper
     :type wrapper: str or None
@@ -618,7 +618,7 @@ def unwrap(response: requests.Response, wrapper):
         # There is a wrapped entity to unpack:
         bod_type = type(body)
         error_msg = f"Expected response body for {endpoint} after JSON-" \
-            f"decoding to be a dict and have a key \"{wrapper}\", but %s."
+            f"decoding to be a dictionary with a key \"{wrapper}\", but %s."
         if bod_type is dict:
             if wrapper in body:
                 return body[wrapper]
@@ -2227,9 +2227,9 @@ class PDHTTPError(PDClientError):
             user = session.rget('/users/PABC123')
         except pdpyras.PDClientError as e:
             if e.response is not None:
-                print("HTTP error: "+str(e))
+                print("HTTP error: "+str(e.response.status_code))
             else:
-                print(e)
+                raise e
 
     one could write this:
 
@@ -2237,10 +2237,8 @@ class PDHTTPError(PDClientError):
 
         try:
             user = session.rget('/users/PABC123')
-        except pdpyras.PDHTTPErrror as e:
-            print("HTTP error: "+str(e))
-        except pdpyras.PDClientError as e:
-            print(e)
+        except pdpyras.PDHTTPError as e:
+            print("HTTP error: "+str(e.response.status_code))
     """
 
     def __init__(self, message, response: requests.Response):
@@ -2250,7 +2248,9 @@ class PDServerError(PDHTTPError):
     """
     Error class representing failed expectations made of the server
 
-    This is raised in cases where the response schema changes because of some
-    bug, or because it's an early access endpoint, or HTTP status 5xx.
+    This is raised in cases where the response schema differs from the expected
+    schema because of an API bug, or because it's an early access endpoint and
+    changes before GA, or in cases of HTTP status 5xx where a successful
+    response is required.
     """
     pass

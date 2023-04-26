@@ -376,13 +376,14 @@ of API responses, and wrap request entities for the user as appropriate:
 Typically (but not for all endpoints), the key ("wrapper name") is named after
 the last or second to last node of the URL's path. The wrapper name is a
 singular noun for an individual resource or plural for a collection of
-resources. As of v5.0.0, the above methods support non-conformal endpoints,
-i.e. where that pattern does not apply. In versions prior to v5.0.0, they
-may only be used on APIs that follow these conventions, and will run
-into ``KeyError`` when used on endpoints that do not.
+resources. As of v5.0.0, the above methods support endpoints where that pattern
+does not apply. In versions prior to v5.0.0, they may only be used on APIs that
+follow these conventions, and will run into ``KeyError`` when used on endpoints
+that do not.
 
 On some endpoints, however, entity wrapping is disabled, and the results for a
 given ``r*`` method would be the same if using the equivalent ``j*`` method.
+This is essential to avoid discarding features of the response schema.
 
 The configuration that this client uses to decide if entity wrapping is enabled
 for an endpoint or not are stored in the module variable
@@ -396,7 +397,36 @@ Some endpoints are unusual in that the request must be wrapped but the response
 is not wrapped or vice versa, i.e. creating Schedule overrides (``POST
 /schedules/{id}/overrides``) or to create a status update on an incient (``POST
 /incidents/{id}/status_updates``). In all such cases, the above rule still
-applies, albeit differently for the request as for the response.
+applies, albeit differently for the request as for the response. For instance:
+
+.. code-block:: python
+
+    created_overrides = session.rpost('/schedules/PGHI789/overrides', json=[
+        {
+          "start": "2023-07-01T00:00:00-04:00",
+          "end": "2023-07-02T00:00:00-04:00",
+          "user": {
+            "id": "PEYSGVA",
+            "type": "user_reference"
+          },
+          "time_zone": "UTC"
+        },
+        {
+          "start": "2023-07-03T00:00:00-04:00",
+          "end": "2023-07-01T00:00:00-04:00",
+          "user": {
+            "id": "PEYSGVF",
+            "type": "user_reference"
+          },
+          "time_zone": "UTC"
+        }
+    ])
+    # >>> created_overrides
+    # [
+    #     {'status': 201, 'override': {...}},
+    #     {'status': 400, errors: ['Override must end after its start'], 'override': {...}}
+    # ]
+
 
 Pagination
 ----------

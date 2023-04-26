@@ -1,9 +1,6 @@
 ================
 Module Reference
 ================
-API client classes supplied by this library are not intended as replacements
-for API documentation or wrappers of PagerDuty's APIs, but rather wrappers of the
-HTTP client (`requests.Session`_) that make it easier to use PagerDuty's APIs.
 
 API Client Classes
 ------------------
