@@ -12,7 +12,7 @@ import pdpyras
 
 # -- Project information -----------------------------------------------------
 project = u'PagerDuty Python REST API Sessions'
-copyright = u'2018, PagerDuty Inc.'
+copyright = u'2023, PagerDuty Inc.'
 author = u'Demitri Morgan <demitri@pagerduty.com>'
 
 # The short X.Y version
@@ -78,7 +78,9 @@ html_static_path = ['_static']
 # default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
 # 'searchbox.html']``.
 #
-html_sidebars = {'**': ['searchbox.html', 'localtoc.html']}
+html_sidebars = {'**': ['searchbox.html', 'globaltoc.html']}
+
+#html_theme_options = {'globaltoc_maxdepth': 3}
 
 # -- Options for HTMLHelp output ---------------------------------------------
 

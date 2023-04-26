@@ -1,3 +1,7 @@
+=========
+Changelog
+=========
+
 **2022-12-X: Version 4.6.0:**
 
 * New property :attr:`APISession.debug` to enable printing log messages to stderr

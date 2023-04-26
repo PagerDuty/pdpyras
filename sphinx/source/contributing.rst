@@ -1,29 +1,64 @@
-Releasing
----------
-(Target audience: package maintainers)
+==================
+Contribution Guide
+==================
+
+Bug reports and pull requests to fix issues are always welcome, as are
+contributions to the built-in documentation.
+
+If adding features, or making changes, it is recommended to update or add tests
+and assertions to the appropriate test case class in ``test_pdpyras.py`` to
+ensure code coverage. If the change(s) fix a bug, please add assertions that
+reproduce the bug along with code changes themselves, and include the GitHub
+issue number in the commit message.
 
 Initial Setup
-*************
-
+-------------
 To be able to rebuild the documentation and release a new version, first make
 sure you have `make <https://www.gnu.org/software/make/>`_ and `pip
 <https://pip.pypa.io/en/stable/installation/>`_ installed in your shell
 environment.
 
-Next, install Python dependencies for building and publishing:
+Next, install Python dependencies for building and publishing as well as
+testing locally:
 
 .. code-block:: shell
 
+    pip install -r requirements.txt
     pip install -r requirements-publish.txt 
 
-Before publishing
-*****************
+Running Unit Tests
+------------------
+Assuming that all dependencies are installed, running ``test_pdpyras.py`` in
+the root path of the repository will run the unit test suite:
 
-You will need valid user accounts on both ``pypi.org`` and ``test.pypi.org``
-that have the "Maintainer" role on the project.
+.. code-block:: shell
+
+    ./test_pdpyras.py
+
+
+Updating Documentation
+----------------------
+
+The ``.rst`` files in ``sphinx/source`` are where most of the documentation
+lives. The files ``CHANGELOG.rst`` and ``README.rst`` in the root of the
+repository also contain content that is included when the HTML documentation is
+built.
+
+To rebuild the HTML documentation from the source, run:
+
+.. code-block:: shell
+
+    make docs
+
+Releasing a New Version
+-----------------------
+
+You will first need valid user accounts on both ``pypi.org`` and ``test.pypi.org``
+that have the "Maintainer" role on the project, as well as the requirements
+installed (see above).
 
 Perform end-to-end publish and installation testing
-++++++++++++++++++++++++++++++++++++++++++++++++++++
+***************************************************
 
 To test publishing and installing from the package index, first make sure you
 have a valid user account on ``test.pypi.org`` that has publisher access to the
@@ -58,7 +93,7 @@ and gets uploaded, and set it to the desired version before the actual
 release.
 
 Merge changes and tag
-+++++++++++++++++++++
+*********************
 
 A pull request for releasing a new version should be created, which along with
 the functional changes should also include at least:
@@ -91,8 +126,8 @@ Once the pull request is approved, merge, then checkout main and tag:
       git tag "v$(python -c 'from pdpyras import __version__; print(__version__)')" && \
       git push --tags origin main
 
-Publishing a new version
-************************
+Publishing
+**********
 
 Once the changes are merged and tagged, make sure your local repository clone
 has the ``main`` branch checked out at the latest avialable commit, and the

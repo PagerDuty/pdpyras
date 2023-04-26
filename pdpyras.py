@@ -492,7 +492,7 @@ def normalize_url(base_url: str, url: str):
             'canonical path as a tuple and only supports explicitly ' \
             'supported URLs (listed in pdpyras.CANONICAL_PATHS)')
 def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
-    """(DEPRECATED) return a tuple of path nodes.
+    """Return a tuple of path nodes.
 
     This function is the implementation of URL parsing logic from versions
     previous to v5.0.0. It is based on assumptions of patterns that are no
@@ -1559,6 +1559,9 @@ class APISession(PDSession):
     :param default_from:
         The default email address to use in the ``From`` header when making
         API calls using an account-level API access key.
+    :param auth_type:
+        The type of credential in use. If authenticating with an OAuth access
+        token, this must be set to ``oauth2`` or ``bearer``.
     :param debug:
         Sets :attr:`debug`. Set to True to enable verbose command line output.
     :type token: str
@@ -1771,8 +1774,6 @@ class APISession(PDSession):
         :type params: dict or None
         :type page_size: int or None
         :type total: bool
-        :yields: Results from the index endpoint.
-        :rtype: dict
         """
         if paginate is not None:
             deprecated_kwarg('paginate', details='It has no effect as of ' \
@@ -2069,7 +2070,7 @@ class APISession(PDSession):
             'REST API v2 URLs instead.')
     def profiler_key(self, method, path, suffix=None):
         """
-        (DEPRECATED) Generates a fixed-format key to classify a request
+        Generates a fixed-format key to classify a request
         """
         my_suffix = "" if suffix is None else "#"+suffix
         path_str = '/'.join(tokenize_url_path(path, baseurl=self.url))
