@@ -5,6 +5,7 @@
     * Property ``PDSession.print_debug`` enables printing verbose log messages to ``sys.stderr``
 * **Breaking Changes:**
     * Removal of the deprecated method ``PDSession.set_api_key``
+    * End support for `Python v3.5 <https://www.python.org/downloads/release/python-350/>`_, which has reached end-of-life.
 * **Deprecations:** the following will be removed in the next minor release, and use of them in v5.0.0 will trigger warnings:
     * Keyword argument ``name`` of the session constructor: this previously set the name of the logger; now it has no effect.
     * Keyword argument ``paginate`` of ``APISession.iter_all``: this previously could be set to ``False`` to make ``iter_all`` stop iteration after the first page of results; now it has no effect.

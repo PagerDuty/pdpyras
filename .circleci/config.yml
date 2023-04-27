@@ -29,25 +29,9 @@ test: &test
 
 jobs:
 
-  py3_5:
-    docker:
-      - image: circleci/python:3.5-buster
-    steps:
-      - checkout
-      - run:
-          <<: *pip
-      - run:
-          <<: *venv
-      - run:
-          <<: *getenv
-      - run:
-          <<: *depinst
-      - run:
-          <<: *test
-
   py3_6:
     docker:
-      - image: circleci/python:3.6-buster
+      - image: circleci/python:3.6-bullseye
     steps:
       - checkout
       - run:
@@ -63,7 +47,7 @@ jobs:
 
   py3_7:
     docker:
-      - image: circleci/python:3.7-buster
+      - image: circleci/python:3.7-bullseye
     steps:
       - checkout
       - run:
@@ -79,7 +63,7 @@ jobs:
 
   py3_8:
     docker:
-      - image: circleci/python:3.8-buster
+      - image: circleci/python:3.8-bullseye
     steps:
       - checkout
       - run:
@@ -95,7 +79,7 @@ jobs:
 
   py3_9:
     docker:
-      - image: circleci/python:3.9-buster
+      - image: circleci/python:3.9-bullseye
     steps:
       - checkout
       - run:
@@ -109,14 +93,29 @@ jobs:
       - run:
           <<: *test
 
+  py3_10:
+    docker:
+      - image: circleci/python:3.10-bullseye
+    steps:
+      - checkout
+      - run:
+          <<: *pip
+      - run:
+          <<: *venv
+      - run:
+          <<: *getenv
+      - run:
+          <<: *depinst
+      - run:
+          <<: *test
 
 workflows: 
   version: 2.1
   run_tests:
     jobs:
-      - py3_5
       - py3_6
       - py3_7
       - py3_8
       - py3_9
+      - py3_10
 

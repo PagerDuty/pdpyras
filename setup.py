@@ -15,5 +15,5 @@ if __name__ == '__main__':
         install_requires=['requests', 'urllib3'],
         author='PagerDuty',
         author_email='support@pagerduty.com',
-        python_requires='>=3.5'
+        python_requires='>=3.6'
     )
