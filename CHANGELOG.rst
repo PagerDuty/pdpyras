@@ -1,8 +1,21 @@
-**2022-12-X: Version 4.6.0:**
+**2023-05-X: Version 5.0.0:**
 
-* New property :attr:`APISession.debug` to enable printing log messages to stderr
-* Removal of deprecated ``set_api_key`` method
-* Deprecation of optional ``name`` keyword argument to constructor (this only affected the name of the logger)
+* **New features:**
+    * Methods that assume entity wrapping like ``rget`` and ``iter_all`` now support all API endpoints
+    * Property ``PDSession.print_debug`` enables printing verbose log messages to ``sys.stderr``
+* **Breaking Changes:**
+    * Removal of the deprecated method ``PDSession.set_api_key``
+* **Deprecations:** the following will be removed in the next minor release, and use of them in v5.0.0 will trigger warnings:
+    * Keyword argument ``name`` of the session constructor: this previously set the name of the logger; now it has no effect.
+    * Keyword argument ``paginate`` of ``APISession.iter_all``: this previously could be set to ``False`` to make ``iter_all`` stop iteration after the first page of results; now it has no effect.
+    * Keyword argument ``attribute`` of ``APISession.iter_all``: this previously could be used to specify the entity wrapper name of results. The wrapper is now determined automatically and this argument has no effect.
+    * Function ``tokenize_url_path``
+    * Function (decorator) ``resource_envelope``
+    * Function ``object_type``
+    * Function ``raise_on_error``
+    * Function ``resource_name``
+    * Property ``APISession.raise_if_http_error``: this previously allowed partial results to be returned from ``iter_all`` in the case of HTTP errors; now it has no effect.
+    * Function ``APISession.profiler_key``
 
 **2022-10-13: Version 4.5.2**
 
