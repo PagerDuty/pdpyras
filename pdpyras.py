@@ -403,8 +403,9 @@ def canonical_path(base_url: str, url: str):
     Returns the canonical REST API path corresponding to a URL.
 
     Canonical paths are defined in ``CANONICAL_PATHS`` and are the path part of
-    any given API's URL. The path what is shown at the top of its reference
-    page, i.e. ``/users/{id}/contact_methods`` for a user's contact methods.
+    any given API's URL. The path for a given API is what is shown at the top of
+    its reference page, i.e. ``/users/{id}/contact_methods`` for retrieving a
+    user's contact methods (GET) or creating a new one (POST).
 
     :param base_url: The base URL of the API
     :param url: A non-normalized URL (a path or full URL)
@@ -487,7 +488,7 @@ def normalize_url(base_url: str, url: str):
         )
 
 @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
-        current_version=__version__, details='Use canonical_path instead '\
+        current_version=__version__, details='Use canonical_path instead ' \
             'to identify and classify URLs.')
 def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
     """Return a tuple of path nodes.
@@ -607,9 +608,8 @@ def unwrap(response: requests.Response, wrapper):
     """
     Unwraps and returns a wrapped entity.
 
-    :param response: A `requests.Response`_ object
-    :param body: The entire content of the response body after JSON-decoding
-    :param wrapper: The wrapper
+    :param response: The response object
+    :param wrapper: The entity wrapper
     :type wrapper: str or None
     """
     body = try_decoding(response)
@@ -617,7 +617,7 @@ def unwrap(response: requests.Response, wrapper):
     if wrapper is not None:
         # There is a wrapped entity to unpack:
         bod_type = type(body)
-        error_msg = f"Expected response body for {endpoint} after JSON-" \
+        error_msg = f"Expected response body from {endpoint} after JSON-" \
             f"decoding to be a dictionary with a key \"{wrapper}\", but %s."
         if bod_type is dict:
             if wrapper in body:
@@ -1566,7 +1566,8 @@ class APISession(PDSession):
         The type of credential in use. If authenticating with an OAuth access
         token, this must be set to ``oauth2`` or ``bearer``.
     :param debug:
-        Sets :attr:`debug`. Set to True to enable verbose command line output.
+        Sets :attr:`print_debug`. Set to True to enable verbose command line
+        output.
     :type token: str
     :type name: str or None
     :type default_from: str or None
@@ -1828,7 +1829,7 @@ class APISession(PDSession):
             if highest_record_index > ITERATION_LIMIT:
                 iter_limit = '%d'%ITERATION_LIMIT
                 warn(
-                    f"Stopping iter_all on {endpoint} at "\
+                    f"Stopping iter_all on {endpoint} at " \
                     f"limit+offset={highest_record_index} " \
                     'as this exceeds the maximum permitted by the API ' \
                     f"({iter_limit}). The set of results may be incomplete."
@@ -2069,7 +2070,7 @@ class APISession(PDSession):
         return headers
 
     @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
-        current_version=__version__, details='Use canonical_path to identify '\
+        current_version=__version__, details='Use canonical_path to identify ' \
             'REST API v2 URLs instead.')
     def profiler_key(self, method, path, suffix=None):
         """
