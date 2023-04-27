@@ -78,7 +78,7 @@ and having them represented as a dictionary object using three different methods
     response = session.get('/users/PABC123')
     user = None
     if response.ok:
-      user = response.json()['user']
+        user = response.json()['user']
 
     # Using jget (return the full body after decoding):
     user = session.jget('/users/PABC123')['user']
@@ -341,17 +341,17 @@ Using the example given in the API reference page:
 .. code-block:: python
 
     new_rule = {
-      "escalation_delay_in_minutes": 30,
-      "targets": [
-        {
-          "id": "PAM4FGS",
-          "type": "user_reference"
-        },
-        {
-          "id": "PI7DH85",
-          "type": "schedule_reference"
-        }
-      ]
+        "escalation_delay_in_minutes": 30,
+        "targets": [
+            {
+                "id": "PAM4FGS",
+                "type": "user_reference"
+            },
+            {
+                "id": "PI7DH85",
+                "type": "schedule_reference"
+            }
+        ]
     }
     ep['escalation_rules'].append(new_rule)
     # Save changes:
@@ -429,22 +429,22 @@ entity is wrapped as appropriate. For instance:
 
     created_overrides = session.rpost('/schedules/PGHI789/overrides', json=[
         {
-          "start": "2023-07-01T00:00:00-04:00",
-          "end": "2023-07-02T00:00:00-04:00",
-          "user": {
-            "id": "PEYSGVA",
-            "type": "user_reference"
-          },
-          "time_zone": "UTC"
+            "start": "2023-07-01T00:00:00-04:00",
+            "end": "2023-07-02T00:00:00-04:00",
+            "user": {
+                "id": "PEYSGVA",
+                "type": "user_reference"
+            },
+            "time_zone": "UTC"
         },
         {
-          "start": "2023-07-03T00:00:00-04:00",
-          "end": "2023-07-01T00:00:00-04:00",
-          "user": {
-            "id": "PEYSGVF",
-            "type": "user_reference"
-          },
-          "time_zone": "UTC"
+            "start": "2023-07-03T00:00:00-04:00",
+            "end": "2023-07-01T00:00:00-04:00",
+            "user": {
+                "id": "PEYSGVF",
+                "type": "user_reference"
+            },
+            "time_zone": "UTC"
         }
     ])
     # >>> created_overrides
@@ -545,8 +545,8 @@ For instance, to resolve two incidents with IDs ``PABC123`` and ``PDEF456``:
     session.rput(
         "incidents",
         json=[
-          {'id':'PABC123','type':'incident_reference', 'status':'resolved'},
-          {'id':'PDEF456','type':'incident_reference', 'status':'resolved'},
+            {'id':'PABC123','type':'incident_reference', 'status':'resolved'},
+            {'id':'PDEF456','type':'incident_reference', 'status':'resolved'},
         ],
     )
 
