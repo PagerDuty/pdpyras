@@ -65,7 +65,12 @@
 <li class="toctree-l3"><a class="reference internal" href="user_guide.html#resource-schemas">Resource schemas</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="user_guide.html#entity-wrapping">Entity Wrapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide.html#entity-wrapping">Entity Wrapping</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="user_guide.html#wrapped-entity-aware-functions">Wrapped-entity-aware Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide.html#classic-patterns">Classic Patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide.html#special-cases">Special Cases</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="user_guide.html#pagination">Pagination</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="user_guide.html#performance-and-completeness-of-results">Performance and Completeness of Results</a></li>
 <li class="toctree-l3"><a class="reference internal" href="user_guide.html#updating-creating-or-deleting-while-paginating">Updating, creating or deleting while paginating</a></li>
@@ -98,30 +103,20 @@
 <li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.URLError"><code class="docutils literal notranslate"><span class="pre">URLError</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="module_reference.html#module-pdpyras">Functions</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.auto_json"><code class="docutils literal notranslate"><span class="pre">auto_json()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.canonical_path"><code class="docutils literal notranslate"><span class="pre">canonical_path()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.deprecated_kwarg"><code class="docutils literal notranslate"><span class="pre">deprecated_kwarg()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.endpoint_matches"><code class="docutils literal notranslate"><span class="pre">endpoint_matches()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.entity_wrappers"><code class="docutils literal notranslate"><span class="pre">entity_wrappers()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.http_error_message"><code class="docutils literal notranslate"><span class="pre">http_error_message()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.infer_entity_wrapper"><code class="docutils literal notranslate"><span class="pre">infer_entity_wrapper()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.is_path_param"><code class="docutils literal notranslate"><span class="pre">is_path_param()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.last_4"><code class="docutils literal notranslate"><span class="pre">last_4()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.normalize_url"><code class="docutils literal notranslate"><span class="pre">normalize_url()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.object_type"><code class="docutils literal notranslate"><span class="pre">object_type()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.plural_name"><code class="docutils literal notranslate"><span class="pre">plural_name()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.raise_on_error"><code class="docutils literal notranslate"><span class="pre">raise_on_error()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.random"><code class="docutils literal notranslate"><span class="pre">random()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.requires_success"><code class="docutils literal notranslate"><span class="pre">requires_success()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.resource_envelope"><code class="docutils literal notranslate"><span class="pre">resource_envelope()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.resource_name"><code class="docutils literal notranslate"><span class="pre">resource_name()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.resource_url"><code class="docutils literal notranslate"><span class="pre">resource_url()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.successful_response"><code class="docutils literal notranslate"><span class="pre">successful_response()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.tokenize_url_path"><code class="docutils literal notranslate"><span class="pre">tokenize_url_path()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.try_decoding"><code class="docutils literal notranslate"><span class="pre">try_decoding()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.unwrap"><code class="docutils literal notranslate"><span class="pre">unwrap()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.wrapped_entities"><code class="docutils literal notranslate"><span class="pre">wrapped_entities()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_reference.html#client-defaults">Client Defaults</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.CANONICAL_PATHS"><code class="docutils literal notranslate"><span class="pre">CANONICAL_PATHS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.CURSOR_BASED_PAGINATION_PATHS"><code class="docutils literal notranslate"><span class="pre">CURSOR_BASED_PAGINATION_PATHS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.ENTITY_WRAPPER_CONFIG"><code class="docutils literal notranslate"><span class="pre">ENTITY_WRAPPER_CONFIG</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.ITERATION_LIMIT"><code class="docutils literal notranslate"><span class="pre">ITERATION_LIMIT</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.TEXT_LEN_LIMIT"><code class="docutils literal notranslate"><span class="pre">TEXT_LEN_LIMIT</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="module_reference.html#pdpyras.TIMEOUT"><code class="docutils literal notranslate"><span class="pre">TIMEOUT</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="module_reference.html#functions">Functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="module_reference.html#url-handling">URL Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="module_reference.html#entity-wrapping">Entity Wrapping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="module_reference.html#function-decorators">Function Decorators</a></li>
+<li class="toctree-l3"><a class="reference internal" href="module_reference.html#helpers">Helpers</a></li>
 </ul>
 </li>
 </ul>

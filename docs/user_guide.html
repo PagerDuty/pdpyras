@@ -240,7 +240,7 @@ a complete API URL.  For instance, one can specify <code class="docutils literal
 the <code class="docutils literal notranslate"><span class="pre">self</span></code> property of any object can be used, and there is no need to strip
 out the API base URL.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">r*</span></code> (and <code class="docutils literal notranslate"><span class="pre">j*</span></code> methods as of version 5), i.e.
-<code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rget</span></code>, can also accept a dictionary object
+<a class="reference internal" href="module_reference.html#pdpyras.APISession.rget" title="pdpyras.APISession.rget"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rget</span></code></a>, can also accept a dictionary object
 representing an API resource or a resource reference in place of a URL, in
 which case the URL at its <code class="docutils literal notranslate"><span class="pre">self</span></code> key will be used as the request target.</p>
 </section>
@@ -358,6 +358,8 @@ inside of another object with a single key at the root level of the
 (JSON-encoded) response body, and/or require the request body be wrapped in
 another object that contains a single key. Endpoints with such request/response
 schemas are said to wrap entities.</p>
+<section id="wrapped-entity-aware-functions">
+<h3>Wrapped-entity-aware Functions<a class="headerlink" href="#wrapped-entity-aware-functions" title="Permalink to this heading">¶</a></h3>
 <p>The following methods will automatically extract and return the wrapped content
 of API responses, and wrap request entities for the user as appropriate:</p>
 <ul class="simple">
@@ -367,10 +369,13 @@ of API responses, and wrap request entities for the user as appropriate:</p>
 <li><p><a class="reference internal" href="module_reference.html#pdpyras.APISession.iter_cursor" title="pdpyras.APISession.iter_cursor"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.iter_cursor</span></code></a>: Iterate through all results of a resource collection using cursor-based pagination</p></li>
 <li><p><a class="reference internal" href="module_reference.html#pdpyras.APISession.list_all" title="pdpyras.APISession.list_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.list_all</span></code></a>: Create a list of all results from a resource collection</p></li>
 <li><p><a class="reference internal" href="module_reference.html#pdpyras.APISession.persist" title="pdpyras.APISession.persist"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.persist</span></code></a>: Create a resource entity with specified attributes if one that matches them does not already exist</p></li>
-<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rget</span></code>: Get the wrapped entity or resource collection at a given endpoint</p></li>
-<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rpost</span></code>: Send a POST request, wrapping the request entity / unwrapping the response entity</p></li>
-<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rput</span></code>: Send a PUT request, wrapping the request entity / unwrapping the response entity</p></li>
+<li><p><a class="reference internal" href="module_reference.html#pdpyras.APISession.rget" title="pdpyras.APISession.rget"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rget</span></code></a>: Get the wrapped entity or resource collection at a given endpoint</p></li>
+<li><p><a class="reference internal" href="module_reference.html#pdpyras.APISession.rpost" title="pdpyras.APISession.rpost"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rpost</span></code></a>: Send a POST request, wrapping the request entity / unwrapping the response entity</p></li>
+<li><p><a class="reference internal" href="module_reference.html#pdpyras.APISession.rput" title="pdpyras.APISession.rput"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.rput</span></code></a>: Send a PUT request, wrapping the request entity / unwrapping the response entity</p></li>
 </ul>
+</section>
+<section id="classic-patterns">
+<h3>Classic Patterns<a class="headerlink" href="#classic-patterns" title="Permalink to this heading">¶</a></h3>
 <p>Typically (but not for all endpoints), the key (“wrapper name”) is named after
 the last or second to last node of the URL’s path. The wrapper name is a
 singular noun for an individual resource or plural for a collection of
@@ -378,17 +383,21 @@ resources. As of v5.0.0, the above methods support endpoints where that pattern
 does not apply. In versions prior to v5.0.0, they may only be used on APIs that
 follow these conventions, and will run into <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> when used on endpoints
 that do not.</p>
+</section>
+<section id="special-cases">
+<h3>Special Cases<a class="headerlink" href="#special-cases" title="Permalink to this heading">¶</a></h3>
 <p>On endpoints that do not wrap entities, however, the results for a given <code class="docutils literal notranslate"><span class="pre">r*</span></code>
 method would be the same if using the equivalent <code class="docutils literal notranslate"><span class="pre">j*</span></code> method. This is
 necessary to avoid discarding features of the response schema.</p>
 <p>The configuration that this client uses to decide if entity wrapping is enabled
 for an endpoint or not is stored in the module variable
-<code class="docutils literal notranslate"><span class="pre">pdpyras.ENTITY_WRAPPER_CONFIG</span></code> and generally follows this rule: <em>If the
+<a class="reference internal" href="module_reference.html#pdpyras.ENTITY_WRAPPER_CONFIG" title="pdpyras.ENTITY_WRAPPER_CONFIG"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.ENTITY_WRAPPER_CONFIG</span></code></a> and generally follows this rule: <em>If the
 endpoint’s response body or expected request body contains only one property
 that points to all the content of the requested resource, entity wrapping is
 enabled for the endpoint.</em> The only exception is for resource collection
 endpoints that support pagination, where response bodies have additional
-pagination control properties like <code class="docutils literal notranslate"><span class="pre">more</span></code> but no content-bearing properties.</p>
+pagination control properties like <code class="docutils literal notranslate"><span class="pre">more</span></code> but only one content-bearing
+property that wraps the collection of results.</p>
 <p>This rule also applies to endpoints like <code class="docutils literal notranslate"><span class="pre">POST</span>
 <span class="pre">/business_services/{id}/subscribers</span></code> where the response is wrapped differently
 than the request. One can still pass the content to be wrapped via the <code class="docutils literal notranslate"><span class="pre">json</span></code>
@@ -429,6 +438,7 @@ entity is wrapped as appropriate. For instance:</p>
 <span class="c1"># ]</span>
 </pre></div>
 </div>
+</section>
 </section>
 <section id="pagination">
 <h2>Pagination<a class="headerlink" href="#pagination" title="Permalink to this heading">¶</a></h2>
@@ -722,7 +732,12 @@ lower.</p>
 <li class="toctree-l3"><a class="reference internal" href="#resource-schemas">Resource schemas</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#entity-wrapping">Entity Wrapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#entity-wrapping">Entity Wrapping</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#wrapped-entity-aware-functions">Wrapped-entity-aware Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#classic-patterns">Classic Patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#special-cases">Special Cases</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#pagination">Pagination</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#performance-and-completeness-of-results">Performance and Completeness of Results</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#updating-creating-or-deleting-while-paginating">Updating, creating or deleting while paginating</a></li>
