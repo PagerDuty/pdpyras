@@ -1,3 +1,2 @@
-requests >= 2.28.0
+requests >= 2.25.1
 deprecation >= 2.0.6
-urllib3 >= 1.26.5
