@@ -31,7 +31,7 @@ jobs:
 
   py3_6:
     docker:
-      - image: circleci/python:3.6-bullseye
+      - image: circleci/python:3.6-buster
     steps:
       - checkout
       - run:
@@ -47,7 +47,7 @@ jobs:
 
   py3_7:
     docker:
-      - image: circleci/python:3.7-bullseye
+      - image: circleci/python:3.7-buster
     steps:
       - checkout
       - run:
@@ -63,7 +63,7 @@ jobs:
 
   py3_8:
     docker:
-      - image: circleci/python:3.8-bullseye
+      - image: circleci/python:3.8-buster
     steps:
       - checkout
       - run:
@@ -79,7 +79,7 @@ jobs:
 
   py3_9:
     docker:
-      - image: circleci/python:3.9-bullseye
+      - image: circleci/python:3.9-buster
     steps:
       - checkout
       - run:
@@ -95,7 +95,7 @@ jobs:
 
   py3_10:
     docker:
-      - image: circleci/python:3.10-bullseye
+      - image: circleci/python:3.10-buster
     steps:
       - checkout
       - run:
