@@ -1900,11 +1900,8 @@ class APISession(PDSession):
             deprecated_kwarg('attribute', details='It has no effect as of ' \
                 'v5.0.0 and will be removed in v5.1.0.')
         path = canonical_path(self.url, url)
-        endpoint = f"GET {path}"
         if path not in CURSOR_BASED_PAGINATION_PATHS:
-            raise URLError(
-                f"{endpoint} does not support cursor-based pagination."
-            )
+            raise URLError(f"{path} does not support cursor-based pagination.")
         _, wrapper = entity_wrappers('GET', path)
         user_params = {}
         if isinstance(params, (dict, list)):
