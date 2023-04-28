@@ -855,6 +855,10 @@ def successful_response(r: requests.Response, context=None) \
         raise PDClientError(message)
 
 def truncate_text(text: str):
+    """Truncates a string longer than TEXT_LEN_LIMIT
+
+    :param text: The string to truncate if longer than the limit.
+    """
     if len(text) > TEXT_LEN_LIMIT:
         return text[:TEXT_LEN_LIMIT-1]+'...'
     else:
