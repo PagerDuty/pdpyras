@@ -25,7 +25,7 @@ __version__ = '5.0.0'
 #######################
 ITERATION_LIMIT = 1e4
 """
-The maximum position of a result in classic pagination
+The maximum position of a result in classic pagination.
 
 See: `Pagination
 <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination>`_
@@ -37,7 +37,7 @@ used to short-circuit pagination in order to running into a HTTP 400 error.
 
 TIMEOUT = 60
 """
-The default timeout in seconds for any given HTTP request
+The default timeout in seconds for any given HTTP request.
 
 Modifying this value will not affect any preexisting API session instances.
 Rather, it will only affect new instances. It is recommended to use
@@ -45,7 +45,9 @@ Rather, it will only affect new instances. It is recommended to use
 """
 
 TEXT_LEN_LIMIT = 100
-"""The longest permissible length of content to include in error messages"""
+"""
+The longest permissible length of API content to include in error messages.
+"""
 
 # List of canonical API paths
 #
@@ -386,6 +388,9 @@ properties in request bodies.
 def canonical_path(base_url: str, url: str):
     """
     Returns the canonical REST API path corresponding to a URL.
+
+    This is used to identify and classify URLs according to which particular API
+    within REST API v2 it belongs to.
 
     Explicitly supported canonical paths are defined in the list
     :attr:`CANONICAL_PATHS` and are the path part of any given API's URL. The
