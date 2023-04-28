@@ -91,6 +91,8 @@ html_sidebars = {'**': ['searchbox.html', 'globaltoc.html']}
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'pdpyrasPagerDutyPythonRESTAPISessionsdoc'
 
+# To avoid duplicate doc entries
+autodoc_inherit_docstrings = False
 
 # -- Options for LaTeX output ------------------------------------------------
 
