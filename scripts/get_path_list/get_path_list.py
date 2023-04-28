@@ -32,7 +32,9 @@ def main():
     print('CANONICAL_PATHS = [')
     for path in public_endpoints:
         print(f"    '{path}',")
-    print("]\n")
+    print("]")
+    print('"""'+"\nExplicit list of supported canonical REST API v2 paths")
+    print("\n:meta hide-value:\n"+'"""'+"\n")
 
     print('CURSOR_BASED_PAGINATION_PATHS = [')
     cursor_param_ref = '../common/models/Parameters.yaml#/cursor_cursor'
@@ -43,6 +45,9 @@ def main():
             if cursor_param_ref in param.values():
                 print(f"    '{path}',")
     print(']')
+    print('"""'+"\nExplicit list of paths that support cursor-based pagination")
+    print("\n:meta hide-value:\n"+'"""')
+
 
 if __name__ == '__main__':
     main()

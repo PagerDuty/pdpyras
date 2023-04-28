@@ -24,64 +24,28 @@ __version__ = '5.0.0'
 ### CLIENT DEFAULTS ###
 #######################
 ITERATION_LIMIT = 1e4
-"""The maximum position of a result in classic pagination.
-
-The offset plus limit parameter may not exceed this number. See: `Pagination
-<https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination>`_
 """
-TIMEOUT = 60
-"""The default timeout in seconds for any given HTTP request"""
-TEXT_LEN_LIMIT = 100
-"""The longest permissible length of API content to include in error messages"""
+The maximum position of a result in classic pagination
 
-# On resource wrapping and handling of special behaviors of certain APIs:
-#
-# Earlier APIs followed a simple set of patterns that allowed clients to make
-# assumptions about the resource envelope (a.k.a. entity wrapper) name. This
-# enabled effort-saving abstraction for wrapped entities that worked across all
-# APIs without requiring the abstraction layer be designed to explicitly
-# describe each individual API. This approach was chosen in this client because
-# then no code changes would be required to support new APIs.
-# 
-# Unfortunately, over time, the schemas of many new APIs have departed from
-# these patterns, and the wrapper name does not predictably follow from the
-# endpoint path. Moreover, a very old and long-standing antipattern in the
-# overrides creation endpoint in the Schedules API became known, and so to did
-# the need for a new layer of abstraction.
-#
-# To correctly assign the entity wrapper name requires some explicit schema
-# information about particular APIs that can override the otherwise global
-# norms. The new assumptions about entity wrapping, in a nutshell, on which this
-# design is based, and which the implementer must be aware of:
-#
-# -----------------------------------------------------------------------------
-# 1:
-#   If the endpoint's response body or expected request body contains only one
-#   property that points to all the content of the requested object, or if it is
-#   a request made to an endpoint that supports pagination*, entity wrapping is
-#   enabled for the endpoint.
-#
-# 2:
-#   If there are any other properties, and the endpoint does not support
-#   pagination, entity wrapping is disabled, and using methods on them that
-#   require entity wrapping will produce warnings and/or raise exceptions.
-#
-# 3: 
-#   For all endpoints that support pagination but whose responses contain any
-#   properties other than the wrapped list of response entities and the standard
-#   pagination properties (i.e. limit, offset, more, cursor), those properties
-#   are discarded from responses, and only the response entities are returned.
-#
-# 4:
-#   As with previous versions, entity wrapping can be bypassed for request
-#   bodies by passing a complete request object (i.e. a dictionary that when
-#   marshaled to JSON will represent the whole request body structure that is
-#   expected by the endpoint).
-#
-# * An endpoint is said to support pagination if it takes the query parameters
-# ``limit`` and either ``offset`` (classic pagination) or ``cursor``
-# (cursor-based pagination).
-# -----------------------------------------------------------------------------
+See: `Pagination
+<https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination>`_
+
+The offset plus limit parameter may not exceed this number. This is enforced
+server-side and is not something the client may override. Rather, this value is
+used to short-circuit pagination in order to running into a HTTP 400 error.
+"""
+
+TIMEOUT = 60
+"""
+The default timeout in seconds for any given HTTP request
+
+Modifying this value will not affect any preexisting API session instances.
+Rather, it will only affect new instances. It is recommended to use
+:attr:`pdpyras.PDSession.timeout` to configure the timeout for a given session.
+"""
+
+TEXT_LEN_LIMIT = 100
+"""The longest permissible length of content to include in error messages"""
 
 # List of canonical API paths
 #
@@ -267,6 +231,11 @@ CANONICAL_PATHS = [
     '/webhook_subscriptions/{id}/enable',
     '/webhook_subscriptions/{id}/ping',
 ]
+"""
+Explicit list of supported canonical REST API v2 paths
+
+:meta hide-value:
+"""
 
 CURSOR_BASED_PAGINATION_PATHS = [
     '/audit/records',
@@ -280,6 +249,11 @@ CURSOR_BASED_PAGINATION_PATHS = [
     '/teams/{id}/audit/records',
     '/users/{id}/audit/records',
 ]
+"""
+Explicit list of paths that support cursor-based pagination
+
+:meta hide-value:
+"""
 
 ENTITY_WRAPPER_CONFIG = {
     # Analytics
