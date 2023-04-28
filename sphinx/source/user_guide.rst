@@ -415,7 +415,8 @@ endpoint's response body or expected request body contains only one property
 that points to all the content of the requested resource, entity wrapping is
 enabled for the endpoint.* The only exception is for resource collection
 endpoints that support pagination, where response bodies have additional
-pagination control properties like ``more`` but no content-bearing properties.
+pagination control properties like ``more`` but only one content-bearing
+property that wraps the collection of results.
 
 This rule also applies to endpoints like ``POST
 /business_services/{id}/subscribers`` where the response is wrapped differently
