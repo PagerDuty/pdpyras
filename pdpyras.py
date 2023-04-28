@@ -350,7 +350,7 @@ ENTITY_WRAPPER_CONFIG = {
     'GET /users/me': 'user',
 } #: :meta hide-value:
 """
-Entity wrapper name configuration
+Wrapped entities antipattern handling configuration.
 
 When trying to determine the entity wrapper name, this dictionary is first
 checked for keys that apply to a given request method and canonical API path
