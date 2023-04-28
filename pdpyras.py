@@ -361,7 +361,7 @@ properly support it for entity wrapping.
 
 Each of the keys should be a capitalized HTTP method (or ``*`` to match any
 method), followed by a space, followed by a canonical path i.e. as returned by
-:attr:`canonical_path` and included in ``pdpyras.CANONICAL_PATHS``. Each value
+:attr:`canonical_path` and included in :attr:`CANONICAL_PATHS`. Each value
 is either a tuple with request and response body wrappers (if they differ), a
 string (if they are the same for both cases) or ``None`` (if wrapping is
 disabled and the data is to be marshaled or unmarshaled as-is). Values in tuples
@@ -388,9 +388,9 @@ def canonical_path(base_url: str, url: str):
     Returns the canonical REST API path corresponding to a URL.
 
     Explicitly supported canonical paths are defined in the list
-    ``pdpyras.CANONICAL_PATHS`` and are the path part of any given API's URL.
-    The path for a given API is what is shown at the top of its reference page,
-    i.e. ``/users/{id}/contact_methods`` for retrieving a user's contact methods
+    :attr:`CANONICAL_PATHS` and are the path part of any given API's URL. The
+    path for a given API is what is shown at the top of its reference page, i.e.
+    ``/users/{id}/contact_methods`` for retrieving a user's contact methods
     (GET) or creating a new one (POST).
 
     :param base_url: The base URL of the API
@@ -572,7 +572,7 @@ def infer_entity_wrapper(method: str, path: str):
     the v2 REST API, where the wrapper name is predictable from the path and
     method. This is the default logic applied to determine the wrapper name
     based on the path if there is no explicit entity wrapping defined for the
-    given path in :attr:`pdpyras.ENTITY_WRAPPER_CONFIG`.
+    given path in :attr:`ENTITY_WRAPPER_CONFIG`.
 
     :param method: The HTTP method
     :param path: A canonical API path i.e. as returned by ``canonical_path``
@@ -637,16 +637,20 @@ def auto_json(method):
     Intended for use on functions that take a URL positional argument followed
     by keyword arguments and return a `requests.Response`_ object.
     """
+    doc = method.__doc__
     def call(self, url, **kw):
         return try_decoding(successful_response(method(self, url, **kw)))
+    call.__doc__ = doc
     return call
 
 def requires_success(method):
     """
     Decorator that validates HTTP responses.
     """
+    doc = method.__doc__
     def call(self, url, **kw):
         return successful_response(method(self, url, **kw))
+    call.__doc__ = doc
     return call
 
 @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
@@ -670,6 +674,7 @@ def resource_url(method):
     such a resource dictionary as the ``path`` argument, thus eliminating the
     need to re-construct the resource URL or hold it in a temporary variable.
     """
+    doc = method.__doc__
     def call(self, resource, **kw):
         url = resource
         if type(resource) is dict and 'self' in resource: # passing an object
@@ -679,6 +684,7 @@ def resource_url(method):
             raise URLError(f"Value passed to {name} is not a str or dict with "
                 "key 'self'")
         return method(self, url, **kw)
+    call.__doc__ = doc
     return call
 
 def wrapped_entities(method):
@@ -709,6 +715,7 @@ def wrapped_entities(method):
     :returns: A callable object; the reformed method
     """
     http_method = method.__name__.lstrip('r')
+    doc = method.__doc__
     def call(self, url, **kw):
         pass_kw = deepcopy(kw) # Make a copy for modification
         path = canonical_path(self.url, url)
@@ -725,6 +732,7 @@ def wrapped_entities(method):
 
         # Unpack the response:
         return unwrap(r, res_w)
+    call.__doc__ = doc
     return call
 
 
@@ -2100,14 +2108,17 @@ class APISession(PDSession):
     @wrapped_entities
     def rget(self, resource, **kw):
         """
-        Retrieve a resource and return the wrapped entity in the response
+        Wrapped-entity-aware GET function.
+
+        Retrieves a resource via GET and returns the wrapped entity in the
+        response.
 
         :param resource:
             The path/URL to which to send the request, or a dict object
             representing an API resource that contains an item with key ``self``
             whose value is the URL of the resource.
         :param \*\*kw:
-            Keyword arguments to pass to ``requests.Session.rget``
+            Keyword arguments to pass to ``requests.Session.get``
         :returns:
             Dictionary representation of the object.
         :type resource: str or dict
@@ -2118,10 +2129,9 @@ class APISession(PDSession):
     @wrapped_entities
     def rpost(self, path, **kw):
         """
-        Create a resource.
+        Wrapped-entity-aware POST function.
 
-        Returns the dictionary object representation if creating it was
-        successful.
+        Creates a resource and returns the created entity if successful.
 
         :param path:
             The path/URL to which to send the POST request, which should be an
@@ -2139,7 +2149,9 @@ class APISession(PDSession):
     @wrapped_entities
     def rput(self, resource, **kw):
         """
-        Update an individual resource, returning the wrapped entity as a dict
+        Wrapped-entity-aware PUT function.
+
+        Update an individual resource, returning the wrapped entity.
 
         :param resource:
             The path/URL to which to send the request, or a dict object
