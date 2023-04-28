@@ -572,33 +572,10 @@ class APISessionTest(SessionTest):
             'incidents', # Maybe some glorious day, but not as of this writing
         )
 
-        # Note, for this next test and the one after it, we must send a lambda
-        # to assertRaises because the method returns a generator
-        # Test: guessing the envelope name, incorrect
-        wrong_envelope_name = [
-            Response(200, page('audit_records', [1, 2, 3], None))
-        ]
-        get.side_effect = wrong_envelope_name
-        self.assertRaises(
-            pdpyras.PDClientError,
-            lambda p: list(sess.iter_cursor(p)),
-            '/audit/records'
-        )
-        get.reset_mock()
-
-        # Test: taking user's input for the envelope name, incorrect
-        get.side_effect = wrong_envelope_name
-        self.assertRaises(
-            pdpyras.PDClientError,
-            lambda p: list(sess.iter_cursor(p, attribute="thing")),
-            '/audit/records'
-        )
-        get.reset_mock()
-
-        # Test: guessing the wrapper name, correct guess, cursor parameter
-        # exchange, stop iteration when records run out, etc. This isn't what
-        # the schema of the audit records API actually looks like apart from the
-        # entity wrapper, but that doesn't matter for the purpose of this test.
+        # Test: cursor parameter exchange, stop iteration when records run out,
+        # etc. This isn't what the schema of the audit records API actually
+        # looks like apart from the entity wrapper, but that doesn't matter for
+        # the purpose of this test.
         get.side_effect = [
             Response(200, page('records', [1, 2, 3], 2)),
             Response(200, page('records', [4, 5, 6], 5)),
@@ -611,8 +588,6 @@ class APISessionTest(SessionTest):
         # It should send the next_cursor body parameter from the second to
         # last response as the cursor query parameter in the final request
         self.assertEqual(get.mock_calls[-1][2]['params']['cursor'], 5)
-
-
 
     @patch.object(pdpyras.APISession, 'rput')
     @patch.object(pdpyras.APISession, 'rpost')
