@@ -403,7 +403,7 @@ necessary to avoid discarding features of the response schema.
 
 The configuration that this client uses to decide if entity wrapping is enabled
 for an endpoint or not is stored in the module variable
-``pdpyras.ENTITY_WRAPPER_CONFIG`` and generally follows this rule: *If the
+:attr:`pdpyras.ENTITY_WRAPPER_CONFIG` and generally follows this rule: *If the
 endpoint's response body or expected request body contains only one property
 that points to all the content of the requested resource, entity wrapping is
 enabled for the endpoint.* The only exception is for resource collection

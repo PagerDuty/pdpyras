@@ -428,7 +428,10 @@ def canonical_path(base_url: str, url: str):
 
 def endpoint_matches(endpoint_pattern: str, method: str, path: str):
     """
-    Returns true if a method and path match an endpoint pattern
+    Returns true if a method and path match an endpoint pattern.
+
+    This is the filtering logic  used for finding the appropriate entry in
+    :attr:`ENTITY_WRAPPER_CONFIG` to use for a given method and API path.
 
     :param e: The endpoint pattern in the form ``METHOD PATH`` where ``METHOD``
         is the HTTP method in uppercase or ``*`` to match all methods, and
@@ -630,6 +633,9 @@ def unwrap(response: requests.Response, wrapper):
 def auto_json(method):
     """
     Makes methods return the full response body object after decoding from JSON.
+
+    Intended for use on functions that take a URL positional argument followed
+    by keyword arguments and return a `requests.Response`_ object.
     """
     def call(self, url, **kw):
         return try_decoding(successful_response(method(self, url, **kw)))
@@ -638,9 +644,6 @@ def auto_json(method):
 def requires_success(method):
     """
     Decorator that validates HTTP responses.
-
-    Require a method that returns a `requests.Response`_ object to return a
-    successful response.
     """
     def call(self, url, **kw):
         return successful_response(method(self, url, **kw))
@@ -784,7 +787,7 @@ def object_type(r_name):
 
 def plural_name(obj_type: str):
     """
-    Transforms an object type into a resource name
+    Pluralizes a name, i.e. the API name from the ``type`` property
 
     :param obj_type:
         The object type, i.e. ``user`` or ``user_reference``
@@ -812,6 +815,16 @@ def resource_name(obj_type):
     return plural_name(obj_type)
 
 def singular_name(r_name: str):
+    """
+    Singularizes a name, i.e. for the entity wrapper in a POST request
+
+    :para r_name:
+        The "resource" name, i.e. "escalation_policies", a plural noun that
+        forms the part of the canonical path identifying what kind of resource
+        lives in the collection there, for an API that follows classic wrapped
+        entity naming patterns.
+    :rtype: str
+    """
     if r_name.endswith('ies'):
         # Because English
         return r_name[:-3]+'y'
