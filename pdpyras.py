@@ -400,7 +400,7 @@ def canonical_path(base_url: str, url: str):
 
     :param base_url: The base URL of the API
     :param url: A non-normalized URL (a path or full URL)
-    :rtype str:
+    :rtype: str
     """
     full_url = normalize_url(base_url, url)
     # Starting with / after hostname up until the parameters:
@@ -455,7 +455,7 @@ def is_path_param(path_node: str):
     Returns true if a given node in a canonical path represents a parameter.
 
     :param path_node: The node (value between slashes) in the path
-    :rtype bool:
+    :rtype: bool
     """
     return path_node.startswith('{') and path_node.endswith('}')
 
@@ -581,7 +581,7 @@ def infer_entity_wrapper(method: str, path: str):
 
     :param method: The HTTP method
     :param path: A canonical API path i.e. as returned by ``canonical_path``
-    :rtype str:
+    :rtype: str
     """
     m = method.upper()
     path_nodes = path.split('/')
@@ -1434,22 +1434,15 @@ class EventsAPISession(PDSession):
         :param links:
             Set the ``links`` property of the event.
         :type action: str
-        :type summary: str
-        :type dedup_key: str
-        :type severity: str
-        :type payload: dict
         :type custom_details: dict
+        :type dedup_key: str
         :type images: list
         :type links: list
-        :rtype: str
-        :type summary: str
+        :type payload: dict
+        :type severity: str
         :type source: str
-        :type dedup_key: str
-        :type severity: str
-        :type payload: dict
-        :type custom_details: dict
-        :type images: list
-        :type links: list
+        :type summary: str
+        :rtype: str
         """
         for local in ('payload', 'custom_details'):
             local_var = locals()[local]
@@ -2127,7 +2120,7 @@ class APISession(PDSession):
         :returns:
             Dictionary representation of the object.
         :type resource: str or dict
-        :rtype dict:
+        :rtype: dict
         """
         return self.get(resource, **kw)
 
@@ -2146,7 +2139,7 @@ class APISession(PDSession):
         :returns:
             Dictionary representation of the created object
         :type path: str
-        :rtype dict:
+        :rtype: dict
         """
         return self.post(path, **kw)
 
@@ -2166,6 +2159,7 @@ class APISession(PDSession):
             Keyword arguments to pass to ``requests.Session.put``
         :returns:
             Dictionary representation of the updated object
+        :rtype: dict
         """
         return self.put(resource, **kw)
 
