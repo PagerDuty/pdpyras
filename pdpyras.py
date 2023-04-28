@@ -24,8 +24,15 @@ __version__ = '5.0.0'
 ### CLIENT DEFAULTS ###
 #######################
 ITERATION_LIMIT = 1e4
+"""The maximum position of a result in classic pagination.
+
+The offset plus limit parameter may not exceed this number. See: `Pagination
+<https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination>`_
+"""
 TIMEOUT = 60
+"""The default timeout in seconds for any given HTTP request"""
 TEXT_LEN_LIMIT = 100
+"""The longest permissible length of API content to include in error messages"""
 
 # On resource wrapping and handling of special behaviors of certain APIs:
 #
@@ -274,33 +281,6 @@ CURSOR_BASED_PAGINATION_PATHS = [
     '/users/{id}/audit/records',
 ]
 
-# Entity wrapper name configuration
-#
-# When trying to determine the entity wrapper name, the following dictionary is
-# checked for keys that apply to a given endpoint based on a matching logic.
-#
-# MODIFYING THIS GLOBAL CAN BREAK IMPLEMENTATIONS OF THE CLIENT. Be careful when
-# modifying the entity wrapper configuration for existing entries or adding
-# entries where the conventional patterns (where wrapping can be inferred)
-# apply; that should not be necessary unless the endpoint responses themselves
-# change or the wrapping configuration is already broken. This is because it
-# directly affects how the API response data is (re)structured when it is
-# returned to or taken from the implementer's scope.
-#
-# Each of the keys should be a capitalized HTTP method (or * to match any
-# method), followed by a space, followed by a canonical path.  Each value is
-# either a tuple with request and response body wrappers (if they differ), a
-# string (if they are the same for both cases) or None (if wrapping is disabled
-# and the data is to be marshaled or unmarshaled as-is). Values in tuples can
-# also be None to denote that either the request or response is unwrapped.
-#
-# An endpoint, under the design logic of this client, is said to have entity
-# wrapping if the body (request or response) has only one property containing
-# the content requested or transmitted, apart from properties used for
-# pagination. If there are any secondary content-bearing properties (other than
-# those used for pagination), entity wrapping should be disabled to avoid
-# discarding those properties from responses or preventing the use of those
-# properties in request bodies.
 ENTITY_WRAPPER_CONFIG = {
     # Analytics
     '* /analytics/metrics/incidents/all': None,
@@ -392,7 +372,38 @@ ENTITY_WRAPPER_CONFIG = {
     'GET /users/{id}/sessions': 'user_sessions',
     'GET /users/{id}/sessions/{type}/{session_id}': 'user_session',
     'GET /users/me': 'user',
-}
+} #: :meta hide-value:
+"""
+Entity wrapper name configuration
+
+When trying to determine the entity wrapper name, this dictionary is first
+checked for keys that apply to a given request method and canonical API path
+based on a matching logic. If no keys are found that match, it is assumed that
+the API endpoint follows classic entity wrapping conventions, and the wrapper
+name can be inferred based on those conventions (see
+:attr:`infer_entity_wrapper`). Any new API that does not follow these
+conventions should therefore be given an entry in this dictionary in order to
+properly support it for entity wrapping.
+
+Each of the keys should be a capitalized HTTP method (or ``*`` to match any
+method), followed by a space, followed by a canonical path i.e. as returned by
+:attr:`canonical_path` and included in ``pdpyras.CANONICAL_PATHS``. Each value
+is either a tuple with request and response body wrappers (if they differ), a
+string (if they are the same for both cases) or ``None`` (if wrapping is
+disabled and the data is to be marshaled or unmarshaled as-is). Values in tuples
+can also be None to denote that either the request or response is unwrapped.
+
+An endpoint, under the design logic of this client, is said to have entity
+wrapping if the body (request or response) has only one property containing
+the content requested or transmitted, apart from properties used for
+pagination. If there are any secondary content-bearing properties (other than
+those used for pagination), entity wrapping should be disabled to avoid
+discarding those properties from responses or preventing the use of those
+properties in request bodies.
+
+:meta hide-value:
+"""
+
 
 ####################
 ### URL HANDLING ###
@@ -402,10 +413,11 @@ def canonical_path(base_url: str, url: str):
     """
     Returns the canonical REST API path corresponding to a URL.
 
-    Canonical paths are defined in ``CANONICAL_PATHS`` and are the path part of
-    any given API's URL. The path for a given API is what is shown at the top of
-    its reference page, i.e. ``/users/{id}/contact_methods`` for retrieving a
-    user's contact methods (GET) or creating a new one (POST).
+    Explicitly supported canonical paths are defined in the list
+    ``pdpyras.CANONICAL_PATHS`` and are the path part of any given API's URL.
+    The path for a given API is what is shown at the top of its reference page,
+    i.e. ``/users/{id}/contact_methods`` for retrieving a user's contact methods
+    (GET) or creating a new one (POST).
 
     :param base_url: The base URL of the API
     :param url: A non-normalized URL (a path or full URL)
@@ -583,7 +595,7 @@ def infer_entity_wrapper(method: str, path: str):
     the v2 REST API, where the wrapper name is predictable from the path and
     method. This is the default logic applied to determine the wrapper name
     based on the path if there is no explicit entity wrapping defined for the
-    given path in ``pdpyras.ENTITY_WRAPPER_CONFIG``.
+    given path in :attr:`pdpyras.ENTITY_WRAPPER_CONFIG`.
 
     :param method: The HTTP method
     :param path: A canonical API path i.e. as returned by ``canonical_path``
@@ -855,7 +867,7 @@ def successful_response(r: requests.Response, context=None) \
         raise PDClientError(message)
 
 def truncate_text(text: str):
-    """Truncates a string longer than TEXT_LEN_LIMIT
+    """Truncates a string longer than :attr:`TEXT_LEN_LIMIT`
 
     :param text: The string to truncate if longer than the limit.
     """

@@ -33,11 +33,16 @@ Errors
     :members:
 .. autoclass:: pdpyras.URLError
 
+Client Defaults
+---------------
+.. automodule:: pdpyras
+    :members: ITERATION_LIMIT, TEXT_LEN_LIMIT, TIMEOUT, ENTITY_WRAPPER_CONFIG
+
 Functions
 ---------
 .. automodule:: pdpyras
     :members:
-    :exclude-members: APISession, EventsAPISession, ChangeEventsAPISession, PDClientError, PDHTTPError, PDSession, URLError, PDServerError
+    :exclude-members: APISession, EventsAPISession, ChangeEventsAPISession, PDClientError, PDHTTPError, PDSession, URLError, PDServerError, ITERATION_LIMIT, TEXT_LEN_LIMIT, TIMEOUT, ENTITY_WRAPPER_CONFIG
 
 
 .. References:
