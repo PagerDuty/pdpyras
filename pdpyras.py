@@ -27,12 +27,12 @@ ITERATION_LIMIT = 1e4
 """
 The maximum position of a result in classic pagination.
 
-See: `Pagination
-<https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination>`_
-
 The offset plus limit parameter may not exceed this number. This is enforced
 server-side and is not something the client may override. Rather, this value is
-used to short-circuit pagination in order to running into a HTTP 400 error.
+used to short-circuit pagination in order to avoid a HTTP 400 error.
+
+See: `Pagination
+<https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination>`_.
 """
 
 TIMEOUT = 60
