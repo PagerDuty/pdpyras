@@ -376,6 +376,9 @@ inside of another object with a single key at the root level of the
 another object that contains a single key. Endpoints with such request/response
 schemas are said to wrap entities.
 
+
+Wrapped-entity-aware Functions
+******************************
 The following methods will automatically extract and return the wrapped content
 of API responses, and wrap request entities for the user as appropriate:
 
@@ -389,6 +392,8 @@ of API responses, and wrap request entities for the user as appropriate:
 * :attr:`pdpyras.APISession.rpost`: Send a POST request, wrapping the request entity / unwrapping the response entity
 * :attr:`pdpyras.APISession.rput`: Send a PUT request, wrapping the request entity / unwrapping the response entity
 
+Classic Patterns
+****************
 Typically (but not for all endpoints), the key ("wrapper name") is named after
 the last or second to last node of the URL's path. The wrapper name is a
 singular noun for an individual resource or plural for a collection of
@@ -397,6 +402,8 @@ does not apply. In versions prior to v5.0.0, they may only be used on APIs that
 follow these conventions, and will run into ``KeyError`` when used on endpoints
 that do not.
 
+Special Cases
+*************
 On endpoints that do not wrap entities, however, the results for a given ``r*``
 method would be the same if using the equivalent ``j*`` method. This is
 necessary to avoid discarding features of the response schema.
