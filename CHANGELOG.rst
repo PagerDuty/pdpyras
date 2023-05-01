@@ -1,4 +1,4 @@
-**2023-05-X: Version 5.0.0:**
+**2023-05-01: Version 5.0.0:**
 
 * **New features:**
     * Methods that assume entity wrapping like ``rget`` and ``iter_all`` now support all API endpoints
