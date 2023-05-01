@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-__version__ = '4.5.2'
+__version__ = '5.0.0'
 
 if __name__ == '__main__':
     setup(
@@ -15,5 +15,5 @@ if __name__ == '__main__':
         install_requires=['requests', 'urllib3'],
         author='PagerDuty',
         author_email='support@pagerduty.com',
-        python_requires='>=3.5'
+        python_requires='>=3.6'
     )

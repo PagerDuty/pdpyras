@@ -2,162 +2,805 @@
 # Copyright (c) PagerDuty.
 # See LICENSE for details.
 
+# Standard libraries
 import logging
 import sys
 import time
-import warnings
 from copy import deepcopy
 from datetime import datetime
+from logging import StreamHandler
 from random import random
+from warnings import warn
 
+# Libraries from PyPI
 import requests
+from deprecation import deprecated, DeprecatedWarning
 from urllib3.exceptions import HTTPError, PoolError
 from requests.exceptions import RequestException
 
-__version__ = '4.5.2'
+__version__ = '5.0.0'
 
-# These are API resource endpoints/methods for which multi-update is supported
-VALID_MULTI_UPDATE_PATHS = [
-    ('incidents', '{index}'),
-    ('incidents', '{id}', 'alerts', '{index}'),
-    ('priorities', '{index}'),
-]
-
+#######################
+### CLIENT DEFAULTS ###
+#######################
 ITERATION_LIMIT = 1e4
+"""
+The maximum position of a result in classic pagination.
+
+The offset plus limit parameter may not exceed this number. This is enforced
+server-side and is not something the client may override. Rather, this value is
+used to short-circuit pagination in order to avoid a HTTP 400 error.
+
+See: `Pagination
+<https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination>`_.
+"""
 
 TIMEOUT = 60
+"""
+The default timeout in seconds for any given HTTP request.
 
-#########################
-### UTILITY FUNCTIONS ###
-#########################
+Modifying this value will not affect any preexisting API session instances.
+Rather, it will only affect new instances. It is recommended to use
+:attr:`pdpyras.PDSession.timeout` to configure the timeout for a given session.
+"""
+
+TEXT_LEN_LIMIT = 100
+"""
+The longest permissible length of API content to include in error messages.
+"""
+
+# List of canonical API paths
+#
+# Supporting a new API for entity wrapping will require adding its patterns to
+# this list. If it doesn't follow standard naming conventions, it will also
+# require one or more new entries in ENTITY_WRAPPER_CONFIG.
+#
+# To generate new definitions for CANONICAL_PATHS and
+# CURSOR_BASED_PAGINATION_PATHS based on the API documentation's source code,
+# use scripts/get_path_list/get_path_list.py
+
+CANONICAL_PATHS = [
+    '/{entity_type}/{id}/change_tags',
+    '/{entity_type}/{id}/tags',
+    '/abilities',
+    '/abilities/{id}',
+    '/addons',
+    '/addons/{id}',
+    '/analytics/metrics/incidents/all',
+    '/analytics/metrics/incidents/services',
+    '/analytics/metrics/incidents/teams',
+    '/analytics/raw/incidents',
+    '/analytics/raw/incidents/{id}',
+    '/analytics/raw/incidents/{id}/responses',
+    '/audit/records',
+    '/automation_actions/actions',
+    '/automation_actions/actions/{id}',
+    '/automation_actions/actions/{id}/invocations',
+    '/automation_actions/actions/{id}/services',
+    '/automation_actions/actions/{id}/services/{service_id}',
+    '/automation_actions/actions/{id}/teams',
+    '/automation_actions/actions/{id}/teams/{team_id}',
+    '/automation_actions/invocations',
+    '/automation_actions/invocations/{id}',
+    '/automation_actions/runners',
+    '/automation_actions/runners/{id}',
+    '/automation_actions/runners/{id}/teams',
+    '/automation_actions/runners/{id}/teams/{team_id}',
+    '/business_services',
+    '/business_services/{id}',
+    '/business_services/{id}/account_subscription',
+    '/business_services/{id}/subscribers',
+    '/business_services/{id}/supporting_services/impacts',
+    '/business_services/{id}/unsubscribe',
+    '/business_services/impactors',
+    '/business_services/impacts',
+    '/business_services/priority_thresholds',
+    '/change_events',
+    '/change_events/{id}',
+    '/customfields/fields',
+    '/customfields/fields/{field_id}',
+    '/customfields/fields/{field_id}/field_options',
+    '/customfields/fields/{field_id}/field_options/{field_option_id}',
+    '/customfields/fields/{field_id}/schemas',
+    '/customfields/schema_assignments',
+    '/customfields/schema_assignments/{id}',
+    '/customfields/schemas',
+    '/customfields/schemas/{schema_id}',
+    '/customfields/schemas/{schema_id}/field_configurations',
+    '/customfields/schemas/{schema_id}/field_configurations/{field_configuration_id}',
+    '/escalation_policies',
+    '/escalation_policies/{id}',
+    '/escalation_policies/{id}/audit/records',
+    '/event_orchestrations',
+    '/event_orchestrations/{id}',
+    '/event_orchestrations/{id}/router',
+    '/event_orchestrations/{id}/unrouted',
+    '/event_orchestrations/services/{id}',
+    '/event_orchestrations/services/{id}/active',
+    '/extension_schemas',
+    '/extension_schemas/{id}',
+    '/extensions',
+    '/extensions/{id}',
+    '/extensions/{id}/enable',
+    '/incident_workflows',
+    '/incident_workflows/{id}',
+    '/incident_workflows/{id}/instances',
+    '/incident_workflows/actions',
+    '/incident_workflows/actions/{id}',
+    '/incident_workflows/triggers',
+    '/incident_workflows/triggers/{id}',
+    '/incident_workflows/triggers/{id}/services',
+    '/incident_workflows/triggers/{trigger_id}/services/{service_id}',
+    '/incidents',
+    '/incidents/{id}',
+    '/incidents/{id}/alerts',
+    '/incidents/{id}/alerts/{alert_id}',
+    '/incidents/{id}/business_services/{business_service_id}/impacts',
+    '/incidents/{id}/business_services/impacts',
+    '/incidents/{id}/field_values',
+    '/incidents/{id}/field_values/schema',
+    '/incidents/{id}/log_entries',
+    '/incidents/{id}/merge',
+    '/incidents/{id}/notes',
+    '/incidents/{id}/outlier_incident',
+    '/incidents/{id}/past_incidents',
+    '/incidents/{id}/related_change_events',
+    '/incidents/{id}/related_incidents',
+    '/incidents/{id}/responder_requests',
+    '/incidents/{id}/snooze',
+    '/incidents/{id}/status_updates',
+    '/incidents/{id}/status_updates/subscribers',
+    '/incidents/{id}/status_updates/unsubscribe',
+    '/incidents/count',
+    '/license_allocations',
+    '/licenses',
+    '/log_entries',
+    '/log_entries/{id}',
+    '/log_entries/{id}/channel',
+    '/maintenance_windows',
+    '/maintenance_windows/{id}',
+    '/notifications',
+    '/oncalls',
+    '/paused_incident_reports/alerts',
+    '/paused_incident_reports/counts',
+    '/priorities',
+    '/response_plays',
+    '/response_plays/{id}',
+    '/response_plays/{response_play_id}/run',
+    '/rulesets',
+    '/rulesets/{id}',
+    '/rulesets/{id}/rules',
+    '/rulesets/{id}/rules/{rule_id}',
+    '/schedules',
+    '/schedules/{id}',
+    '/schedules/{id}/audit/records',
+    '/schedules/{id}/overrides',
+    '/schedules/{id}/overrides/{override_id}',
+    '/schedules/{id}/users',
+    '/schedules/preview',
+    '/service_dependencies/associate',
+    '/service_dependencies/business_services/{id}',
+    '/service_dependencies/disassociate',
+    '/service_dependencies/technical_services/{id}',
+    '/services',
+    '/services/{id}',
+    '/services/{id}/audit/records',
+    '/services/{id}/change_events',
+    '/services/{id}/integrations',
+    '/services/{id}/integrations/{integration_id}',
+    '/services/{id}/rules',
+    '/services/{id}/rules/{rule_id}',
+    '/status_dashboards',
+    '/status_dashboards/{id}',
+    '/status_dashboards/{id}/service_impacts',
+    '/status_dashboards/url_slugs/{url_slug}',
+    '/status_dashboards/url_slugs/{url_slug}/service_impacts',
+    '/tags',
+    '/tags/{id}',
+    '/tags/{id}/{entity_type}',
+    '/teams',
+    '/teams/{id}',
+    '/teams/{id}/audit/records',
+    '/teams/{id}/escalation_policies/{escalation_policy_id}',
+    '/teams/{id}/members',
+    '/teams/{id}/notification_subscriptions',
+    '/teams/{id}/notification_subscriptions/unsubscribe',
+    '/teams/{id}/users/{user_id}',
+    '/templates',
+    '/templates/{id}',
+    '/templates/{id}/render',
+    '/users',
+    '/users/{id}',
+    '/users/{id}/audit/records',
+    '/users/{id}/contact_methods',
+    '/users/{id}/contact_methods/{contact_method_id}',
+    '/users/{id}/license',
+    '/users/{id}/notification_rules',
+    '/users/{id}/notification_rules/{notification_rule_id}',
+    '/users/{id}/notification_subscriptions',
+    '/users/{id}/notification_subscriptions/unsubscribe',
+    '/users/{id}/oncall_handoff_notification_rules',
+    '/users/{id}/oncall_handoff_notification_rules/{oncall_handoff_notification_rule_id}',
+    '/users/{id}/sessions',
+    '/users/{id}/sessions/{type}/{session_id}',
+    '/users/{id}/status_update_notification_rules',
+    '/users/{id}/status_update_notification_rules/{status_update_notification_rule_id}',
+    '/users/me',
+    '/vendors',
+    '/vendors/{id}',
+    '/webhook_subscriptions',
+    '/webhook_subscriptions/{id}',
+    '/webhook_subscriptions/{id}/enable',
+    '/webhook_subscriptions/{id}/ping',
+]
+"""
+Explicit list of supported canonical REST API v2 paths
+
+:meta hide-value:
+"""
+
+CURSOR_BASED_PAGINATION_PATHS = [
+    '/audit/records',
+    '/automation_actions/actions',
+    '/automation_actions/runners',
+    '/escalation_policies/{id}/audit/records',
+    '/incident_workflows/actions',
+    '/incident_workflows/triggers',
+    '/schedules/{id}/audit/records',
+    '/services/{id}/audit/records',
+    '/teams/{id}/audit/records',
+    '/users/{id}/audit/records',
+]
+"""
+Explicit list of paths that support cursor-based pagination
+
+:meta hide-value:
+"""
+
+ENTITY_WRAPPER_CONFIG = {
+    # Analytics
+    '* /analytics/metrics/incidents/all': None,
+    '* /analytics/metrics/incidents/services': None,
+    '* /analytics/metrics/incidents/teams': None,
+    '* /analytics/raw/incidents': None,
+    '* /analytics/raw/incidents/{id}': None,
+    '* /analytics/raw/incidents/{id}/responses': None,
+
+    # Automation Actions
+    'POST /automation_actions/actions/{id}/invocations': (None,'invocation'),
+
+    # Paused Incident Reports
+    'GET /paused_incident_reports/alerts': 'paused_incident_reporting_counts',
+    'GET /paused_incident_reports/counts': 'paused_incident_reporting_counts',
+
+    # Business Services
+    '* /business_services/{id}/account_subscription': None,
+    'POST /business_services/{id}/subscribers': ('subscribers', 'subscriptions'),
+    'POST /business_services/{id}/unsubscribe': ('subscribers', None),
+    '* /business_services/priority_thresholds': None,
+    'GET /business_services/impacts': 'services',
+    'GET /business_services/{id}/supporting_services/impacts': 'services',
+
+    # Change Events
+    'POST /change_events': None, # why not just use ChangeEventsAPISession?
+    'GET /incidents/{id}/related_change_events': 'change_events',
+
+    # Event Orchestrations
+    '* /event_orchestrations': 'orchestrations',
+    '* /event_orchestrations/{id}': 'orchestration',
+    '* /event_orchestrations/{id}/router': 'orchestration_path',
+    '* /event_orchestrations/{id}/unrouted': 'orchestration_path',
+    '* /event_orchestrations/services/{id}': 'orchestration_path',
+    '* /event_orchestrations/services/{id}/active': None,
+
+    # Extensions
+    'POST /extensions/{id}/enable': (None, 'extension'),
+
+    # Incidents
+    'PUT /incidents': 'incidents', # Multi-update
+    'PUT /incidents/{id}/merge': ('source_incidents', 'incident'),
+    'POST /incidents/{id}/responder_requests': (None, 'responder_request'),
+    'POST /incidents/{id}/snooze': (None, 'incident'),
+    'POST /incidents/{id}/status_updates': (None, 'status_update'),
+    'POST /incidents/{id}/status_updates/subscribers': ('subscribers', 'subscriptions'),
+    'POST /incidents/{id}/status_updates/unsubscribe': ('subscribers', None),
+    'GET /incidents/{id}/business_services/impacts': 'services',
+    'PUT /incidents/{id}/business_services/{business_service_id}/impacts': None,
+
+    # Incident Workflows
+    'POST /incident_workflows/{id}/instances': 'incident_workflow_instance',
+    'POST /incident_workflows/triggers/{id}/services': ('service', 'trigger'),
+
+    # Response Plays
+    'POST /response_plays/{response_play_id}/run': None, # (deprecated)
+
+    # Schedules
+    'POST /schedules/{id}/overrides': ('overrides', None),
+
+    # Service Dependencies
+    'POST /service_dependencies/associate': 'relationships',
+
+    # Webhooks
+    'POST /webhook_subscriptions/{id}/enable': (None, 'webhook_subscription'),
+    'POST /webhook_subscriptions/{id}/ping': None,
+
+    # Status Dashboards
+    'GET /status_dashboards/{id}/service_impacts': 'services',
+    'GET /status_dashboards/url_slugs/{url_slug}': 'status_dashboard',
+    'GET /status_dashboards/url_slugs/{url_slug}/service_impacts': 'services',
+
+    # Tags
+    'POST /{entity_type}/{id}/change_tags': None,
+
+    # Teams
+    'PUT /teams/{id}/escalation_policies/{escalation_policy_id}': None,
+    'POST /teams/{id}/notification_subscriptions': ('subscribables', 'subscriptions'),
+    'POST /teams/{id}/notification_subscriptions/unsubscribe': ('subscribables', None),
+    'PUT /teams/{id}/users/{user_id}': None,
+    'GET /teams/{id}/notification_subscriptions': 'subscriptions',
+
+    # Templates
+    'POST /templates/{id}/render': None,
+
+    # Users
+    '* /users/{id}/notification_subscriptions': ('subscribables', 'subscriptions'),
+    'POST /users/{id}/notification_subscriptions/unsubscribe': ('subscribables', None),
+    'GET /users/{id}/sessions': 'user_sessions',
+    'GET /users/{id}/sessions/{type}/{session_id}': 'user_session',
+    'GET /users/me': 'user',
+} #: :meta hide-value:
+"""
+Wrapped entities antipattern handling configuration.
+
+When trying to determine the entity wrapper name, this dictionary is first
+checked for keys that apply to a given request method and canonical API path
+based on a matching logic. If no keys are found that match, it is assumed that
+the API endpoint follows classic entity wrapping conventions, and the wrapper
+name can be inferred based on those conventions (see
+:attr:`infer_entity_wrapper`). Any new API that does not follow these
+conventions should therefore be given an entry in this dictionary in order to
+properly support it for entity wrapping.
+
+Each of the keys should be a capitalized HTTP method (or ``*`` to match any
+method), followed by a space, followed by a canonical path i.e. as returned by
+:attr:`canonical_path` and included in :attr:`CANONICAL_PATHS`. Each value
+is either a tuple with request and response body wrappers (if they differ), a
+string (if they are the same for both cases) or ``None`` (if wrapping is
+disabled and the data is to be marshaled or unmarshaled as-is). Values in tuples
+can also be None to denote that either the request or response is unwrapped.
+
+An endpoint, under the design logic of this client, is said to have entity
+wrapping if the body (request or response) has only one property containing
+the content requested or transmitted, apart from properties used for
+pagination. If there are any secondary content-bearing properties (other than
+those used for pagination), entity wrapping should be disabled to avoid
+discarding those properties from responses or preventing the use of those
+properties in request bodies.
+
+:meta hide-value:
+"""
+
+
+####################
+### URL HANDLING ###
+####################
+
+def canonical_path(base_url: str, url: str):
+    """
+    Returns the canonical REST API path corresponding to a URL.
+
+    This is used to identify and classify URLs according to which particular API
+    within REST API v2 it belongs to.
+
+    Explicitly supported canonical paths are defined in the list
+    :attr:`CANONICAL_PATHS` and are the path part of any given API's URL. The
+    path for a given API is what is shown at the top of its reference page, i.e.
+    ``/users/{id}/contact_methods`` for retrieving a user's contact methods
+    (GET) or creating a new one (POST).
+
+    :param base_url: The base URL of the API
+    :param url: A non-normalized URL (a path or full URL)
+    :rtype: str
+    """
+    full_url = normalize_url(base_url, url)
+    # Starting with / after hostname up until the parameters:
+    url_path = full_url.replace(base_url.rstrip('/'), '').split('?')[0]
+    # Root node (blank) counts so we include it
+    n_nodes = url_path.count('/')
+    # First winnow the list down to paths with the same number of nodes:
+    patterns = list(filter(
+        lambda p: p.count('/') == n_nodes,
+        CANONICAL_PATHS
+    ))
+    # Match against each node, skipping index zero because the root node always
+    # matches, and using the adjusted index "j":
+    for i, node in enumerate(url_path.split('/')[1:]):
+        j = i+1
+        patterns = list(filter(
+            lambda p: p.split('/')[j] == node or is_path_param(p.split('/')[j]),
+            patterns
+        ))
+        # Don't break early if len(patterns) == 1, but require an exact match...
+    if len(patterns) == 0:
+        raise URLError(f"URL {url} does not match any canonical API path " \
+            'supported by this client.')
+    elif len(patterns) > 1:
+        raise Exception(f"Ambiguous URL {url} matches more than one " \
+            "canonical path pattern: "+', '.join(patterns)+'; this is likely ' \
+            'a bug.')
+    else:
+        return patterns[0]
+
+def endpoint_matches(endpoint_pattern: str, method: str, path: str):
+    """
+    Returns true if a method and path match an endpoint pattern.
+
+    This is the filtering logic  used for finding the appropriate entry in
+    :attr:`ENTITY_WRAPPER_CONFIG` to use for a given method and API path.
+
+    :param e: The endpoint pattern in the form ``METHOD PATH`` where ``METHOD``
+        is the HTTP method in uppercase or ``*`` to match all methods, and
+        ``PATH`` is a canonical API path.
+    :param m: The HTTP method
+    :param p: The canonical API path (i.e. as returned by ``canonical_path``)
+    :rtype: boolean
+    """
+    return (
+        endpoint_pattern.startswith(method.upper()) \
+            or endpoint_pattern.startswith('*')
+    ) and endpoint_pattern.endswith(f" {path}")
+
+def is_path_param(path_node: str):
+    """
+    Returns true if a given node in a canonical path represents a parameter.
+
+    :param path_node: The node (value between slashes) in the path
+    :rtype: bool
+    """
+    return path_node.startswith('{') and path_node.endswith('}')
+
+def normalize_url(base_url: str, url: str):
+    """
+    Normalize a URL to a complete API URL.
+
+    The ``url`` argument may be a path relative to the base URL or a full URL.
+
+    :param url: The URL to normalize
+    :param baseurl:
+        The base API URL, excluding any trailing slash, i.e.
+        "https://api.pagerduty.com"
+    :returns: The full API endpoint URL
+    :rtype: str
+    """
+    if url.startswith(base_url):
+        return url
+    elif not (url.startswith('http://') or url.startswith('https://')):
+        return base_url.rstrip('/') + "/" + url.lstrip('/')
+    else:
+        raise URLError(
+            f"URL {url} does not start with the API base URL {base_url}"
+        )
+
+@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
+        current_version=__version__, details='Use canonical_path instead ' \
+            'to identify and classify URLs.')
+def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
+    """Return a tuple of path nodes.
+
+    This function is the implementation of URL parsing logic from versions
+    previous to v5.0.0. It is based on assumptions of patterns that are no
+    longer universal in REST API v2 but were once much more common.
+    """
+    urlnparams = url.split('#')[0].split('?')
+    url_nodes = urlnparams[0].lstrip('/').split('/')
+    path_index = 0
+    invalid_url = ValueError('Invalid API resource URL: '+url[:99])
+    if url.startswith(baseurl):
+        path_index = 3
+    elif url.startswith('http') and url_nodes[0].endswith(':'):
+        raise invalid_url
+    if len(url_nodes) - path_index < 1:
+        raise invalid_url
+    path_nodes = tuple(url_nodes[path_index:])
+    if '' in path_nodes:
+        raise invalid_url
+    tokenized_nodes = [path_nodes[0]]
+    if len(path_nodes) >= 3:
+        tokenized_nodes.extend(('{id}', path_nodes[2]))
+    final_node_type = '{id}'
+    if len(path_nodes)%2 == 1:
+        final_node_type = '{index}'
+    tokenized_nodes.append(final_node_type)
+    return tuple(tokenized_nodes)
+
+#######################
+### ENTITY WRAPPING ###
+#######################
+
+def entity_wrappers(method: str, path: str):
+    """
+    Obtains entity wrapping information for a given endpoint (path and method)
+
+    Returns a 2-tuple. The first element is the wrapper name that should be used
+    for the request body, and the second is the wrapper name to be used for the
+    response body. For either elements, if ``None`` is returned, that signals to
+    disable wrapping and pass the user-supplied request body or API response
+    body object unmodified.
+
+    :param method: The HTTP method
+    :param path: A canonical API path i.e. as returned by ``canonical_path``
+    :rtype: tuple
+    """
+    m = method.upper()
+    endpoint = "%s %s"%(m, path)
+    match = list(filter(
+        lambda k: endpoint_matches(k, m, path),
+        ENTITY_WRAPPER_CONFIG.keys()
+    ))
+
+    if len(match) == 1:
+        # Look up entity wrapping info from the global dictionary and validate:
+        wrapper = ENTITY_WRAPPER_CONFIG[match[0]]
+        invalid_config_error = 'Invalid entity wrapping configuration for ' \
+                    f"{endpoint}: {wrapper}; this is most likely a bug."
+        if wrapper is not None and type(wrapper) not in (tuple, str):
+            raise Exception(invalid_config_error)
+        elif wrapper is None or type(wrapper) is str:
+            # Both request and response have the same wrapping at this endpoint.
+            return (wrapper, wrapper)
+        elif type(wrapper) is tuple and len(wrapper) == 2:
+            # Endpoint uses different wrapping for request and response bodies.
+            #
+            # Both elements must be either str or None. The first element is the
+            # request body wrapper and the second is the response body wrapper.
+            # If a value is None, that indicates that the request or response
+            # value should be encoded and decoded as-is without modifications.
+            if False in [w is None or type(w) is str for w in wrapper]:
+                raise Exception(invalid_config_error)
+            return wrapper
+    elif len(match) == 0:
+        # Nothing in entity wrapper config matches. In this case it is assumed
+        # that the endpoint follows classic API patterns and the wrapper name
+        # can be inferred from the URL and request method:
+        wrapper = infer_entity_wrapper(method, path)
+        return (wrapper, wrapper)
+    else:
+        matches_str = ', '.join(match)
+        raise Exception(f"{endpoint} matches more than one pattern:" + \
+            f"{matches_str}; this is most likely a bug in pdpyras.")
+
+def infer_entity_wrapper(method: str, path: str):
+    """
+    Infer the entity wrapper name from the endpoint using orthodox patterns.
+
+    This is based on patterns that are broadly applicable but not universal in
+    the v2 REST API, where the wrapper name is predictable from the path and
+    method. This is the default logic applied to determine the wrapper name
+    based on the path if there is no explicit entity wrapping defined for the
+    given path in :attr:`ENTITY_WRAPPER_CONFIG`.
+
+    :param method: The HTTP method
+    :param path: A canonical API path i.e. as returned by ``canonical_path``
+    :rtype: str
+    """
+    m = method.upper()
+    path_nodes = path.split('/')
+    if is_path_param(path_nodes[-1]):
+        # Singular if it's an individual resource's URL for read/update/delete
+        # (named similarly to the second to last node, as the last is its ID and
+        # the second to last denotes the API resource collection it is part of):
+        return singular_name(path_nodes[-2])
+    elif m == 'POST':
+        # Singular if creating a new resource by POSTing to the index containing
+        # similar resources (named simiarly to the last path node):
+        return singular_name(path_nodes[-1])
+    else:
+        # Plural if listing via GET to the index endpoint, or doing a multi-put:
+        return path_nodes[-1]
+
+def unwrap(response: requests.Response, wrapper):
+    """
+    Unwraps and returns a wrapped entity.
+
+    :param response: The response object
+    :param wrapper: The entity wrapper
+    :type wrapper: str or None
+    """
+    body = try_decoding(response)
+    endpoint = "%s %s"%(response.request.method.upper(), response.request.url)
+    if wrapper is not None:
+        # There is a wrapped entity to unpack:
+        bod_type = type(body)
+        error_msg = f"Expected response body from {endpoint} after JSON-" \
+            f"decoding to be a dictionary with a key \"{wrapper}\", but %s."
+        if bod_type is dict:
+            if wrapper in body:
+                return body[wrapper]
+            else:
+                keys = truncate_text(', '.join(body.keys()))
+                raise PDServerError(
+                    error_msg%(f"its keys are: {keys}",),
+                    response
+                )
+        else:
+            raise PDServerError(
+                error_msg%(f"its type is {bod_type}.",),
+                response
+            )
+    else:
+        # Wrapping is disabled for responses:
+        return body
+
+###########################
+### FUNCTION DECORATORS ###
+###########################
 
 def auto_json(method):
     """
-    Function decorator that makes methods return the full response JSON
+    Makes methods return the full response body object after decoding from JSON.
+
+    Intended for use on functions that take a URL positional argument followed
+    by keyword arguments and return a `requests.Response`_ object.
     """
-    def call(self, path, **kw):
-        response = raise_on_error(method(self, path, **kw))
-        return try_decoding(response)
+    doc = method.__doc__
+    def call(self, url, **kw):
+        return try_decoding(successful_response(method(self, url, **kw)))
+    call.__doc__ = doc
     return call
 
-def last_4(secret):
-    """Returns an abbreviation of the input"""
-    return '*'+str(secret)[-4:]
-
-def object_type(r_name):
+def requires_success(method):
     """
-    Derives an object type (i.e. ``user``) from a resource name (i.e. ``users``)
-
-    :param r_name:
-        Resource name, i.e. would be ``users`` for the resource index URL
-        ``https://api.pagerduty.com/users``
-    :returns: The object type name; usually the ``type`` property of an instance
-        of the given resource.
-    :rtype: str
+    Decorator that validates HTTP responses.
     """
-    if r_name.endswith('ies'):
-        # Because English
-        return r_name[:-3]+'y'
-    else:
-        return r_name.rstrip('s')
+    doc = method.__doc__
+    def call(self, url, **kw):
+        return successful_response(method(self, url, **kw))
+    call.__doc__ = doc
+    return call
 
-def raise_on_error(r):
-    """
-    Raise an exception if a HTTP error response has error status.
-
-    :param r: Response object corresponding to the response received.
-    :type r: `requests.Response`_
-    :returns: The response object, if its status was success
-    :rtype: `requests.Response`_
-    """
-    received_http_response = bool(r.status_code)
-    if received_http_response:
-        if r.ok:
-            return r
-        else:
-            raise PDHTTPError("%s %s: API responded with non-success status "
-                "(%d): %s" % (
-                    r.request.method.upper(),
-                    r.request.url.replace('https://api.pagerduty.com', ''),
-                    r.status_code,
-                    r.text[:99]
-                ), r)
-    else:
-        raise PDClientError("Network or unknown error: "+str(r))
-
+@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
+    current_version=__version__, details='Use wrapped_entities instead.')
 def resource_envelope(method):
     """
     Convenience and consistency decorator for HTTP verb functions.
 
-    This makes the request methods ``GET``, ``POST`` and ``PUT`` always return a
-    dictionary object representing the resource at the envelope property (i.e.
-    the ``{...}`` from ``{"escalation_policy":{...}}`` in a get/put request to
-    an escalation policy)  rather than a `requests.Response`_ object.
+    DEPRECATED. Use wrapped_entities instead.
+    """
+    return wrapped_entities(method)
 
-    Methods using this decorator will raise a :class:`PDClientError` with its
+def resource_url(method):
+    """
+    API call decorator that allows passing a resource dict as the path/URL
+
+    Most resources returned by the API will contain a ``self`` attribute that is
+    the URL of the resource itself.
+
+    Using this decorator allows the implementer to pass either a URL/path or
+    such a resource dictionary as the ``path`` argument, thus eliminating the
+    need to re-construct the resource URL or hold it in a temporary variable.
+    """
+    doc = method.__doc__
+    def call(self, resource, **kw):
+        url = resource
+        if type(resource) is dict and 'self' in resource: # passing an object
+            url = resource['self']
+        elif type(resource) is not str:
+            name = method.__name__
+            raise URLError(f"Value passed to {name} is not a str or dict with "
+                "key 'self'")
+        return method(self, url, **kw)
+    call.__doc__ = doc
+    return call
+
+def wrapped_entities(method):
+    """
+    Automatically wrap request entities and unwrap response entities.
+
+    Used for methods :attr:`APISession.rget`, :attr:`APISession.rpost` and
+    :attr:`APISession.rput`. It makes them always return an object representing
+    the resource entity in the response (whether wrapped in a root-level
+    property or not) rather than the full response body. When making a post /
+    put request, and passing the ``json`` keyword argument to specify the
+    content to be JSON-encoded as the body, that keyword argument can be either
+    the to-be-wrapped content or the full body including the entity wrapper, and
+    the ``json`` keyword argument will be normalized to include the wrapper.
+
+    Methods using this decorator will raise a :class:`PDHTTPError` with its
     ``response`` property being being the `requests.Response`_ object in the
     case of any error (as of version 4.2 this is subclassed as
     :class:`PDHTTPError`), so that the implementer can access it by catching the
     exception, and thus design their own custom logic around different types of
     error responses.
 
-    It allows creation of methods that can provide more succinct ways of making
-    API calls. In particular, the methods using this decorator don't require
-    checking for a success status, JSON-decoding the response body and then
-    pulling the essential data out of the envelope (i.e. for ``GET
-    /escalation_policies/{id}`` one would have to access the
-    ``escalation_policy`` property of the object decoded from the response body,
-    assuming nothing went wrong in the whole process).
-
-    These methods are :attr:`APISession.rget`, :attr:`APISession.rpost` and
-    :attr:`APISession.rput`.
-
     :param method: Method being decorated. Must take one positional argument
-        after ``self`` that is the URL/path to the resource, and must return an
-        object of class `requests.Response`_, and be named after the HTTP method
-        but with "r" prepended.
+        after ``self`` that is the URL/path to the resource, followed by keyword
+        any number of keyword arguments, and must return an object of class
+        `requests.Response`_, and be named after the HTTP method but with "r"
+        prepended.
     :returns: A callable object; the reformed method
     """
-    global VALID_MULTI_UPDATE_PATHS
     http_method = method.__name__.lstrip('r')
-    def call(self, path, **kw):
+    doc = method.__doc__
+    def call(self, url, **kw):
         pass_kw = deepcopy(kw) # Make a copy for modification
-        nodes = tokenize_url_path(path, baseurl=self.url)
-        is_index = nodes[-1] == '{index}'
-        resource = nodes[-2]
-        multi_put = http_method == 'put' and nodes in VALID_MULTI_UPDATE_PATHS
-        envelope_name_single = object_type(resource) # Usually the "type"
-        if is_index and http_method=='get' or multi_put:
-            # Plural resource name, for index action (GET /<resource>), or for
-            # multi-update (PUT /<resource>). In both cases, the response
-            # (former) or request (latter) body is {<resource>:[<objects>]}
-            envelope_name = resource
-        else:
-            # Individual resource create/read/update
-            # Body = {<singular-resource-type>: {<object>}}
-            envelope_name = envelope_name_single
+        path = canonical_path(self.url, url)
+        endpoint = "%s %s"%(http_method.upper(), path)
+        req_w, res_w = entity_wrappers(http_method, path)
         # Validate the abbreviated (or full) request payload, and automatically
-        # fill the gap for the implementer if some assumptions hold true:
-        if http_method in ('post', 'put') and 'json' in pass_kw and \
-                envelope_name not in pass_kw['json']:
-            pass_kw['json'] = {envelope_name: pass_kw['json']}
+        # wrap the request entity for the implementer if necessary:
+        if req_w is not None and http_method in ('post', 'put') \
+                and 'json' in pass_kw and req_w not in pass_kw['json']:
+            pass_kw['json'] = {req_w: pass_kw['json']}
 
-        r = raise_on_error(method(self, path, **pass_kw))
-        # Now let's try to unpack...
-        response_obj = try_decoding(r)
-        # Get the wrapped entity
-        if envelope_name not in response_obj:
-            raise PDClientError("Cannot extract object; expected top-level "
-                "property \"%s\", but could not find it in the response "
-                "schema. Response body=%s"%(envelope_name, r.text[:99]),
-                response=r)
-            return None
-        return response_obj[envelope_name]
+        # Make the request:
+        r = successful_response(method(self, url, **pass_kw))
+
+        # Unpack the response:
+        return unwrap(r, res_w)
+    call.__doc__ = doc
     return call
 
-def resource_name(obj_type):
+
+########################
+### HELPER FUNCTIONS ###
+########################
+
+def deprecated_kwarg(deprecated_name: str, details=None):
     """
-    Transforms an object type into a resource name
+    Raises a warning if a deprecated keyword argument is used.
+
+    :param deprecated_name: The name of the deprecated function
+    :param details: An optional message to append to the deprecation message
+    """
+    details_msg = ''
+    if details is not None:
+        details_msg = f" {details}"
+    warn(f"Keyword argument \"{deprecated_name}\" is deprecated.{details_msg}")
+
+def http_error_message(r: requests.Response, context=None):
+    """
+    Formats a message describing a HTTP error.
+
+    :param r:
+        The response object.
+    :param context:
+        A description of when the error was received, or None to not include it
+    """
+    received_http_response = bool(r.status_code)
+    endpoint = "%s %s"%(r.request.method.upper(), r.request.url)
+    context_msg = ""
+    if type(context) is str:
+        context_msg=f" in {context}"
+    if received_http_response and not r.ok:
+        err_type = 'unknown'
+        if r.status_code / 100 == 4:
+            err_type = 'client'
+        elif r.status_code / 100 == 5:
+            err_type = 'server'
+        return (
+            f"{endpoint}: API responded with {err_type} error (status %d)" \
+            f"{context_msg}: %s"
+        ) % (r.status_code, truncate_text(r.text))
+    elif not received_http_response:
+        return f"{endpoint}: Network or other unknown error{context_msg}"
+    else:
+        return (
+            f"{endpoint}: Success (status %d) but an expectation still " \
+            f"failed{context_msg}"
+        )%(r.status_code)
+
+def last_4(secret: str):
+    """Returns an abbreviation of the input"""
+    return '*'+str(secret)[-4:]
+
+@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
+        current_version=__version__, details='Use singular_name instead.')
+def object_type(r_name):
+    return singular_name(r_name)
+
+def plural_name(obj_type: str):
+    """
+    Pluralizes a name, i.e. the API name from the ``type`` property
 
     :param obj_type:
         The object type, i.e. ``user`` or ``user_reference``
@@ -174,98 +817,82 @@ def resource_name(obj_type):
     else:
         return obj_type+'s'
 
-def resource_path(method):
+@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
+        current_version=__version__, details='Use successful_response instead.')
+def raise_on_error(r):
+    return successful_response(r)
+
+@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
+        current_version=__version__, details='Use plural_name instead.')
+def resource_name(obj_type):
+    return plural_name(obj_type)
+
+def singular_name(r_name: str):
     """
-    API call decorator that allows passing a resource dict as the path/URL
+    Singularizes a name, i.e. for the entity wrapper in a POST request
 
-    Most resources returned by the API will contain a ``self`` attribute that is
-    the URL of the resource itself.
-
-    Using this decorator allows the implementer to pass either a URL/path or
-    such a resource dictionary as the ``path`` argument, thus eliminating the
-    need to re-construct the resource URL or hold it in a temporary variable.
+    :para r_name:
+        The "resource" name, i.e. "escalation_policies", a plural noun that
+        forms the part of the canonical path identifying what kind of resource
+        lives in the collection there, for an API that follows classic wrapped
+        entity naming patterns.
+    :rtype: str
     """
-    def call(self, resource, **kw):
-        url = resource
-        if type(resource) is dict and 'self' in resource: # passing an object
-            url = resource['self']
-        return method(self, url, **kw)
-    return call
+    if r_name.endswith('ies'):
+        # Because English
+        return r_name[:-3]+'y'
+    else:
+        return r_name.rstrip('s')
 
-def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
-    """
-    Classifies a URL according to some global patterns in the API.
+def successful_response(r: requests.Response, context=None) \
+        -> requests.Response:
+    """Validates the response as successful.
 
-    If the URL is to access a specific individual resource by ID, the node type
-    will be identified as ``{id}``, whereas if it is an index, it will be
-    identified as ``{index}``.
-
-    For instance, ``https://api.pagerduty.com/users`` would be classified as
-    ``("users", "{index}")``, and ``https://api.pagerduty.com/users/PABC123``
-    would be classified as ``("users", "{id}")``
-
-    :param url:
-        The URL (or path) to be classified; the function should accept either
-    :param baseurl:
-        API base URL
-    :type method: str
-    :type url: str
-    :type baseurl: str
-    :rtype: tuple
-    """
-    urlnparams = url.split('#')[0].split('?') # Ignore all #'s / params
-    url_nodes = urlnparams[0].lstrip('/').split('/')
-    path_index = 0
-    invalid_url = ValueError('Invalid API resource URL: '+url[:99])
-    # Validate URL or path:
-    if url.startswith(baseurl):
-        # Full URL: path starts after the third forward slash
-        path_index = 3
-    elif url.startswith('http') and url_nodes[0].endswith(':'):
-        # Full URL but not within the REST API
-        raise invalid_url
-    if len(url_nodes) - path_index < 1:
-        # Incomplete URL (API web root is not a valid resource)
-        raise invalid_url
-    # Path nodes generally start after the hostname, at path_index
-    path_nodes = tuple(url_nodes[path_index:])
-    if '' in path_nodes:
-        # Empty node due to two consecutive unescaped forward slashes (or
-        # trailing slash in the case of it being just the base URL plus slash)
-        raise invalid_url
-    # Tokenize / classify the URL now:
-    tokenized_nodes = [path_nodes[0]]
-    if len(path_nodes) >= 3:
-        # It's an endpoint like one of the following
-        # /{resource}/{id}/{sub-resource}
-        # We're interested in {resource} and {sub_resource}.
-        # More deeply-nested endpoints not known to exist.
-        tokenized_nodes.extend(('{id}', path_nodes[2]))
-    # If the number of path nodes is even: it's an individual resource URL, and
-    # the resource name will be the second to last path node. Otherwise, it is
-    # a resource index, and the resource name will be the last pathnode.
-    # However, if the request was GET, and made to an index endpoint, the
-    # envelope property should simply be the resource name.
-    #
-    # This is a ubiquitous pattern throughout the PagerDuty REST API: path
-    # nodes alternate between identifiers and resource names.
-    final_node_type = '{id}'
-    if len(path_nodes)%2 == 1:
-        final_node_type = '{index}'
-    tokenized_nodes.append(final_node_type)
-    return tuple(tokenized_nodes)
-
-def try_decoding(r):
-    """
-    JSON-decode a response body and raise :class:`PDClientError` if it fails.
+    Returns the response if it was successful; otherwise, raises an exception.
 
     :param r:
-        `requests.Response`_ object
+        Response object corresponding to the response received.
+    :param context:
+        A description of when the HTTP request is happening, for error reporting
+    :returns: The response object, if it was successful
+    """
+    message = http_error_message(r, context=context)
+    if r.ok and bool(r.status_code):
+        return r
+    elif r.status_code / 100 == 5:
+        raise PDServerError(message, r)
+    elif bool(r.status_code):
+        raise PDHTTPError(message, r)
+    else:
+        raise PDClientError(message)
+
+def truncate_text(text: str):
+    """Truncates a string longer than :attr:`TEXT_LEN_LIMIT`
+
+    :param text: The string to truncate if longer than the limit.
+    """
+    if len(text) > TEXT_LEN_LIMIT:
+        return text[:TEXT_LEN_LIMIT-1]+'...'
+    else:
+        return text
+
+def try_decoding(r: requests.Response):
+    """
+    JSON-decode a response body
+
+    Returns the decoded body if successful; raises :class:`PDServerError`
+    otherwise.
+
+    :param r:
+        The response object
     """
     try:
         return r.json()
     except ValueError as e:
-        raise PDHTTPError("API responded with invalid JSON: "+r.text[:99], r)
+        raise PDServerError(
+            "API responded with invalid JSON: " + truncate_text(r.text),
+            r,
+        )
 
 ###############
 ### CLASSES ###
@@ -273,24 +900,40 @@ def try_decoding(r):
 
 class PDSession(requests.Session):
     """
-    Base class for making HTTP requests to PagerDuty APIs.
+    Base class for making HTTP requests to PagerDuty APIs
 
-    Instances of this class are essentially the same as `requests.Session`_
-    objects, but with a few modifications:
+    This is an opinionated wrapper of `requests.Session`_, with a few additional
+    features:
 
-    - The client will reattempt the request with configurable, auto-increasing
-      cooldown/retry intervals if encountering a network error or rate limit
+    - The client will reattempt the request with auto-increasing cooldown/retry
+      intervals, with attempt limits configurable through the :attr:`retry`
+      attribute.
     - When making requests, headers specified ad-hoc in calls to HTTP verb
-      functions will not replace, but will be merged with, default headers.
+      functions will not replace, but will be merged into, default headers.
     - The request URL, if it doesn't already start with the REST API base URL,
       will be prepended with the default REST API base URL.
     - It will only perform requests with methods as given in the
       :attr:`permitted_methods` list, and will raise :class:`PDClientError` for
       any other HTTP methods.
+
+    :param api_key:
+        REST API access token to use for HTTP requests
+    :param debug:
+        Sets :attr:`print_debug`. Set to True to enable verbose command line
+        output.
+    :param name:
+        Deprecated in v5.0.0; will be removed in v5.1.0.
+    :type token: str
+    :type debug: bool
     """
 
     log = None
-    """A ``logging.Logger`` object for printing messages."""
+    """
+    A ``logging.Logger`` object for logging messages. By default it is
+    configured without any handlers and so no messages will be emitted. See
+    `logger objects
+    <https://docs.python.org/3/library/logging.html#logger-objects>`_
+    """
 
     max_http_attempts = 10
     """
@@ -309,22 +952,13 @@ class PDSession(requests.Session):
     """The ``super`` object (`requests.Session`_)"""
 
     permitted_methods = ()
-
-    raise_if_http_error = True
     """
-    Raise an exception upon receiving an error response from the server.
+    A tuple of the methods permitted by the API which the client implements.
 
-    This affects iteration (in the REST API) as well as the generic request
-    method itself.
+    For instance:
 
-    In the general case: if set to True, then upon receiving a non-transient
-    HTTP error (from too many retries), an exception will be raised. Otherwise,
-    the response object will be returned.
-
-    In iteration: if set to true, an exception will be raised in
-    :attr:`iter_all` if a HTTP error is encountered. This is the default
-    behavior in versions >= 2.1.0.  If False, the behavior is to halt iteration
-    upon receiving a HTTP error.
+    * The REST API accepts GET, POST, PUT and DELETE.
+    * The Events API and Change Events APIs only accept POST.
     """
 
     retry = {}
@@ -334,8 +968,8 @@ class PDSession(requests.Session):
     Note, any value set for this class variable will not be reflected in
     instances and so it must be set separately for each instance.
 
-    Each key in this dictionary represents a HTTP response code. The behavior is
-    specified by the value at each key as follows:
+    Each key in this dictionary is an int representing a HTTP response code. The
+    behavior is specified by the int value at each key as follows:
 
     * ``-1`` to retry infinitely
     * ``0`` to return the `requests.Response`_ object and exit (which is the
@@ -368,30 +1002,21 @@ class PDSession(requests.Session):
 
     timeout = TIMEOUT
     """
-    This is the value sent to `requests.Session.request`_ as the ``timeout``
-    parameter that determines the TCP read timeout.
+    This is the value sent to `Requests`_ as the ``timeout`` parameter that
+    determines the TCP read timeout.
     """
 
     url = ""
 
-    def __init__(self, api_key, name=None):
-        """
-        Basic constructor for API sessions.
-
-        :param api_key:
-            The API credential to use.
-        :param name:
-            Identifying label for the session to use in log messages
-        """
+    def __init__(self, api_key: str, name=None, debug=False):
+        if name is not None:
+            deprecated_kwarg('name', 'It has no effect and will be removed ' \
+                'in v5.1.0.')
         self.parent = super(PDSession, self)
         self.parent.__init__()
         self.api_key = api_key
-        if isinstance(name, str) and name:
-            my_name = name
-        else:
-            my_name = self.trunc_key
-        self.log = logging.getLogger('pdpyras.%s(%s)'%(
-            self.__class__.__name__, my_name))
+        self.log = logging.getLogger(__name__)
+        self.print_debug = debug
         self.retry = {}
 
     def after_set_api_key(self):
@@ -450,14 +1075,14 @@ class PDSession(requests.Session):
 
     def normalize_url(self, url):
         """Compose the URL whether it is a path or an already-complete URL"""
-        if url.startswith(self.url) or not self.url:
-            return url
-        else:
-            return self.url + "/" + url.lstrip('/')
+        return normalize_url(self.url, url)
 
     def postprocess(self, response):
         """
         Perform supplemental actions immediately after receiving a response.
+
+        This method is called once per request not including retries, and can be
+        extended in child classes.
         """
         pass
 
@@ -475,6 +1100,36 @@ class PDSession(requests.Session):
             headers.update(user_headers)
         return headers
 
+    @property
+    def print_debug(self):
+        """
+        Printing debug flag
+
+        If set to True, the logging level of :attr:`log` is set to
+        ``logging.DEBUG`` and all log messages are emitted to ``sys.stderr``.
+        If set to False, the logging level of :attr:`log` is set to
+        ``logging.NOTSET`` and the debugging log handler that prints messages to
+        ``sys.stderr`` is removed. This value thus can be toggled to enable and
+        disable verbose command line output.
+
+        It is ``False`` by default and it is recommended to keep it that way in
+        production settings.
+        """
+        return self._debug
+
+    @print_debug.setter
+    def print_debug(self, debug):
+        self._debug = debug
+        if debug and not hasattr(self, '_debugHandler'):
+            self.log.setLevel(logging.DEBUG)
+            self._debugHandler = logging.StreamHandler()
+            self.log.addHandler(self._debugHandler)
+        elif not debug and hasattr(self, '_debugHandler'):
+            self.log.setLevel(logging.NOTSET)
+            self.log.removeHandler(self._debugHandler)
+            delattr(self, '_debugHandler')
+        # else: no-op; only happens if debug is set to the same value twice
+
     def request(self, method, url, **kwargs):
         """
         Make a generic PagerDuty API request.
@@ -485,8 +1140,8 @@ class PDSession(requests.Session):
         :param url:
             The path/URL to request. If it does not start with the base URL, the
             base URL will be prepended.
-        :param \\*\\*kwargs:
-            Additional keyword arguments to pass to `requests.Session.request`_
+        :param \*\*kwargs:
+            Additional keyword arguments to pass to `Requests`_
         :type method: str
         :type url: str
         :returns: the HTTP response object
@@ -501,6 +1156,8 @@ class PDSession(requests.Session):
                 "Method %s not supported by this API. Permitted methods: %s"%(
                     method, ', '.join(self.permitted_methods)))
         req_kw = deepcopy(kwargs)
+        full_url = self.normalize_url(url)
+        endpoint = "%s %s"%(method.upper(), full_url)
 
         # Add in any headers specified in keyword arguments:
         headers = kwargs.get('headers', {})
@@ -514,23 +1171,23 @@ class PDSession(requests.Session):
         if 'params' in kwargs and kwargs['params']:
             req_kw['params'] = self.normalize_params(kwargs['params'])
 
-        # Compose the full URL:
-        my_url = self.normalize_url(url)
-
         # Make the request (and repeat w/cooldown if the rate limit is reached):
         while True:
             try:
-                response = self.parent.request(method, my_url, **req_kw)
+                response = self.parent.request(method, full_url, **req_kw)
                 self.postprocess(response)
             except (HTTPError, PoolError, RequestException) as e:
                 network_attempts += 1
                 if network_attempts > self.max_network_attempts:
-                    raise PDClientError("Non-transient network error; exceeded "
-                        "maximum number of attempts (%d) to connect to the "
-                        "API."%self.max_network_attempts)
+                    raise PDClientError(
+                        (f"{endpoint}: Non-transient network error; exceeded " \
+                        'maximum number of attempts (%d) to connect to the ' \
+                        'API.')%self.max_network_attempts
+                    )
                 sleep_timer *= self.cooldown_factor()
-                self.log.debug("HTTP or network error: %s: %s; retrying in %g "
-                    "seconds.", e.__class__.__name__, e, sleep_timer)
+                self.log.warning(
+                    "%s: HTTP or network error: %s. retrying in %g seconds.",
+                    endpoint, e.__class__.__name__, sleep_timer)
                 time.sleep(sleep_timer)
                 continue
 
@@ -542,21 +1199,22 @@ class PDSession(requests.Session):
                     # Retry a specific number of times (-1 implies infinite)
                     if http_attempts.get(status, 0)>=retry_logic or \
                             sum(http_attempts.values())>self.max_http_attempts:
-                        self.log.error("Non-transient HTTP error: exceeded " \
-                            "maximum number of attempts (%d) to make a " \
-                            "successful request. Currently encountering "
-                            "status %d.", self.retry[status], status)
+                        self.log.error(
+                            f"{endpoint}: Non-transient HTTP error: exceeded " \
+                            'maximum number of attempts (%d) to make a ' \
+                            'successful request. Currently encountering ' \
+                            'status %d.', self.retry[status], status)
                         return response
                     http_attempts[status] = 1 + http_attempts.get(status, 0)
                 sleep_timer *= self.cooldown_factor()
-                self.log.debug("HTTP error (%d); retrying in %g seconds.",
-                    status, sleep_timer)
+                self.log.warning("%s: HTTP error (%d); retrying in %g seconds.",
+                    endpoint, status, sleep_timer)
                 time.sleep(sleep_timer)
                 continue
             elif status == 429:
                 sleep_timer *= self.cooldown_factor()
-                self.log.debug("Hit API rate limit (response status 429); "
-                    "retrying in %g seconds", sleep_timer)
+                self.log.debug("%s: Hit API rate limit (status 429); " \
+                    "retrying in %g seconds", endpoint, sleep_timer)
                 time.sleep(sleep_timer)
                 continue
             elif status == 401:
@@ -570,20 +1228,20 @@ class PDSession(requests.Session):
                 # All went according to plan.
                 return response
 
-    def set_api_key(self, api_key):
+    @property
+    @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
+        current_version=__version__)
+    def raise_if_http_error(self):
         """
-        (Deprecated) set the API key/token.
+        (DEPRECATED) Raise an exception in iteration if there is a HTTP error.
+        """
+        return True
 
-        :param api_key:
-            The API key to use
-        :type api_key: str
-        """
-        raise DeprecationWarning("This method is deprecated. Please use the "
-            "object setter directly (i.e. session.api_key = <value>) or "
-            "implement the after_set_api_key method in a child class of "
-            "PDSession to define a hook that runs when the API credential is "
-            "changed.")
-        self.api_key = api_key
+    @raise_if_http_error.setter
+    @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
+        current_version=__version__)
+    def raise_if_http_error(self, val: bool):
+        pass
 
     @property
     def stagger_cooldown(self):
@@ -705,7 +1363,7 @@ class EventsAPISession(PDSession):
         :param dedup_key:
             The deduplication key; used for determining event uniqueness and
             associating actions with existing incidents.
-        :param \\*\\*properties:
+        :param \*\*properties:
             Additional properties to set, i.e. if ``action`` is ``trigger``
             this would include ``payload``
         :type action: str
@@ -726,12 +1384,16 @@ class EventsAPISession(PDSession):
         elif not action == 'trigger':
             raise ValueError("The dedup_key property is required for"
                 "event_action=%s events, and it must be a string."%action)
-        response = self.post('/v2/enqueue', json=event)
-        raise_on_error(response)
+        response = successful_response(
+            self.post('/v2/enqueue', json=event),
+            context='submitting an event to the events API',
+        )
         response_body = try_decoding(response)
-        if not 'dedup_key' in response_body:
-            raise PDClientError("Malformed response body; does not contain "
-                "deduplication key.", response=response)
+        if type(response_body) is not dict or 'dedup_key' not in response_body:
+            err_msg = 'Malformed response body from the events API; it is ' \
+                'not a dict that has a key named "dedup_key" after ' \
+                'decoding. Body = '+truncate_text(response.text)
+            raise PDServerError(err_msg, response)
         return response_body['dedup_key']
 
     def post(self, *args, **kw):
@@ -772,22 +1434,15 @@ class EventsAPISession(PDSession):
         :param links:
             Set the ``links`` property of the event.
         :type action: str
-        :type summary: str
-        :type dedup_key: str
-        :type severity: str
-        :type payload: dict
         :type custom_details: dict
+        :type dedup_key: str
         :type images: list
         :type links: list
-        :rtype: str
-        :type summary: str
+        :type payload: dict
+        :type severity: str
         :type source: str
-        :type dedup_key: str
-        :type severity: str
-        :type payload: dict
-        :type custom_details: dict
-        :type images: list
-        :type links: list
+        :type summary: str
+        :rtype: str
         """
         for local in ('payload', 'custom_details'):
             local_var = locals()[local]
@@ -850,15 +1505,17 @@ class ChangeEventsAPISession(PDSession):
 
         See: https://developer.pagerduty.com/docs/events-api-v2/send-change-events/
 
-        :param \\*\\*properties:
+        :param \*\*properties:
             Properties to set, i.e. ``payload`` and ``links``
         :returns:
             The response ID
         """
         event = deepcopy(properties)
         response = self.post('/v2/change/enqueue', json=event)
-        raise_on_error(response)
-        response_body = try_decoding(response)
+        response_body = try_decoding(successful_response(
+            response,
+            context="submitting change event",
+        ))
         return response_body.get("id", None)
 
     def submit(self, summary, source=None, custom_details=None, links=None):
@@ -900,28 +1557,30 @@ class ChangeEventsAPISession(PDSession):
 
 class APISession(PDSession):
     """
-    Reusable PagerDuty REST API session objects for making API requests.
+    PagerDuty REST API v2 session object class.
 
-    Implements features to facilitate usage of the REST API. For more details on
-    how to use each resource type's API, see the `REST API Reference`_.
-
-    Includes some convenience functions as well, i.e. :attr:`rget`, :attr:`find`
-    and :attr:`iter_all`, to eliminate some repetitive tasks associated with
-    API usage.
+    Implements the most generic and oft-implemented aspects of PagerDuty's REST
+    API v2 as an opinionated wrapper of `requests.Session`_.
 
     Inherits from :class:`PDSession`.
 
     :param api_key:
         REST API access token to use for HTTP requests
     :param name:
-        Optional name identifier for logging. If unspecified or ``None``, it
-        will be the last four characters of the REST API token.
+        Deprecated and has no effect as of v5.0.0
     :param default_from:
-        Email address of a valid PagerDuty user to use in API requests by
-        default as the ``From`` header (see: `HTTP Request Headers`_)
+        The default email address to use in the ``From`` header when making
+        API calls using an account-level API access key.
+    :param auth_type:
+        The type of credential in use. If authenticating with an OAuth access
+        token, this must be set to ``oauth2`` or ``bearer``.
+    :param debug:
+        Sets :attr:`print_debug`. Set to True to enable verbose command line
+        output.
     :type token: str
     :type name: str or None
     :type default_from: str or None
+    :type debug: bool
 
     :members:
     """
@@ -938,7 +1597,7 @@ class APISession(PDSession):
     default_page_size = 100
     """
     This will be the default number of results requested in each page when
-    iterating/querying an index (the ``limit`` parameter). See: `pagination`_.
+    iterating/querying an index (the ``limit`` parameter).
     """
 
     permitted_methods = ('GET', 'POST', 'PUT', 'DELETE')
@@ -947,11 +1606,11 @@ class APISession(PDSession):
     """Base URL of the REST API"""
 
     def __init__(self, api_key, name=None, default_from=None,
-            auth_type='token'):
+            auth_type='token', debug=False):
         self.api_call_counts = {}
         self.api_time = {}
         self.auth_type = auth_type
-        super(APISession, self).__init__(api_key, name)
+        super(APISession, self).__init__(api_key, name=name, debug=debug)
         self.default_from = default_from
         self.headers.update({
             'Accept': 'application/vnd.pagerduty+json;version=2',
@@ -982,7 +1641,7 @@ class APISession(PDSession):
                     self._api_key_access = None
                     self.log.error("Failed to obtain API key access level; "
                         "the API did not respond as expected.")
-                    self.log.debug("Body = %s", response.text[:99])
+                    self.log.debug("Body = %s", truncate_text(response.text))
             else:
                 self._api_key_access = 'user'
         return self._api_key_access
@@ -997,7 +1656,7 @@ class APISession(PDSession):
         return self._auth_type
 
     @auth_type.setter
-    def auth_type(self, value):
+    def auth_type(self, value: str):
         if value not in ('token', 'bearer', 'oauth2'):
             raise AttributeError("auth_type value must be \"token\" (default) "
                 "or \"bearer\" or \"oauth\" to use OAuth2 authentication.")
@@ -1026,14 +1685,6 @@ class APISession(PDSession):
             uniqueness validation, so if you use an attribute that is not
             distinct for the data set, this function will omit some data in the
             results.
-        :param params:
-            Additional URL parameters to include.
-        :param paginate:
-            If True, use `pagination`_ to get through all available results. If
-            False, ignore / don't page through more than the first 100 results.
-            Useful for special index endpoints that don't fully support
-            pagination yet, i.e. "nested" endpoints like
-            ``/users/{id}/contact_methods`` and ``/services/{id}/integrations``
         """
         by = kw.pop('by', 'id')
         iterator = self.iter_all(path, **kw)
@@ -1047,7 +1698,7 @@ class APISession(PDSession):
         entry in the index endpoint schema's array of results. Otherwise, it
         will return ``None`` if no result is found or an error is encountered.
 
-        Works by querying a given `resource index`_ endpoint using the ``query``
+        Works by querying a given resource index endpoint using the ``query``
         parameter. To use this function on any given resource, the resource's
         index must support the ``query`` parameter; otherwise, the function may
         not work as expected. If the index ignores the parameter, for instance,
@@ -1077,14 +1728,14 @@ class APISession(PDSession):
         if params is not None:
             query_params.update(params)
         query_params.update({'query':query})
-        # When determining uniqueness, web/the API doesn't care about case.
+        # When determining uniqueness, web/the API is largely case-insensitive:
         simplify = lambda s: s.lower()
         search_term = simplify(query)
         equiv = lambda s: simplify(s[attribute]) == search_term
         obj_iter = self.iter_all(resource, params=query_params)
         return next(iter(filter(equiv, obj_iter)), None)
 
-    def iter_all(self, path, params=None, paginate=True, page_size=None,
+    def iter_all(self, url, params=None, paginate=None, page_size=None,
             item_hook=None, total=False):
         """
         Iterator for the contents of an index endpoint or query.
@@ -1092,207 +1743,240 @@ class APISession(PDSession):
         Automatically paginates and yields the results in each page, until all
         matching results have been yielded or a HTTP error response is received.
 
+        If the URL to use supports cursor-based pagintation, then this will
+        return :attr:`iter_cursor` with the same keyword arguments. Otherwise,
+        it implements classic pagination, a.k.a. numeric pagination.
+
         Each yielded value is a dict object representing a result returned from
         the index. For example, if requesting the ``/users`` endpoint, each
         yielded value will be an entry of the ``users`` array property in the
         response.
 
-        :param path:
+        :param url:
             The index endpoint URL to use.
         :param params:
             Additional URL parameters to include.
         :param paginate:
-            If True, use `pagination`_ to get through all available results. If
-            False, ignore / don't page through more than the first 100 results.
-            Useful for special index endpoints that don't fully support
-            pagination yet, i.e. "nested" endpoints like (as of this writing):
-            ``/users/{id}/contact_methods`` and ``/services/{id}/integrations``
+            In versions before v5.0.0, this could be set to False to disable
+            many of the features of numeric pagination. As of v5.0.0, this
+            keyword argument is deprecated and has no effect. The method can
+            still be used on endpoints that don't fully support pagination yet,
+            i.e. that don't return a ``more`` property in the response, although
+            it will raise a warning.
         :param page_size:
-            If set, the ``page_size`` argument will override the ``default_page_size``
-            parameter on the session and set the ``limit`` parameter to a custom
-            value (default is 100), altering the number of pagination results.
+            If set, the ``page_size`` argument will override the
+            ``default_page_size`` parameter on the session and set the ``limit``
+            parameter to a custom value (default is 100), altering the number of
+            pagination results. The actual number of results in the response
+            will still take precedence, if it differs; this parameter and
+            ``default_page_size`` only dictate what is requested of the API.
         :param item_hook:
             Callable object that will be invoked for each iteration, i.e. for
             printing progress. It will be called with three parameters: a dict
-            representing a given result in the iteration, the number of the
-            item, and the total number of items in the series.
+            representing a given result in the iteration, an int representing
+            the number of the item in the series, and an int (or str, as of
+            v5.0.0) representing the total number of items in the series. If the
+            total isn't knowable, the value passed is "?".
         :param total:
             If True, the ``total`` parameter will be included in API calls, and
             the value for the third parameter to the item hook will be the total
             count of records that match the query. Leaving this as False confers
             a small performance advantage, as the API in this case does not have
             to compute the total count of results in the query.
-        :type path: str
+        :type url: str
         :type params: dict or None
-        :type paginate: bool
         :type page_size: int or None
         :type total: bool
-        :yields: Results from the index endpoint.
-        :rtype: dict
         """
-        # Validate that it's an index URL being requested:
-        path_nodes = tokenize_url_path(path, baseurl=self.url)
-        if not path_nodes[-1] == '{index}':
-            raise ValueError("Invalid index url/path: "+path[:99])
-        # Determine the resource name:
-        r_name = path_nodes[-2]
+        if paginate is not None:
+            deprecated_kwarg('paginate', details='It has no effect as of ' \
+                'v5.0.0 and will be removed in v5.1.0.')
+        # Get entity wrapping and validate that the URL being requested is
+        # likely to support pagination:
+        path = canonical_path(self.url, url)
+        endpoint = f"GET {path}"
+        nodes = path.split('/')
+        if is_path_param(nodes[-1]):
+            # This is based on an as-yet universal pattern, but like classic
+            # entity wrapping conventions, it isn't explicitly in the API
+            # contract and so it may be subject to change. Therefore, I can only
+            # hope our API developers do not deviate from it. If ever a path
+            # parameter refers to a resource type versus a unique ID, we will
+            # have to distinguish between types of path parameters somehow.
+            raise URLError(f"Path {path} (URL={url}) is for accessing an " \
+                "individual resource, versus a resource collection, and as " \
+                "such does not feature pagination.")
+        _, wrapper = entity_wrappers('GET', path)
+        if wrapper is None:
+            raise URLError(f"Pagination is not supported for GET {path}.")
+
+        # Short-circuit to cursor-based iteration:
+        if path in CURSOR_BASED_PAGINATION_PATHS:
+            return self.iter_cursor(url, attribute=res_w, params=params)
+
         # Parameters to send:
         data = {}
-        if paginate:
-            # Retrieve 100 at a time unless otherwise specified:
-            if page_size is None:
-                data['limit'] = self.default_page_size
-            else:
-                data['limit'] = page_size
+        if page_size is None:
+            data['limit'] = self.default_page_size
+        else:
+            data['limit'] = page_size
         if total:
             data['total'] = 1
-        if params is not None:
+        if isinstance(params, (dict, list)):
             # Override defaults with values given:
-            data.update(params)
+            data.update(dict(params))
 
         more = True
         offset = 0
         if params is not None:
             offset = int(params.get('offset', 0))
         n = 0
-        while more: # Paginate through all results
-            if paginate:
-                data['offset'] = offset
-                highest_record_index = int(data['offset']) + int(data['limit'])
-                if highest_record_index > ITERATION_LIMIT:
-                    self.log.warn("Stopping iteration on endpoint \"%s\" at "
-                        "limit+offset=%d as this exceeds the maximum permitted "
-                        "by the API (%d). The retrieved data may be incomplete."
-                        "For more information, see: %s", path,
-                        highest_record_index, ITERATION_LIMIT,
-                        'https://developer.pagerduty.com/docs/rest-api-v2/pagination')
-                    break
-            r = self.get(path, params=data.copy())
-            if not r.ok:
-                if self.raise_if_http_error:
-                    raise PDClientError("Encountered HTTP error status (%d) "
-                        "response while iterating through index endpoint %s."%(
-                            r.status_code, path), response=r)
-                self.log.warn("Stopping iteration on endpoint \"%s\"; API "
-                    "responded with non-success status %d", path, r.status_code)
-                break
-            try:
-                response = r.json()
-            except ValueError:
-                self.log.warn("Stopping iteration on endpoint \"%s\"; API "
-                    "responded with invalid JSON.", path)
-                break
-            #if 'limit' in response:
-            #    data['limit'] = response['limit']
-            data['limit'] = len(response[r_name])
+        while more:
+            # Check the offset and limit:
+            data['offset'] = offset
+            highest_record_index = int(data['offset']) + int(data['limit'])
+            if highest_record_index > ITERATION_LIMIT:
+                iter_limit = '%d'%ITERATION_LIMIT
+                warn(
+                    f"Stopping iter_all on {endpoint} at " \
+                    f"limit+offset={highest_record_index} " \
+                    'as this exceeds the maximum permitted by the API ' \
+                    f"({iter_limit}). The set of results may be incomplete."
+                )
+                return
+
+            # Make the request and validate/unpack the response:
+            r = successful_response(
+                self.get(url, params=data.copy()),
+                context='classic pagination'
+            )
+            body = try_decoding(r)
+            results = unwrap(r, wrapper)
+
+            # Validate and update pagination parameters
+            #
+            # Note, the number of the results in the actual response is always
+            # the most appropriate amount to increment the offset by after
+            # receiving each page. If this is the last page, agination should
+            # stop anyways because the ``more`` parameter should evaluate to
+            # false.
+            #
+            # In short, the reasons why we don't trust the echoed ``limit``
+            # value or stick to the limit requested and hope the server honors
+            # it is that it could potentially result in skipping results or
+            # yielding duplicates if there's a mismatch, or potentially issues
+            # like #61
+            data['limit'] = len(results)
+            offset += data['limit']
             more = False
-            total_count = None
-            if paginate:
-                if 'more' in response:
-                    more = response['more']
-                else:
-                    self.log.warn("Pagination is enabled in iteration, but the"
-                        " index endpoint %s responded with no \"more\" property"
-                        " in the response. Only the first page of results, "
-                        "however many can be gotten, will be included.", path)
-                if 'total' in response:
-                    total_count = response['total']
-                else:
-                    self.log.warn("Pagination and the \"total\" parameter "
-                        "are enabled in iteration, but the index endpoint %s "
-                        "responded with no \"total\" property in the response. "
-                        "Cannot display a total count of this resource without "
-                        "first retrieving all records.", path)
-                offset += data['limit']
-            for result in response[r_name]:
+            total_count = '?'
+            if 'more' in body:
+                more = body['more']
+            else:
+                warn(
+                    f"Endpoint GET {path} responded with no \"more\" property" \
+                    ' in the response, so pagination is not supported ' \
+                    '(or this is an API bug). Only results from the first ' \
+                    'request will be yielded. You can use rget with this ' \
+                    'endpoint instead to avoid this warning.'
+                )
+            if 'total' in body:
+                total_count = body['total']
+
+            # Perform per-page actions on the response data
+            for result in results:
                 n += 1
                 # Call a callable object for each item, i.e. to print progress:
                 if hasattr(item_hook, '__call__'):
                     item_hook(result, n, total_count)
                 yield result
 
-    def iter_cursor(self, path, attribute=None, params=None):
+    def iter_cursor(self, url, attribute=None, params=None, item_hook=None):
         """
-        Iterator for results from an endpoint supporting cursor-based pagination
+        Iterator for results from an endpoint using cursor-based pagination.
 
-        :param path:
+        :param url:
             The index endpoint URL to use.
         :param attribute:
-            The property in the JSON body, i.e. ``records`` for
-            ``/audit/records``, in which to find results. If None is specified,
-            a guess will be made as to the envelope name (that it is the same as
-            the last node in the URI path).
+            User-specified entity wrapper to use. Deprecated and has no effect
+            as of v5.0.0, and will be removed in v5.1.0.
         :param params:
             Query parameters to include in the request.
+        :param item_hook:
+            A callable object that accepts 3 positional arguments; see
         """
-
-        if attribute:
-            assumed_attribute = attribute
-        else:
-            assumed_attribute = path.split('/')[-1]
-
+        if attribute is not None:
+            deprecated_kwarg('attribute', details='It has no effect as of ' \
+                'v5.0.0 and will be removed in v5.1.0.')
+        path = canonical_path(self.url, url)
+        if path not in CURSOR_BASED_PAGINATION_PATHS:
+            raise URLError(f"{path} does not support cursor-based pagination.")
+        _, wrapper = entity_wrappers('GET', path)
         user_params = {}
-        if params:
-            user_params.update(params)
+        if isinstance(params, (dict, list)):
+            # Override defaults with values given:
+            user_params.update(dict(params))
 
         more = True
         next_cursor = None
+        total = 0
+
         while more:
+            # Update parameters and request a new page:
             if next_cursor:
                 user_params.update({'cursor': next_cursor})
-            page = self.jget(path, params=user_params)
-            if assumed_attribute not in page:
-                raise PDClientError("No attribute \"{attribute}\" at the root "
-                    "level of the response body from {path}. Attributes "
-                    "include: {examples}".format(
-                        attribute = assumed_attribute,
-                        path = path,
-                        examples = (', '.join(page.keys()))[:99]
-                    )
-                )
-            for result in page[assumed_attribute]:
+            r = successful_response(
+                self.get(url, params=user_params),
+                context='cursor-based pagination',
+            )
+
+            # Unpack and yield results
+            body = try_decoding(r)
+            results = unwrap(r, wrapper)
+            for result in results:
+                total += 1
+                if hasattr(item_hook, '__call__'):
+                    item_hook(result, total, '?')
                 yield result
-            next_cursor = page.get('next_cursor', None)
+            # Advance to the next page
+            next_cursor = body.get('next_cursor', None)
             more = bool(next_cursor)
 
+    @resource_url
     @auto_json
-    def jget(self, path, **kw):
+    def jget(self, url, **kw):
         """
         Performs a GET request, returning the JSON-decoded body as a dictionary
-
-        :raises PDClientError: In the event of HTTP error
         """
-        return self.get(path, **kw)
+        return self.get(url, **kw)
 
+    @resource_url
     @auto_json
-    def jpost(self, path, **kw):
+    def jpost(self, url, **kw):
         """
         Performs a POST request, returning the JSON-decoded body as a dictionary
-
-        :raises PDClientError: In the event of HTTP error
         """
-        return self.post(path, **kw)
+        return self.post(url, **kw)
 
+    @resource_url
     @auto_json
-    def jput(self, path, **kw):
+    def jput(self, url, **kw):
         """
         Performs a PUT request, returning the JSON-decoded body as a dictionary
-
-        :rauses PDClientError: In the event of HTTP errror
         """
-        return self.put(path, **kw)
+        return self.put(url, **kw)
 
-    def list_all(self, path, **kw):
+    def list_all(self, url, **kw):
         """
         Returns a list of all objects from a given index endpoint.
 
         All keyword arguments passed to this function are also passed directly
         to :attr:`iter_all`; see the documentation on that method for details.
 
-        :param path:
+        :param url:
             The index endpoint URL to use.
         """
-        return list(self.iter_all(path, **kw))
+        return list(self.iter_all(url, **kw))
 
     def persist(self, resource, attr, values, update=False):
         """
@@ -1304,8 +1988,9 @@ class APISession(PDSession):
         persisted via the API (whether or not it already existed).
 
         :param resource:
-            The resource name. Must be a valid API resource that is supported by
-            the ``r*`` methods; see :ref:`Supported Endpoints`.
+            The URL to use when creating the new resource or searching for an
+            existing one. The underlying AP must support entity wrapping to use
+            this method with it.
         :param attr:
             Name of the attribute to use as the idempotency key. For instance,
             "email" when the resource is "users" will not create the user if a
@@ -1338,34 +2023,36 @@ class APISession(PDSession):
         else:
             return self.rpost(resource, json=values)
 
-    def postprocess(self, response, suffix=None):
+    def postprocess(self, response: requests.Response, suffix=None):
         """
         Records performance information / request metadata about the API call.
 
-        This method is called automatically by :func:`request` for all requests,
-        and can be extended in child classes.
-
         :param response:
-            The `requests.Response`_ object returned by
-            `requests.Session.request`_
+            The `requests.Response`_ object returned by the request method
         :param suffix:
             Optional suffix to append to the key
         :type method: str
         :type response: `requests.Response`_
         :type suffix: str or None
         """
-        method = response.request.method
+        method = response.request.method.upper()
+        url = response.request.url
+        status = response.status_code
         request_date = response.headers.get('date', '(missing header)')
         request_id = response.headers.get('x-request-id', '(missing header)')
         request_time = response.elapsed.total_seconds()
-        status = response.status_code
-        url = response.url
 
-        key = self.profiler_key(method, url, suffix=suffix)
-        self.api_call_counts.setdefault(key, 0)
-        self.api_time.setdefault(key, 0.0)
-        self.api_call_counts[key] += 1
-        self.api_time[key] += request_time
+        try:
+            endpoint = "%s %s"%(method, canonical_path(self.url, url))
+        except URLError:
+            # This is necessary so that profiling can also support using the
+            # basic get / post / put / delete methods with APIs that are not yet
+            # explicitly supported by inclusion in CANONICAL_PATHS.
+            endpoint = "%s %s"%(method, url)
+        self.api_call_counts.setdefault(endpoint, 0)
+        self.api_time.setdefault(endpoint, 0.0)
+        self.api_call_counts[endpoint] += 1
+        self.api_time[endpoint] += request_time
 
         # Request ID / timestamp logging
         self.log.debug("Request completed: #method=%s|#url=%s|#status=%d|"
@@ -1388,31 +2075,20 @@ class APISession(PDSession):
             headers.update(user_headers)
         return headers
 
+    @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
+        current_version=__version__, details='Use canonical_path to identify ' \
+            'REST API v2 URLs instead.')
     def profiler_key(self, method, path, suffix=None):
         """
-        Generates a fixed-format key to classify a request, i.e. for profiling.
-
-        Returns a string that will have all instances of IDs replaced with
-        ``{id}``, and will begin with the method in lower case followed by a
-        colon, i.e. ``get:escalation_policies/{id}``
-
-        :param method:
-            The request method
-        :param path:
-            The path/URI to classify
-        :param suffix:
-            Optional suffix to append to the key
-        :type method: str
-        :type path: str
-        :type suffix: str
-        :rtype: str
+        Generates a fixed-format key to classify a request
         """
         my_suffix = "" if suffix is None else "#"+suffix
         path_str = '/'.join(tokenize_url_path(path, baseurl=self.url))
         return '%s:%s'%(method.lower(), path_str)+my_suffix
 
-    @resource_path
-    def rdelete(self, resource, **kw):
+    @resource_url
+    @requires_success
+    def rdelete(self, resource, **kw) -> requests.Response:
         """
         Delete a resource.
 
@@ -1420,65 +2096,70 @@ class APISession(PDSession):
             The path/URL to which to send the request, or a dict object
             representing an API resource that contains an item with key ``self``
             whose value is the URL of the resource.
-        :param \\*\\*kw:
+        :param \*\*kw:
             Keyword arguments to pass to ``requests.Session.delete``
-        :type path: str or dict
+        :type resource: str or dict
         """
-        raise_on_error(self.delete(resource, **kw))
+        return self.delete(resource, **kw)
 
-    @resource_path
-    @resource_envelope
+    @resource_url
+    @wrapped_entities
     def rget(self, resource, **kw):
         """
-        Retrieve a resource and return the wrapped entity in the response
+        Wrapped-entity-aware GET function.
+
+        Retrieves a resource via GET and returns the wrapped entity in the
+        response.
 
         :param resource:
             The path/URL to which to send the request, or a dict object
             representing an API resource that contains an item with key ``self``
             whose value is the URL of the resource.
-        :param \\*\\*kw:
-            Keyword arguments to pass to ``requests.Session.rget``
+        :param \*\*kw:
+            Keyword arguments to pass to ``requests.Session.get``
         :returns:
             Dictionary representation of the object.
         :type resource: str or dict
-        :rtype dict:
+        :rtype: dict
         """
         return self.get(resource, **kw)
 
-    @resource_envelope
+    @wrapped_entities
     def rpost(self, path, **kw):
         """
-        Create a resource.
+        Wrapped-entity-aware POST function.
 
-        Returns the dictionary object representation if creating it was
-        successful.
+        Creates a resource and returns the created entity if successful.
 
         :param path:
             The path/URL to which to send the POST request, which should be an
             index endpoint.
-        :param \\*\\*kw:
+        :param \*\*kw:
             Keyword arguments to pass to ``requests.Session.post``
         :returns:
             Dictionary representation of the created object
         :type path: str
-        :rtype dict:
+        :rtype: dict
         """
         return self.post(path, **kw)
 
-    @resource_path
-    @resource_envelope
+    @resource_url
+    @wrapped_entities
     def rput(self, resource, **kw):
         """
-        Update an individual resource, returning the wrapped entity as a dict
+        Wrapped-entity-aware PUT function.
+
+        Update an individual resource, returning the wrapped entity.
 
         :param resource:
             The path/URL to which to send the request, or a dict object
             representing an API resource that contains an item with key ``self``
             whose value is the URL of the resource.
-        :param \\*\\*kw:
+        :param \*\*kw:
             Keyword arguments to pass to ``requests.Session.put``
         :returns:
             Dictionary representation of the updated object
+        :rtype: dict
         """
         return self.put(resource, **kw)
 
@@ -1514,9 +2195,19 @@ class APISession(PDSession):
         """Truncated token for secure display/identification purposes."""
         return last_4(self.api_key)
 
+class URLError(Exception):
+    """
+    Exception class for unsupported URLs or malformed input.
+    """
+    pass
+
 class PDClientError(Exception):
     """
     General API errors base class.
+
+    Note, the name of this class does not imply it solely includes errors
+    experienced by the client or HTTP status 4xx responses, but descendants can
+    include issues with the API backend.
     """
 
     response = None
@@ -1551,9 +2242,9 @@ class PDHTTPError(PDClientError):
             user = session.rget('/users/PABC123')
         except pdpyras.PDClientError as e:
             if e.response is not None:
-                print("HTTP error: "+str(e))
+                print("HTTP error: "+str(e.response.status_code))
             else:
-                print(e)
+                raise e
 
     one could write this:
 
@@ -1561,11 +2252,20 @@ class PDHTTPError(PDClientError):
 
         try:
             user = session.rget('/users/PABC123')
-        except pdpyras.PDHTTPErrror as e:
-            print("HTTP error: "+str(e))
-        except pdpyras.PDClientError as e:
-            print(e)
+        except pdpyras.PDHTTPError as e:
+            print("HTTP error: "+str(e.response.status_code))
     """
 
     def __init__(self, message, response: requests.Response):
-        super(PDHTTPError, self).__init__(message, response)
+        super(PDHTTPError, self).__init__(message, response=response)
+
+class PDServerError(PDHTTPError):
+    """
+    Error class representing failed expectations made of the server
+
+    This is raised in cases where the response schema differs from the expected
+    schema because of an API bug, or because it's an early access endpoint and
+    changes before GA, or in cases of HTTP status 5xx where a successful
+    response is required.
+    """
+    pass

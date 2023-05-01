@@ -1,1 +1,2 @@
-requests >= 2.20.0
+requests >= 2.27.1
+deprecation >= 2.0.6

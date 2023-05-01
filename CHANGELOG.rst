@@ -1,7 +1,28 @@
-**2022-10-13: Version 4.5.1**
+**2023-05-01: Version 5.0.0:**
+
+* **New features:**
+    * Methods that assume entity wrapping like ``rget`` and ``iter_all`` now support all API endpoints
+    * Property ``PDSession.print_debug`` enables printing verbose log messages to ``sys.stderr``
+* **Breaking Changes:**
+    * Removal of the deprecated method ``PDSession.set_api_key``
+    * End support for `Python v3.5 <https://www.python.org/downloads/release/python-350/>`_, which has reached end-of-life.
+* **Deprecations:** the following will be removed in the next minor release, and use of them in v5.0.0 will trigger warnings:
+    * Keyword argument ``name`` of the session constructor: this previously set the name of the logger; now it has no effect.
+    * Keyword argument ``paginate`` of ``APISession.iter_all``: this previously could be set to ``False`` to make ``iter_all`` stop iteration after the first page of results; now it has no effect.
+    * Keyword argument ``attribute`` of ``APISession.iter_all``: this previously could be used to specify the entity wrapper name of results. The wrapper is now determined automatically and this argument has no effect.
+    * Function ``tokenize_url_path``
+    * Function (decorator) ``resource_envelope``
+    * Function ``object_type``
+    * Function ``raise_on_error``
+    * Function ``resource_name``
+    * Property ``APISession.raise_if_http_error``: this previously allowed partial results to be returned from ``iter_all`` in the case of HTTP errors; now it has no effect.
+    * Function ``APISession.profiler_key``
+
+**2022-10-13: Version 4.5.2**
 
 * The default value for request timeouts is now 60s.
 * Method ``api_key_access`` is now implemented as :attr:`APISession.api_key_access`; formerly it was implemented in the parent class and inherited in classes that did not need it and could not use it.
+* Bug in version 4.5.1 (removed) in package distribution/build fixed
 
 **2022-02-22: Version 4.5.0**
 
@@ -40,7 +61,7 @@
 
 * Use documented method for including the routing key in the request for API V2 (addresses `#53 <https://github.com/PagerDuty/pdpyras/issues/53>`_)
 * Add warning for Python 2.7
-* Configurable timeout: argument to `requests.Session.request`_ set in default args to backwards-compatible 5 second value that can be set at the module level (@ctrlaltdel / `#48 <https://github.com/PagerDuty/pdpyras/pull/48>`)
+* Configurable timeout: argument to ``requests.Session.request`` set in default args to backwards-compatible 5 second value that can be set at the module level (@ctrlaltdel / `#48 <https://github.com/PagerDuty/pdpyras/pull/48>`)
 
 **2020-09-15: Version 4.1.2**
 

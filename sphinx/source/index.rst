@@ -1,51 +1,21 @@
-.. include:: ../../README.rst
+===========================================
+PDPYRAS: PagerDuty Python REST API Sessions
+===========================================
 
-Developer Interface
--------------------
-API client classes supplied by this library are not intended as replacements
-for API documentation or wrappers of PagerDuty's APIs, but rather wrappers of the
-HTTP client (`requests.Session`_) that make it easier to use PagerDuty's APIs.
+External Resources
+------------------
+* `GitHub Repository <https://github.com/PagerDuty/pdpyras>`_
+* `PyPI Project Page <https://pypi.org/project/pdpyras/>`_
+* **PagerDuty REST API v2:** `Documentation <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUw-rest-api-v2-overview>`_ / `API Reference <https://developer.pagerduty.com/api-reference/e65c5833eeb07-pager-duty-api>`_
+* **PagerDuty Events API v2:** `Documentation <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgw-events-api-v2-overview>`_ / `API Reference <https://developer.pagerduty.com/api-reference/YXBpOjI3NDgyNjU-pager-duty-v2-events-api>`_
 
-Generic API Client
-******************
-This base class implements features common to all API client classes.
+Table of Contents
+-----------------
 
-.. autoclass:: pdpyras.PDSession
-    :members:
+.. toctree::
+   :maxdepth: 3
 
-REST API Client
-***************
-.. autoclass:: pdpyras.APISession
-    :members:
-
-    .. automethod:: rdelete(self, path, \*\*kw)
-    .. automethod:: rget(self, path, \*\*kw)
-    .. automethod:: rpost(self, path, \*\*kw)
-    .. automethod:: rput(self, path, \*\*kw)
-
-Events API Client
-*****************
-.. autoclass:: pdpyras.EventsAPISession
-    :members:
-
-Change Events API Client
-************************
-.. autoclass:: pdpyras.ChangeEventsAPISession
-    :members:
-
-Errors
-******
-.. autoclass:: pdpyras.PDClientError
-    :members:
-.. autoclass:: pdpyras.PDHTTPError
-    :members:
-
-Functions
-*********
-.. automodule:: pdpyras
-    :members:
-    :exclude-members: APISession, EventsAPISession, ChangeEventsAPISession, PDClientError, PDHTTPError, PDSession
-
-Changelog
----------
-.. include:: ../../CHANGELOG.rst
+   user_guide
+   module_reference
+   contributing
+   changelog

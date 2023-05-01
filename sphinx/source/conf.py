@@ -12,7 +12,7 @@ import pdpyras
 
 # -- Project information -----------------------------------------------------
 project = u'PagerDuty Python REST API Sessions'
-copyright = u'2018, PagerDuty Inc.'
+copyright = u'2023, PagerDuty Inc.'
 author = u'Demitri Morgan <demitri@pagerduty.com>'
 
 # The short X.Y version
@@ -47,7 +47,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -69,7 +69,7 @@ html_theme = 'alabaster'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {'globaltoc_maxdepth': 3}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -84,14 +84,15 @@ html_static_path = ['_static']
 # default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
 # 'searchbox.html']``.
 #
-html_sidebars = {'**': ['localtoc.html']}
-
+html_sidebars = {'**': ['searchbox.html', 'globaltoc.html']}
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'pdpyrasPagerDutyPythonRESTAPISessionsdoc'
 
+# To avoid duplicate doc entries
+autodoc_inherit_docstrings = False
 
 # -- Options for LaTeX output ------------------------------------------------
 

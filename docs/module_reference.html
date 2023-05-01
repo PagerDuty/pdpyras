@@ -1,0 +1,1397 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Module Reference &#8212; PagerDuty Python REST API Sessions 5.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Contribution Guide" href="contributing.html" />
+    <link rel="prev" title="User Guide" href="user_guide.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-reference">
+<span id="id1"></span><h1>Module Reference<a class="headerlink" href="#module-reference" title="Permalink to this heading">¶</a></h1>
+<p>This page covers the documentation of individual methods and classes provided
+by the module. For general usage and examples, refer to the <a class="reference internal" href="user_guide.html#user-guide"><span class="std std-ref">User Guide</span></a>.</p>
+<section id="api-client-classes">
+<h2>API Client Classes<a class="headerlink" href="#api-client-classes" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="pdpyras.PDSession">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">PDSession</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">api_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for making HTTP requests to PagerDuty APIs</p>
+<p>This is an opinionated wrapper of <a class="reference external" href="https://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>, with a few additional
+features:</p>
+<ul class="simple">
+<li><p>The client will reattempt the request with auto-increasing cooldown/retry
+intervals, with attempt limits configurable through the <a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">retry</span></code></a>
+attribute.</p></li>
+<li><p>When making requests, headers specified ad-hoc in calls to HTTP verb
+functions will not replace, but will be merged into, default headers.</p></li>
+<li><p>The request URL, if it doesn’t already start with the REST API base URL,
+will be prepended with the default REST API base URL.</p></li>
+<li><p>It will only perform requests with methods as given in the
+<a class="reference internal" href="#pdpyras.PDSession.permitted_methods" title="pdpyras.PDSession.permitted_methods"><code class="xref py py-attr docutils literal notranslate"><span class="pre">permitted_methods</span></code></a> list, and will raise <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> for
+any other HTTP methods.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>api_key</strong> – REST API access token to use for HTTP requests</p></li>
+<li><p><strong>debug</strong> (<em>bool</em>) – Sets <a class="reference internal" href="#pdpyras.PDSession.print_debug" title="pdpyras.PDSession.print_debug"><code class="xref py py-attr docutils literal notranslate"><span class="pre">print_debug</span></code></a>. Set to True to enable verbose command line
+output.</p></li>
+<li><p><strong>name</strong> – Deprecated in v5.0.0; will be removed in v5.1.0.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.PDSession.after_set_api_key">
+<span class="sig-name descname"><span class="pre">after_set_api_key</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.after_set_api_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setter hook for setting or updating the API key.</p>
+<p>Child classes should implement this to perform additional steps.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pdpyras.PDSession.api_key">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">api_key</span></span><a class="headerlink" href="#pdpyras.PDSession.api_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>API Key property getter.</p>
+<p>Returns the _api_key attribute’s value.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pdpyras.PDSession.auth_header">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">auth_header</span></span><a class="headerlink" href="#pdpyras.PDSession.auth_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates the header with the API credential used for authentication.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.PDSession.log">
+<span class="sig-name descname"><span class="pre">log</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pdpyras.PDSession.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">logging.Logger</span></code> object for logging messages. By default it is
+configured without any handlers and so no messages will be emitted. See
+<a class="reference external" href="https://docs.python.org/3/library/logging.html#logger-objects">logger objects</a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.PDSession.max_http_attempts">
+<span class="sig-name descname"><span class="pre">max_http_attempts</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></em><a class="headerlink" href="#pdpyras.PDSession.max_http_attempts" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of times that the client will retry after error statuses, for any
+that are defined greater than zero in <a class="reference internal" href="#pdpyras.PDSession.retry" title="pdpyras.PDSession.retry"><code class="xref py py-attr docutils literal notranslate"><span class="pre">retry</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.PDSession.max_network_attempts">
+<span class="sig-name descname"><span class="pre">max_network_attempts</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#pdpyras.PDSession.max_network_attempts" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of times that connecting to the API will be attempted before
+treating the failure as non-transient; a <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> exception
+will be raised if this happens.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.PDSession.normalize_params">
+<span class="sig-name descname"><span class="pre">normalize_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.normalize_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modify the user-supplied parameters.</p>
+<p>Current behavior:</p>
+<ul class="simple">
+<li><p>If a parameter’s value is of type list, and the parameter name does
+not already end in “[]”, then the square brackets are appended to keep
+in line with the requirement that all set filters’ parameter names end
+in “[]”.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.PDSession.normalize_url">
+<span class="sig-name descname"><span class="pre">normalize_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.normalize_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compose the URL whether it is a path or an already-complete URL</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.PDSession.parent">
+<span class="sig-name descname"><span class="pre">parent</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pdpyras.PDSession.parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">super</span></code> object (<a class="reference external" href="https://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.PDSession.permitted_methods">
+<span class="sig-name descname"><span class="pre">permitted_methods</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">()</span></em><a class="headerlink" href="#pdpyras.PDSession.permitted_methods" title="Permalink to this definition">¶</a></dt>
+<dd><p>A tuple of the methods permitted by the API which the client implements.</p>
+<p>For instance:</p>
+<ul class="simple">
+<li><p>The REST API accepts GET, POST, PUT and DELETE.</p></li>
+<li><p>The Events API and Change Events APIs only accept POST.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.PDSession.postprocess">
+<span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform supplemental actions immediately after receiving a response.</p>
+<p>This method is called once per request not including retries, and can be
+extended in child classes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.PDSession.prepare_headers">
+<span class="sig-name descname"><span class="pre">prepare_headers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_headers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.prepare_headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append special additional per-request headers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> – The HTTP method, in upper case.</p></li>
+<li><p><strong>user_headers</strong> – Headers that can be specified to override default values.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pdpyras.PDSession.print_debug">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">print_debug</span></span><a class="headerlink" href="#pdpyras.PDSession.print_debug" title="Permalink to this definition">¶</a></dt>
+<dd><p>Printing debug flag</p>
+<p>If set to True, the logging level of <a class="reference internal" href="#pdpyras.PDSession.log" title="pdpyras.PDSession.log"><code class="xref py py-attr docutils literal notranslate"><span class="pre">log</span></code></a> is set to
+<code class="docutils literal notranslate"><span class="pre">logging.DEBUG</span></code> and all log messages are emitted to <code class="docutils literal notranslate"><span class="pre">sys.stderr</span></code>.
+If set to False, the logging level of <a class="reference internal" href="#pdpyras.PDSession.log" title="pdpyras.PDSession.log"><code class="xref py py-attr docutils literal notranslate"><span class="pre">log</span></code></a> is set to
+<code class="docutils literal notranslate"><span class="pre">logging.NOTSET</span></code> and the debugging log handler that prints messages to
+<code class="docutils literal notranslate"><span class="pre">sys.stderr</span></code> is removed. This value thus can be toggled to enable and
+disable verbose command line output.</p>
+<p>It is <code class="docutils literal notranslate"><span class="pre">False</span></code> by default and it is recommended to keep it that way in
+production settings.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pdpyras.PDSession.raise_if_http_error">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">raise_if_http_error</span></span><a class="headerlink" href="#pdpyras.PDSession.raise_if_http_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>(DEPRECATED) Raise an exception in iteration if there is a HTTP error.</p>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version 5.0.0: </span>This will be removed in 5.1.0.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.PDSession.request">
+<span class="sig-name descname"><span class="pre">request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDSession.request" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a generic PagerDuty API request.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> (<em>str</em>) – The request method to use. Case-insensitive. May be one of get, put,
+post or delete.</p></li>
+<li><p><strong>url</strong> (<em>str</em>) – The path/URL to request. If it does not start with the base URL, the
+base URL will be prepended.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments to pass to <a class="reference external" href="https://docs.python-requests.org/en/master/">Requests</a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the HTTP response object</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.PDSession.retry">
+<span class="sig-name descname"><span class="pre">retry</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#pdpyras.PDSession.retry" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dict defining the retry behavior for each HTTP response status code.</p>
+<p>Note, any value set for this class variable will not be reflected in
+instances and so it must be set separately for each instance.</p>
+<p>Each key in this dictionary is an int representing a HTTP response code. The
+behavior is specified by the int value at each key as follows:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-1</span></code> to retry infinitely</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">0</span></code> to return the <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object and exit (which is the
+default behavior)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code>, where <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>, to retry <code class="docutils literal notranslate"><span class="pre">n</span></code> times (or up
+to <a class="reference internal" href="#pdpyras.PDSession.max_http_attempts" title="pdpyras.PDSession.max_http_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_http_attempts</span></code></a> total for all statuses, whichever is
+encountered first), and raise a <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> after that many
+attempts. For each successive attempt, the wait time will increase by a
+factor of <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a>.</p></li>
+</ul>
+<p>The default behavior is to retry infinitely on a 429, and return the
+response in any other case (assuming a HTTP response was received from the
+server).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.PDSession.sleep_timer">
+<span class="sig-name descname"><span class="pre">sleep_timer</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.5</span></em><a class="headerlink" href="#pdpyras.PDSession.sleep_timer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default initial cooldown time factor for rate limiting and network errors.</p>
+<p>Each time that the request makes a followup request, there will be a delay
+in seconds equal to this number times <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a> to the power
+of how many attempts have already been made so far.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.PDSession.sleep_timer_base">
+<span class="sig-name descname"><span class="pre">sleep_timer_base</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#pdpyras.PDSession.sleep_timer_base" title="Permalink to this definition">¶</a></dt>
+<dd><p>After each retry, the time to sleep before reattempting the API connection
+and request will increase by a factor of this amount.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pdpyras.PDSession.stagger_cooldown">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stagger_cooldown</span></span><a class="headerlink" href="#pdpyras.PDSession.stagger_cooldown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Randomizing factor for wait times between retries during rate limiting.</p>
+<p>If set to number greater than 0, the sleep time for rate limiting will
+(for each successive sleep) be adjusted by a factor of one plus a
+uniformly-distributed random number between 0 and 1 times this number,
+on top of the base sleep timer <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a>.</p>
+<p>For example:</p>
+<ul class="simple">
+<li><p>If this is 1, and <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a> is 2 (default), then after
+each status 429 response, the sleep time will change overall by a
+random factor between 2 and 4, whereas if it is zero, it will change
+by a factor of 2.</p></li>
+<li><p>If <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a> is 1, then the cooldown time will be
+adjusted by a random factor between one and one plus this number.</p></li>
+</ul>
+<p>If the number is set to zero, then this behavior is effectively
+disabled, and the cooldown factor (by which the sleep time is adjusted)
+will just be <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a></p>
+<p>Setting this to a nonzero number helps avoid the “thundering herd”
+effect that can potentially be caused by many API clients making
+simultaneous concurrent API requests and consequently waiting for the
+same amount of time before retrying.  It is currently zero by default
+for consistent behavior with previous versions.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.PDSession.timeout">
+<span class="sig-name descname"><span class="pre">timeout</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">60</span></em><a class="headerlink" href="#pdpyras.PDSession.timeout" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the value sent to <a class="reference external" href="https://docs.python-requests.org/en/master/">Requests</a> as the <code class="docutils literal notranslate"><span class="pre">timeout</span></code> parameter that
+determines the TCP read timeout.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pdpyras.PDSession.trunc_key">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trunc_key</span></span><a class="headerlink" href="#pdpyras.PDSession.trunc_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Truncated key for secure display/identification purposes.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pdpyras.APISession">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">APISession</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">api_key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_from</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auth_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'token'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession" title="Permalink to this definition">¶</a></dt>
+<dd><p>PagerDuty REST API v2 session object class.</p>
+<p>Implements the most generic and oft-implemented aspects of PagerDuty’s REST
+API v2 as an opinionated wrapper of <a class="reference external" href="https://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>.</p>
+<p>Inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDSession</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>api_key</strong> – REST API access token to use for HTTP requests</p></li>
+<li><p><strong>name</strong> (<em>str</em><em> or </em><em>None</em>) – Deprecated and has no effect as of v5.0.0</p></li>
+<li><p><strong>default_from</strong> (<em>str</em><em> or </em><em>None</em>) – The default email address to use in the <code class="docutils literal notranslate"><span class="pre">From</span></code> header when making
+API calls using an account-level API access key.</p></li>
+<li><p><strong>auth_type</strong> – The type of credential in use. If authenticating with an OAuth access
+token, this must be set to <code class="docutils literal notranslate"><span class="pre">oauth2</span></code> or <code class="docutils literal notranslate"><span class="pre">bearer</span></code>.</p></li>
+<li><p><strong>debug</strong> (<em>bool</em>) – Sets <code class="xref py py-attr docutils literal notranslate"><span class="pre">print_debug</span></code>. Set to True to enable verbose command line
+output.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Members<span class="colon">:</span></dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.APISession.api_call_counts">
+<span class="sig-name descname"><span class="pre">api_call_counts</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pdpyras.APISession.api_call_counts" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dict object recording the number of API calls per endpoint</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pdpyras.APISession.api_key_access">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">api_key_access</span></span><a class="headerlink" href="#pdpyras.APISession.api_key_access" title="Permalink to this definition">¶</a></dt>
+<dd><p>Memoized API key access type getter.</p>
+<p>Will be “user” if the API key is a user-level token (all users should
+have permission to create an API key with the same permissions as they
+have in the PagerDuty web UI).</p>
+<p>If the API key in use is an account-level API token (as only a global
+administrator user can create), this property will be “account”.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.APISession.api_time">
+<span class="sig-name descname"><span class="pre">api_time</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pdpyras.APISession.api_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dict object recording the total time of API calls to each endpoint</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pdpyras.APISession.auth_type">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">auth_type</span></span><a class="headerlink" href="#pdpyras.APISession.auth_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the method of API authentication.</p>
+<p>By default this is “token”; if “oauth2”, the API key will be used.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.APISession.default_from">
+<span class="sig-name descname"><span class="pre">default_from</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pdpyras.APISession.default_from" title="Permalink to this definition">¶</a></dt>
+<dd><p>The default value to use as the <code class="docutils literal notranslate"><span class="pre">From</span></code> request header</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.APISession.default_page_size">
+<span class="sig-name descname"><span class="pre">default_page_size</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">100</span></em><a class="headerlink" href="#pdpyras.APISession.default_page_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>This will be the default number of results requested in each page when
+iterating/querying an index (the <code class="docutils literal notranslate"><span class="pre">limit</span></code> parameter).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.dict_all">
+<span class="sig-name descname"><span class="pre">dict_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.dict_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary of all objects from a given index endpoint.</p>
+<p>With the exception of <code class="docutils literal notranslate"><span class="pre">by</span></code>, all keyword arguments passed to this
+method are also passed to <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpyras.APISession.iter_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">iter_all</span></code></a>; see the documentation on
+that method for further details.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – The index endpoint URL to use.</p></li>
+<li><p><strong>by</strong> – The attribute of each object to use for the key values of the
+dictionary. This is <code class="docutils literal notranslate"><span class="pre">id</span></code> by default. Please note, there is no
+uniqueness validation, so if you use an attribute that is not
+distinct for the data set, this function will omit some data in the
+results.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.find">
+<span class="sig-name descname"><span class="pre">find</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'name'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.find" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds an object of a given resource type exactly matching a query.</p>
+<p>Returns a dict if a result is found. The structure will be that of an
+entry in the index endpoint schema’s array of results. Otherwise, it
+will return <code class="docutils literal notranslate"><span class="pre">None</span></code> if no result is found or an error is encountered.</p>
+<p>Works by querying a given resource index endpoint using the <code class="docutils literal notranslate"><span class="pre">query</span></code>
+parameter. To use this function on any given resource, the resource’s
+index must support the <code class="docutils literal notranslate"><span class="pre">query</span></code> parameter; otherwise, the function may
+not work as expected. If the index ignores the parameter, for instance,
+this function will take much longer to return; results will not be
+constrained to those matching the query, and so every result in the
+index will be downloaded and compared against the query up until a
+matching result is found or all results have been checked.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resource</strong> (<em>str</em>) – The name of the resource endpoint to query, i.e.
+<code class="docutils literal notranslate"><span class="pre">escalation_policies</span></code></p></li>
+<li><p><strong>query</strong> (<em>str</em>) – The string to query for in the the index.</p></li>
+<li><p><strong>attribute</strong> (<em>str</em>) – The property of each result to compare against the query value when
+searching for an exact match. By default it is <code class="docutils literal notranslate"><span class="pre">name</span></code>, but when
+searching for user by email (for example) it can be set to <code class="docutils literal notranslate"><span class="pre">email</span></code></p></li>
+<li><p><strong>params</strong> (<em>dict</em><em> or </em><em>None</em>) – Optional additional parameters to use when querying.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.iter_all">
+<span class="sig-name descname"><span class="pre">iter_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">paginate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">item_hook</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.iter_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterator for the contents of an index endpoint or query.</p>
+<p>Automatically paginates and yields the results in each page, until all
+matching results have been yielded or a HTTP error response is received.</p>
+<p>If the URL to use supports cursor-based pagintation, then this will
+return <a class="reference internal" href="#pdpyras.APISession.iter_cursor" title="pdpyras.APISession.iter_cursor"><code class="xref py py-attr docutils literal notranslate"><span class="pre">iter_cursor</span></code></a> with the same keyword arguments. Otherwise,
+it implements classic pagination, a.k.a. numeric pagination.</p>
+<p>Each yielded value is a dict object representing a result returned from
+the index. For example, if requesting the <code class="docutils literal notranslate"><span class="pre">/users</span></code> endpoint, each
+yielded value will be an entry of the <code class="docutils literal notranslate"><span class="pre">users</span></code> array property in the
+response.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>url</strong> (<em>str</em>) – The index endpoint URL to use.</p></li>
+<li><p><strong>params</strong> (<em>dict</em><em> or </em><em>None</em>) – Additional URL parameters to include.</p></li>
+<li><p><strong>paginate</strong> – In versions before v5.0.0, this could be set to False to disable
+many of the features of numeric pagination. As of v5.0.0, this
+keyword argument is deprecated and has no effect. The method can
+still be used on endpoints that don’t fully support pagination yet,
+i.e. that don’t return a <code class="docutils literal notranslate"><span class="pre">more</span></code> property in the response, although
+it will raise a warning.</p></li>
+<li><p><strong>page_size</strong> (<em>int</em><em> or </em><em>None</em>) – If set, the <code class="docutils literal notranslate"><span class="pre">page_size</span></code> argument will override the
+<code class="docutils literal notranslate"><span class="pre">default_page_size</span></code> parameter on the session and set the <code class="docutils literal notranslate"><span class="pre">limit</span></code>
+parameter to a custom value (default is 100), altering the number of
+pagination results. The actual number of results in the response
+will still take precedence, if it differs; this parameter and
+<code class="docutils literal notranslate"><span class="pre">default_page_size</span></code> only dictate what is requested of the API.</p></li>
+<li><p><strong>item_hook</strong> – Callable object that will be invoked for each iteration, i.e. for
+printing progress. It will be called with three parameters: a dict
+representing a given result in the iteration, an int representing
+the number of the item in the series, and an int (or str, as of
+v5.0.0) representing the total number of items in the series. If the
+total isn’t knowable, the value passed is “?”.</p></li>
+<li><p><strong>total</strong> (<em>bool</em>) – If True, the <code class="docutils literal notranslate"><span class="pre">total</span></code> parameter will be included in API calls, and
+the value for the third parameter to the item hook will be the total
+count of records that match the query. Leaving this as False confers
+a small performance advantage, as the API in this case does not have
+to compute the total count of results in the query.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.iter_cursor">
+<span class="sig-name descname"><span class="pre">iter_cursor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">item_hook</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.iter_cursor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterator for results from an endpoint using cursor-based pagination.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>url</strong> – The index endpoint URL to use.</p></li>
+<li><p><strong>attribute</strong> – User-specified entity wrapper to use. Deprecated and has no effect
+as of v5.0.0, and will be removed in v5.1.0.</p></li>
+<li><p><strong>params</strong> – Query parameters to include in the request.</p></li>
+<li><p><strong>item_hook</strong> – A callable object that accepts 3 positional arguments; see</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.jget">
+<span class="sig-name descname"><span class="pre">jget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.jget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a GET request, returning the JSON-decoded body as a dictionary</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.jpost">
+<span class="sig-name descname"><span class="pre">jpost</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.jpost" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a POST request, returning the JSON-decoded body as a dictionary</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.jput">
+<span class="sig-name descname"><span class="pre">jput</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.jput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a PUT request, returning the JSON-decoded body as a dictionary</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.list_all">
+<span class="sig-name descname"><span class="pre">list_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.list_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of all objects from a given index endpoint.</p>
+<p>All keyword arguments passed to this function are also passed directly
+to <a class="reference internal" href="#pdpyras.APISession.iter_all" title="pdpyras.APISession.iter_all"><code class="xref py py-attr docutils literal notranslate"><span class="pre">iter_all</span></code></a>; see the documentation on that method for details.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>url</strong> – The index endpoint URL to use.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.persist">
+<span class="sig-name descname"><span class="pre">persist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.persist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds or creates and returns a resource with a matching attribute</p>
+<p>Given a resource name, an attribute to use as an idempotency key and a
+set of attribute:value pairs as a dict, create a resource with the
+specified attributes if it doesn’t exist already and return the resource
+persisted via the API (whether or not it already existed).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resource</strong> (<em>str</em>) – The URL to use when creating the new resource or searching for an
+existing one. The underlying AP must support entity wrapping to use
+this method with it.</p></li>
+<li><p><strong>attr</strong> (<em>str</em>) – Name of the attribute to use as the idempotency key. For instance,
+“email” when the resource is “users” will not create the user if a
+user with the email address given in <code class="docutils literal notranslate"><span class="pre">values</span></code> already exists.</p></li>
+<li><p><strong>values</strong> (<em>dict</em>) – The content of the resource to be created, if it does not already
+exist. This must contain an item with a key that is the same as the
+<code class="docutils literal notranslate"><span class="pre">attr</span></code> argument.</p></li>
+<li><p><strong>update</strong> (<em>bool</em>) – (New in 4.4.0) If set to True, any existing resource will be updated
+with the values supplied.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.postprocess">
+<span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records performance information / request metadata about the API call.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>response</strong> (<a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a>) – The <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object returned by the request method</p></li>
+<li><p><strong>suffix</strong> (<em>str</em><em> or </em><em>None</em>) – Optional suffix to append to the key</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.profiler_key">
+<span class="sig-name descname"><span class="pre">profiler_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.profiler_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a fixed-format key to classify a request</p>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version 5.0.0: </span>This will be removed in 5.1.0. Use canonical_path to identify REST API v2 URLs instead.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.rdelete">
+<span class="sig-name descname"><span class="pre">rdelete</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.rdelete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a resource.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resource</strong> (<em>str</em><em> or </em><em>dict</em>) – The path/URL to which to send the request, or a dict object
+representing an API resource that contains an item with key <code class="docutils literal notranslate"><span class="pre">self</span></code>
+whose value is the URL of the resource.</p></li>
+<li><p><strong>**kw</strong> – Keyword arguments to pass to <code class="docutils literal notranslate"><span class="pre">requests.Session.delete</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.rget">
+<span class="sig-name descname"><span class="pre">rget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.rget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapped-entity-aware GET function.</p>
+<p>Retrieves a resource via GET and returns the wrapped entity in the
+response.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resource</strong> (<em>str</em><em> or </em><em>dict</em>) – The path/URL to which to send the request, or a dict object
+representing an API resource that contains an item with key <code class="docutils literal notranslate"><span class="pre">self</span></code>
+whose value is the URL of the resource.</p></li>
+<li><p><strong>**kw</strong> – Keyword arguments to pass to <code class="docutils literal notranslate"><span class="pre">requests.Session.get</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary representation of the object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.rpost">
+<span class="sig-name descname"><span class="pre">rpost</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.rpost" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapped-entity-aware POST function.</p>
+<p>Creates a resource and returns the created entity if successful.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em>) – The path/URL to which to send the POST request, which should be an
+index endpoint.</p></li>
+<li><p><strong>**kw</strong> – Keyword arguments to pass to <code class="docutils literal notranslate"><span class="pre">requests.Session.post</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary representation of the created object</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.APISession.rput">
+<span class="sig-name descname"><span class="pre">rput</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.APISession.rput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapped-entity-aware PUT function.</p>
+<p>Update an individual resource, returning the wrapped entity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resource</strong> – The path/URL to which to send the request, or a dict object
+representing an API resource that contains an item with key <code class="docutils literal notranslate"><span class="pre">self</span></code>
+whose value is the URL of the resource.</p></li>
+<li><p><strong>**kw</strong> – Keyword arguments to pass to <code class="docutils literal notranslate"><span class="pre">requests.Session.put</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary representation of the updated object</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pdpyras.APISession.subdomain">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">subdomain</span></span><a class="headerlink" href="#pdpyras.APISession.subdomain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Subdomain of the PagerDuty account of the API access token.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pdpyras.APISession.total_call_count">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_call_count</span></span><a class="headerlink" href="#pdpyras.APISession.total_call_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>The total number of API calls made by this instance.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pdpyras.APISession.total_call_time">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_call_time</span></span><a class="headerlink" href="#pdpyras.APISession.total_call_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>The total time spent making API calls.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pdpyras.APISession.trunc_token">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trunc_token</span></span><a class="headerlink" href="#pdpyras.APISession.trunc_token" title="Permalink to this definition">¶</a></dt>
+<dd><p>Truncated token for secure display/identification purposes.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.APISession.url">
+<span class="sig-name descname"><span class="pre">url</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'https://api.pagerduty.com'</span></em><a class="headerlink" href="#pdpyras.APISession.url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base URL of the REST API</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pdpyras.EventsAPISession">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">EventsAPISession</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">api_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession" title="Permalink to this definition">¶</a></dt>
+<dd><p>Session class for submitting events to the PagerDuty v2 Events API.</p>
+<p>Implements methods for submitting events to PagerDuty through the Events API
+and inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">pdpyras.PDSession</span></code></a>.  For more details on usage of
+this API, refer to the <a class="reference external" href="https://developer.pagerduty.com/docs/events-api-v2/overview/">Events API v2 documentation</a></p>
+<p>Inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDSession</span></code></a>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.EventsAPISession.acknowledge">
+<span class="sig-name descname"><span class="pre">acknowledge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dedup_key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.acknowledge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Acknowledge an alert via Events API.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dedup_key</strong> – The deduplication key of the alert to set to the acknowledged state.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.EventsAPISession.post">
+<span class="sig-name descname"><span class="pre">post</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override of <code class="docutils literal notranslate"><span class="pre">requests.Session.post</span></code></p>
+<p>Adds the <code class="docutils literal notranslate"><span class="pre">routing_key</span></code> parameter to the body before sending.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.EventsAPISession.prepare_headers">
+<span class="sig-name descname"><span class="pre">prepare_headers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_headers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.prepare_headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add user agent and content type headers for Events API requests.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>user_headers</strong> – User-supplied headers that will override defaults</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.EventsAPISession.resolve">
+<span class="sig-name descname"><span class="pre">resolve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dedup_key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.resolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resolve an alert via Events API.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dedup_key</strong> – The deduplication key of the alert to resolve.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.EventsAPISession.send_event">
+<span class="sig-name descname"><span class="pre">send_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">action</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dedup_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">properties</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.send_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send an event to the v2 Events API.</p>
+<p>See: <a class="reference external" href="https://v2.developer.pagerduty.com/docs/send-an-event-events-api-v2">https://v2.developer.pagerduty.com/docs/send-an-event-events-api-v2</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>action</strong> (<em>str</em>) – The action to perform through the Events API: trigger, acknowledge
+or resolve.</p></li>
+<li><p><strong>dedup_key</strong> (<em>str</em>) – The deduplication key; used for determining event uniqueness and
+associating actions with existing incidents.</p></li>
+<li><p><strong>**properties</strong> – Additional properties to set, i.e. if <code class="docutils literal notranslate"><span class="pre">action</span></code> is <code class="docutils literal notranslate"><span class="pre">trigger</span></code>
+this would include <code class="docutils literal notranslate"><span class="pre">payload</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The deduplication key of the incident, if any.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.EventsAPISession.trigger">
+<span class="sig-name descname"><span class="pre">trigger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">summary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dedup_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">severity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'critical'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_details</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">images</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">links</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.EventsAPISession.trigger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Trigger an incident</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>summary</strong> (<em>str</em>) – Summary / brief description of what is wrong.</p></li>
+<li><p><strong>source</strong> (<em>str</em>) – A human-readable name identifying the system that is affected.</p></li>
+<li><p><strong>dedup_key</strong> (<em>str</em>) – The deduplication key; used for determining event uniqueness and
+associating actions with existing incidents.</p></li>
+<li><p><strong>severity</strong> (<em>str</em>) – Alert severity. Sets the <code class="docutils literal notranslate"><span class="pre">payload.severity</span></code> property.</p></li>
+<li><p><strong>payload</strong> (<em>dict</em>) – Set the payload directly. Can be used in conjunction with other
+parameters that also set payload properties; these properties will
+be merged into the default payload, and any properties in this
+parameter will take precedence except with regard to
+<code class="docutils literal notranslate"><span class="pre">custom_details</span></code>.</p></li>
+<li><p><strong>custom_details</strong> (<em>dict</em>) – The <code class="docutils literal notranslate"><span class="pre">payload.custom_details</span></code> property of the payload. Will
+override the property set in the <code class="docutils literal notranslate"><span class="pre">payload</span></code> parameter if given.</p></li>
+<li><p><strong>images</strong> (<em>list</em>) – Set the <code class="docutils literal notranslate"><span class="pre">images</span></code> property of the event.</p></li>
+<li><p><strong>links</strong> (<em>list</em>) – Set the <code class="docutils literal notranslate"><span class="pre">links</span></code> property of the event.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pdpyras.ChangeEventsAPISession">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">ChangeEventsAPISession</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">api_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.ChangeEventsAPISession" title="Permalink to this definition">¶</a></dt>
+<dd><p>Session class for submitting change events to the PagerDuty v2 Change Events API.</p>
+<p>Implements methods for submitting change events to PagerDuty’s change events
+API. See the <a class="reference external" href="https://developer.pagerduty.com/docs/events-api-v2/send-change-events/">Change Events API documentation</a>
+for more details.</p>
+<p>Inherits from <a class="reference internal" href="#pdpyras.PDSession" title="pdpyras.PDSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDSession</span></code></a>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.ChangeEventsAPISession.prepare_headers">
+<span class="sig-name descname"><span class="pre">prepare_headers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_headers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.ChangeEventsAPISession.prepare_headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add user agent and content type headers for Change Events API requests.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.ChangeEventsAPISession.send_change_event">
+<span class="sig-name descname"><span class="pre">send_change_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">properties</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.ChangeEventsAPISession.send_change_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send a change event to the v2 Change Events API.</p>
+<p>See: <a class="reference external" href="https://developer.pagerduty.com/docs/events-api-v2/send-change-events/">https://developer.pagerduty.com/docs/events-api-v2/send-change-events/</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>**properties</strong> – Properties to set, i.e. <code class="docutils literal notranslate"><span class="pre">payload</span></code> and <code class="docutils literal notranslate"><span class="pre">links</span></code></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The response ID</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pdpyras.ChangeEventsAPISession.submit">
+<span class="sig-name descname"><span class="pre">submit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">summary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_details</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">links</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.ChangeEventsAPISession.submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit an incident change</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>summary</strong> (<em>str</em>) – Summary / brief description of the change.</p></li>
+<li><p><strong>source</strong> (<em>str</em>) – A human-readable name identifying the source of the change.</p></li>
+<li><p><strong>custom_details</strong> (<em>dict</em>) – The <code class="docutils literal notranslate"><span class="pre">payload.custom_details</span></code> property of the payload.</p></li>
+<li><p><strong>links</strong> (<em>list</em>) – Set the <code class="docutils literal notranslate"><span class="pre">links</span></code> property of the event.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="errors">
+<h2>Errors<a class="headerlink" href="#errors" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="pdpyras.PDClientError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">PDClientError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDClientError" title="Permalink to this definition">¶</a></dt>
+<dd><p>General API errors base class.</p>
+<p>Note, the name of this class does not imply it solely includes errors
+experienced by the client or HTTP status 4xx responses, but descendants can
+include issues with the API backend.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pdpyras.PDClientError.response">
+<span class="sig-name descname"><span class="pre">response</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pdpyras.PDClientError.response" title="Permalink to this definition">¶</a></dt>
+<dd><p>The HTTP response object, if a response was successfully received.</p>
+<p>In the case of network errors, this property will be None.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pdpyras.PDHTTPError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">PDHTTPError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Response</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDHTTPError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Error class representing errors strictly associated with HTTP responses.</p>
+<p>This class was created to make it easier to more cleanly handle errors by
+way of a class that is guaranteed to have its <code class="docutils literal notranslate"><span class="pre">response</span></code> be a valid
+<a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object.</p>
+<p>Whereas, the more generic <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> could also be used
+to denote such things as non-transient network errors wherein no response
+was recevied from the API.</p>
+<p>For instance, instead of this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s1">&#39;/users/PABC123&#39;</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;HTTP error: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">e</span>
+</pre></div>
+</div>
+<p>one could write this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">rget</span><span class="p">(</span><span class="s1">&#39;/users/PABC123&#39;</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">pdpyras</span><span class="o">.</span><span class="n">PDHTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;HTTP error: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pdpyras.PDServerError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">PDServerError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Response</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.PDServerError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Error class representing failed expectations made of the server</p>
+<p>This is raised in cases where the response schema differs from the expected
+schema because of an API bug, or because it’s an early access endpoint and
+changes before GA, or in cases of HTTP status 5xx where a successful
+response is required.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pdpyras.URLError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">URLError</span></span><a class="headerlink" href="#pdpyras.URLError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exception class for unsupported URLs or malformed input.</p>
+</dd></dl>
+
+</section>
+<section id="client-defaults">
+<h2>Client Defaults<a class="headerlink" href="#client-defaults" title="Permalink to this heading">¶</a></h2>
+<p>These are properties of the module that configure default behavior for the API
+client. There should be no need for the end user to modify them.</p>
+<span class="target" id="module-pdpyras"></span><dl class="py data">
+<dt class="sig sig-object py" id="pdpyras.CANONICAL_PATHS">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">CANONICAL_PATHS</span></span><a class="headerlink" href="#pdpyras.CANONICAL_PATHS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Explicit list of supported canonical REST API v2 paths</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="pdpyras.CURSOR_BASED_PAGINATION_PATHS">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">CURSOR_BASED_PAGINATION_PATHS</span></span><a class="headerlink" href="#pdpyras.CURSOR_BASED_PAGINATION_PATHS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Explicit list of paths that support cursor-based pagination</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="pdpyras.ENTITY_WRAPPER_CONFIG">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">ENTITY_WRAPPER_CONFIG</span></span><a class="headerlink" href="#pdpyras.ENTITY_WRAPPER_CONFIG" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapped entities antipattern handling configuration.</p>
+<p>When trying to determine the entity wrapper name, this dictionary is first
+checked for keys that apply to a given request method and canonical API path
+based on a matching logic. If no keys are found that match, it is assumed that
+the API endpoint follows classic entity wrapping conventions, and the wrapper
+name can be inferred based on those conventions (see
+<a class="reference internal" href="#pdpyras.infer_entity_wrapper" title="pdpyras.infer_entity_wrapper"><code class="xref py py-attr docutils literal notranslate"><span class="pre">infer_entity_wrapper</span></code></a>). Any new API that does not follow these
+conventions should therefore be given an entry in this dictionary in order to
+properly support it for entity wrapping.</p>
+<p>Each of the keys should be a capitalized HTTP method (or <code class="docutils literal notranslate"><span class="pre">*</span></code> to match any
+method), followed by a space, followed by a canonical path i.e. as returned by
+<a class="reference internal" href="#pdpyras.canonical_path" title="pdpyras.canonical_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">canonical_path</span></code></a> and included in <a class="reference internal" href="#pdpyras.CANONICAL_PATHS" title="pdpyras.CANONICAL_PATHS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CANONICAL_PATHS</span></code></a>. Each value
+is either a tuple with request and response body wrappers (if they differ), a
+string (if they are the same for both cases) or <code class="docutils literal notranslate"><span class="pre">None</span></code> (if wrapping is
+disabled and the data is to be marshaled or unmarshaled as-is). Values in tuples
+can also be None to denote that either the request or response is unwrapped.</p>
+<p>An endpoint, under the design logic of this client, is said to have entity
+wrapping if the body (request or response) has only one property containing
+the content requested or transmitted, apart from properties used for
+pagination. If there are any secondary content-bearing properties (other than
+those used for pagination), entity wrapping should be disabled to avoid
+discarding those properties from responses or preventing the use of those
+properties in request bodies.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="pdpyras.ITERATION_LIMIT">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">ITERATION_LIMIT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10000.0</span></em><a class="headerlink" href="#pdpyras.ITERATION_LIMIT" title="Permalink to this definition">¶</a></dt>
+<dd><p>The maximum position of a result in classic pagination.</p>
+<p>The offset plus limit parameter may not exceed this number. This is enforced
+server-side and is not something the client may override. Rather, this value is
+used to short-circuit pagination in order to avoid a HTTP 400 error.</p>
+<p>See: <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU4-pagination">Pagination</a>.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="pdpyras.TEXT_LEN_LIMIT">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">TEXT_LEN_LIMIT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">100</span></em><a class="headerlink" href="#pdpyras.TEXT_LEN_LIMIT" title="Permalink to this definition">¶</a></dt>
+<dd><p>The longest permissible length of API content to include in error messages.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="pdpyras.TIMEOUT">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">TIMEOUT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">60</span></em><a class="headerlink" href="#pdpyras.TIMEOUT" title="Permalink to this definition">¶</a></dt>
+<dd><p>The default timeout in seconds for any given HTTP request.</p>
+<p>Modifying this value will not affect any preexisting API session instances.
+Rather, it will only affect new instances. It is recommended to use
+<a class="reference internal" href="#pdpyras.PDSession.timeout" title="pdpyras.PDSession.timeout"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.timeout</span></code></a> to configure the timeout for a given session.</p>
+</dd></dl>
+
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Permalink to this heading">¶</a></h2>
+<p>These are generic functions used by the API session classes and are not on
+their own typically needed, but which are documented for the benefit of anyone
+who may find use in them.</p>
+<section id="url-handling">
+<h3>URL Handling<a class="headerlink" href="#url-handling" title="Permalink to this heading">¶</a></h3>
+<p>URL related functions.</p>
+<span class="target" id="module-0"></span><dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.canonical_path">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">canonical_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.canonical_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the canonical REST API path corresponding to a URL.</p>
+<p>This is used to identify and classify URLs according to which particular API
+within REST API v2 it belongs to.</p>
+<p>Explicitly supported canonical paths are defined in the list
+<a class="reference internal" href="#pdpyras.CANONICAL_PATHS" title="pdpyras.CANONICAL_PATHS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CANONICAL_PATHS</span></code></a> and are the path part of any given API’s URL. The
+path for a given API is what is shown at the top of its reference page, i.e.
+<code class="docutils literal notranslate"><span class="pre">/users/{id}/contact_methods</span></code> for retrieving a user’s contact methods
+(GET) or creating a new one (POST).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_url</strong> – The base URL of the API</p></li>
+<li><p><strong>url</strong> – A non-normalized URL (a path or full URL)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.endpoint_matches">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">endpoint_matches</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">endpoint_pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.endpoint_matches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if a method and path match an endpoint pattern.</p>
+<p>This is the filtering logic  used for finding the appropriate entry in
+<a class="reference internal" href="#pdpyras.ENTITY_WRAPPER_CONFIG" title="pdpyras.ENTITY_WRAPPER_CONFIG"><code class="xref py py-attr docutils literal notranslate"><span class="pre">ENTITY_WRAPPER_CONFIG</span></code></a> to use for a given method and API path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>e</strong> – The endpoint pattern in the form <code class="docutils literal notranslate"><span class="pre">METHOD</span> <span class="pre">PATH</span></code> where <code class="docutils literal notranslate"><span class="pre">METHOD</span></code>
+is the HTTP method in uppercase or <code class="docutils literal notranslate"><span class="pre">*</span></code> to match all methods, and
+<code class="docutils literal notranslate"><span class="pre">PATH</span></code> is a canonical API path.</p></li>
+<li><p><strong>m</strong> – The HTTP method</p></li>
+<li><p><strong>p</strong> – The canonical API path (i.e. as returned by <code class="docutils literal notranslate"><span class="pre">canonical_path</span></code>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>boolean</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.is_path_param">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">is_path_param</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.is_path_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if a given node in a canonical path represents a parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path_node</strong> – The node (value between slashes) in the path</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.normalize_url">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">normalize_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.normalize_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalize a URL to a complete API URL.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">url</span></code> argument may be a path relative to the base URL or a full URL.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>url</strong> – The URL to normalize</p></li>
+<li><p><strong>baseurl</strong> – The base API URL, excluding any trailing slash, i.e.
+“<a class="reference external" href="https://api.pagerduty.com">https://api.pagerduty.com</a>”</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The full API endpoint URL</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.tokenize_url_path">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">tokenize_url_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseurl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'https://api.pagerduty.com'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.tokenize_url_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a tuple of path nodes.</p>
+<p>This function is the implementation of URL parsing logic from versions
+previous to v5.0.0. It is based on assumptions of patterns that are no
+longer universal in REST API v2 but were once much more common.</p>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version 5.0.0: </span>This will be removed in 5.1.0. Use canonical_path instead to identify and classify URLs.</p>
+</div>
+</dd></dl>
+
+</section>
+<section id="entity-wrapping">
+<h3>Entity Wrapping<a class="headerlink" href="#entity-wrapping" title="Permalink to this heading">¶</a></h3>
+<p>Functions that implement entity wrapping logic.</p>
+<span class="target" id="module-1"></span><dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.entity_wrappers">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">entity_wrappers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.entity_wrappers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtains entity wrapping information for a given endpoint (path and method)</p>
+<p>Returns a 2-tuple. The first element is the wrapper name that should be used
+for the request body, and the second is the wrapper name to be used for the
+response body. For either elements, if <code class="docutils literal notranslate"><span class="pre">None</span></code> is returned, that signals to
+disable wrapping and pass the user-supplied request body or API response
+body object unmodified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> – The HTTP method</p></li>
+<li><p><strong>path</strong> – A canonical API path i.e. as returned by <code class="docutils literal notranslate"><span class="pre">canonical_path</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.infer_entity_wrapper">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">infer_entity_wrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.infer_entity_wrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Infer the entity wrapper name from the endpoint using orthodox patterns.</p>
+<p>This is based on patterns that are broadly applicable but not universal in
+the v2 REST API, where the wrapper name is predictable from the path and
+method. This is the default logic applied to determine the wrapper name
+based on the path if there is no explicit entity wrapping defined for the
+given path in <a class="reference internal" href="#pdpyras.ENTITY_WRAPPER_CONFIG" title="pdpyras.ENTITY_WRAPPER_CONFIG"><code class="xref py py-attr docutils literal notranslate"><span class="pre">ENTITY_WRAPPER_CONFIG</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> – The HTTP method</p></li>
+<li><p><strong>path</strong> – A canonical API path i.e. as returned by <code class="docutils literal notranslate"><span class="pre">canonical_path</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.unwrap">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">unwrap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrapper</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.unwrap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unwraps and returns a wrapped entity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>response</strong> – The response object</p></li>
+<li><p><strong>wrapper</strong> (<em>str</em><em> or </em><em>None</em>) – The entity wrapper</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="function-decorators">
+<h3>Function Decorators<a class="headerlink" href="#function-decorators" title="Permalink to this heading">¶</a></h3>
+<p>Intended for use with functions based on the HTTP verb functions of subclasses
+of <a class="reference external" href="https://docs.python-requests.org/en/master/api/#request-sessions">requests.Session</a>, i.e. that would otherwise return a <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a>
+object.</p>
+<span class="target" id="module-2"></span><dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.auto_json">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">auto_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.auto_json" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes methods return the full response body object after decoding from JSON.</p>
+<p>Intended for use on functions that take a URL positional argument followed
+by keyword arguments and return a <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.requires_success">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">requires_success</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.requires_success" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator that validates HTTP responses.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.resource_envelope">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">resource_envelope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.resource_envelope" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience and consistency decorator for HTTP verb functions.</p>
+<p>DEPRECATED. Use wrapped_entities instead.</p>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version 5.0.0: </span>This will be removed in 5.1.0. Use wrapped_entities instead.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.resource_url">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">resource_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.resource_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>API call decorator that allows passing a resource dict as the path/URL</p>
+<p>Most resources returned by the API will contain a <code class="docutils literal notranslate"><span class="pre">self</span></code> attribute that is
+the URL of the resource itself.</p>
+<p>Using this decorator allows the implementer to pass either a URL/path or
+such a resource dictionary as the <code class="docutils literal notranslate"><span class="pre">path</span></code> argument, thus eliminating the
+need to re-construct the resource URL or hold it in a temporary variable.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.wrapped_entities">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">wrapped_entities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.wrapped_entities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Automatically wrap request entities and unwrap response entities.</p>
+<p>Used for methods <a class="reference internal" href="#pdpyras.APISession.rget" title="pdpyras.APISession.rget"><code class="xref py py-attr docutils literal notranslate"><span class="pre">APISession.rget</span></code></a>, <a class="reference internal" href="#pdpyras.APISession.rpost" title="pdpyras.APISession.rpost"><code class="xref py py-attr docutils literal notranslate"><span class="pre">APISession.rpost</span></code></a> and
+<a class="reference internal" href="#pdpyras.APISession.rput" title="pdpyras.APISession.rput"><code class="xref py py-attr docutils literal notranslate"><span class="pre">APISession.rput</span></code></a>. It makes them always return an object representing
+the resource entity in the response (whether wrapped in a root-level
+property or not) rather than the full response body. When making a post /
+put request, and passing the <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument to specify the
+content to be JSON-encoded as the body, that keyword argument can be either
+the to-be-wrapped content or the full body including the entity wrapper, and
+the <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument will be normalized to include the wrapper.</p>
+<p>Methods using this decorator will raise a <a class="reference internal" href="#pdpyras.PDHTTPError" title="pdpyras.PDHTTPError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDHTTPError</span></code></a> with its
+<code class="docutils literal notranslate"><span class="pre">response</span></code> property being being the <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object in the
+case of any error (as of version 4.2 this is subclassed as
+<a class="reference internal" href="#pdpyras.PDHTTPError" title="pdpyras.PDHTTPError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDHTTPError</span></code></a>), so that the implementer can access it by catching the
+exception, and thus design their own custom logic around different types of
+error responses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>method</strong> – Method being decorated. Must take one positional argument
+after <code class="docutils literal notranslate"><span class="pre">self</span></code> that is the URL/path to the resource, followed by keyword
+any number of keyword arguments, and must return an object of class
+<a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a>, and be named after the HTTP method but with “r”
+prepended.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A callable object; the reformed method</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="helpers">
+<h3>Helpers<a class="headerlink" href="#helpers" title="Permalink to this heading">¶</a></h3>
+<p>Miscellaneous functions</p>
+<span class="target" id="module-3"></span><dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.deprecated_kwarg">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">deprecated_kwarg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deprecated_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.deprecated_kwarg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raises a warning if a deprecated keyword argument is used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>deprecated_name</strong> – The name of the deprecated function</p></li>
+<li><p><strong>details</strong> – An optional message to append to the deprecation message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.http_error_message">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">http_error_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.http_error_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Formats a message describing a HTTP error.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>r</strong> – The response object.</p></li>
+<li><p><strong>context</strong> – A description of when the error was received, or None to not include it</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.last_4">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">last_4</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">secret</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.last_4" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an abbreviation of the input</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.plural_name">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">plural_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.plural_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pluralizes a name, i.e. the API name from the <code class="docutils literal notranslate"><span class="pre">type</span></code> property</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>obj_type</strong> – The object type, i.e. <code class="docutils literal notranslate"><span class="pre">user</span></code> or <code class="docutils literal notranslate"><span class="pre">user_reference</span></code></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The name of the resource, i.e. the last part of the URL for the
+resource’s index URL</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.successful_response">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">successful_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Response</span></span></span><a class="headerlink" href="#pdpyras.successful_response" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validates the response as successful.</p>
+<p>Returns the response if it was successful; otherwise, raises an exception.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>r</strong> – Response object corresponding to the response received.</p></li>
+<li><p><strong>context</strong> – A description of when the HTTP request is happening, for error reporting</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The response object, if it was successful</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.truncate_text">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">truncate_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.truncate_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Truncates a string longer than <a class="reference internal" href="#pdpyras.TEXT_LEN_LIMIT" title="pdpyras.TEXT_LEN_LIMIT"><code class="xref py py-attr docutils literal notranslate"><span class="pre">TEXT_LEN_LIMIT</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>text</strong> – The string to truncate if longer than the limit.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pdpyras.try_decoding">
+<span class="sig-prename descclassname"><span class="pre">pdpyras.</span></span><span class="sig-name descname"><span class="pre">try_decoding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Response</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pdpyras.try_decoding" title="Permalink to this definition">¶</a></dt>
+<dd><p>JSON-decode a response body</p>
+<p>Returns the decoded body if successful; raises <a class="reference internal" href="#pdpyras.PDServerError" title="pdpyras.PDServerError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDServerError</span></code></a>
+otherwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>r</strong> – The response object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+<h3><a href="index.html">Table of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Module Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#api-client-classes">API Client Classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.PDSession"><code class="docutils literal notranslate"><span class="pre">PDSession</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.APISession"><code class="docutils literal notranslate"><span class="pre">APISession</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.EventsAPISession"><code class="docutils literal notranslate"><span class="pre">EventsAPISession</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.ChangeEventsAPISession"><code class="docutils literal notranslate"><span class="pre">ChangeEventsAPISession</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#errors">Errors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.PDClientError"><code class="docutils literal notranslate"><span class="pre">PDClientError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.PDHTTPError"><code class="docutils literal notranslate"><span class="pre">PDHTTPError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.PDServerError"><code class="docutils literal notranslate"><span class="pre">PDServerError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.URLError"><code class="docutils literal notranslate"><span class="pre">URLError</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#client-defaults">Client Defaults</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.CANONICAL_PATHS"><code class="docutils literal notranslate"><span class="pre">CANONICAL_PATHS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.CURSOR_BASED_PAGINATION_PATHS"><code class="docutils literal notranslate"><span class="pre">CURSOR_BASED_PAGINATION_PATHS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.ENTITY_WRAPPER_CONFIG"><code class="docutils literal notranslate"><span class="pre">ENTITY_WRAPPER_CONFIG</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.ITERATION_LIMIT"><code class="docutils literal notranslate"><span class="pre">ITERATION_LIMIT</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.TEXT_LEN_LIMIT"><code class="docutils literal notranslate"><span class="pre">TEXT_LEN_LIMIT</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pdpyras.TIMEOUT"><code class="docutils literal notranslate"><span class="pre">TIMEOUT</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#functions">Functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#url-handling">URL Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#entity-wrapping">Entity Wrapping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#function-decorators">Function Decorators</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#helpers">Helpers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, PagerDuty Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.2.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/module_reference.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

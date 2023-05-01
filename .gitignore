@@ -1,5 +1,6 @@
 *.pyc
 docs/build/*
+docs/_sources/
 sphinx/build
 dist/
 pdpyras.egg-info/
@@ -7,3 +8,4 @@ docs/.buildinfo
 tmp/
 .DS_Store
 .tool-versions
+*.swp
