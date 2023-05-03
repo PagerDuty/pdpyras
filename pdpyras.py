@@ -785,9 +785,9 @@ def http_error_message(r: requests.Response, context=None):
         return f"{endpoint}: Network or other unknown error{context_msg}"
     else:
         return (
-            f"{endpoint}: Success (status %d) but an expectation still " \
+            f"{endpoint}: Success (status {r.status_code}) but an expectation still " \
             f"failed{context_msg}"
-        )%(r.status_code)
+        )
 
 def last_4(secret: str):
     """Returns an abbreviation of the input"""
