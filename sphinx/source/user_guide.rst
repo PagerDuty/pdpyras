@@ -149,17 +149,17 @@ matching a string using the ``query`` parameter on an index endpoint:
     except PDClientError:
         updated_user = None
 
-Updating/creating using ``persist``, an idempotent create/update function:
+**Idempotent create/update:**
 
 .. code-block:: python
 
     # Create a user if one doesn't already exist based on the dictionary object
-    # user_data, using the 'email' key as the uniquely identifying property, and
-    # update it if it exists and differs from user_data:
+    # user_data, using the 'email' key as the uniquely identifying property,
+    # and update it if it exists and differs from user_data:
     user_data = {'email': 'user123@example.com', 'name': 'User McUserson'}
     updated_user = session.persist('users', 'email', user_data, update=True)
 
-Using multi-valued set filters: set the value in the ``params`` dictionary at
+**Using multi-valued set filters:** set the value in the ``params`` dictionary at
 the appropriate key to a list, and include ``[]`` at the end of the paramter
 name:
 
@@ -171,7 +171,7 @@ name:
         params={'user_ids[]':['PHIJ789'],'statuses[]':['triggered', 'acknowledged']}
     )
 
-Performing multi-update (for endpoints that support it only):
+**Performing multi-update:** for endpoints that support it only, i.e. ``PUT /incidents``:
 
 .. code-block:: python
 
@@ -186,7 +186,7 @@ Performing multi-update (for endpoints that support it only):
 
 Events API v2
 *************
-Trigger and resolve an alert, getting its deduplication key from the API, using :class:`EventsAPISession`:
+**Trigger and resolve an alert,** getting its deduplication key from the API, using :class:`EventsAPISession`:
 
 .. code-block:: python
 
@@ -194,7 +194,7 @@ Trigger and resolve an alert, getting its deduplication key from the API, using 
     # ...
     events_session.resolve(dedup_key)
 
-Trigger an and acknowledge an alert, using a custom deduplication key:
+**Trigger an alert and acknowledge it** using a custom deduplication key:
 
 .. code-block:: python
 
@@ -203,7 +203,7 @@ Trigger an and acknowledge an alert, using a custom deduplication key:
     # ...
     events_session.acknowledge('abc123')
 
-Submit a change event using a :class:`ChangeEventsAPISession` instance:
+**Submit a change event** using a :class:`ChangeEventsAPISession` instance:
 
 .. code-block:: python
 
