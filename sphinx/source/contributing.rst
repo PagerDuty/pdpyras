@@ -46,12 +46,17 @@ lives. To rebuild the HTML documentation from the source, run:
 
     make docs
 
+To force a rebuild, run ``touch CHANGELOG.rst`` first.
+
 Releasing a New Version
 -----------------------
 
 You will first need valid user accounts on both ``pypi.org`` and ``test.pypi.org``
 that have the "Maintainer" role on the project, as well as the requirements
 installed (see above).
+
+It is strongly recommended that you `use an API token
+<https://pypi.org/help/#apitoken>`_ to upload new releases to PyPI.
 
 Perform end-to-end publish and installation testing
 ***************************************************
@@ -63,7 +68,7 @@ project as on ``pypi.org``.
 Note, once a release is uploaded, it is no longer possible to upload a release
 with the same version number, even if that release is deleted. For that reason,
 it is a good idea to first add a suffix, i.e. ``-dev001``, to ``__version__``
-in ``setup.py``.
+in ``setup.py`` while testing.
 
 To perform end-to-end tests, run the following, entering credentials for
 ``test.pypi.org`` when prompted:
@@ -113,7 +118,7 @@ After rebuilding the documentation, it can then be viewed by opening the file
 reviewers by not requiring them to have the documentation-building tools
 installed.
 
-Once the pull request is approved, merge, then checkout main and tag:
+Once the pull request is approved, merge. Then (locally) checkout main and tag:
 
 .. code-block:: shell
 
@@ -133,4 +138,4 @@ local file tree is clean (has no uncommitted changes). Then run:
 
     make publish
 
-
+When prompted, enter ``__token__`` as your username and your API token as the password.
