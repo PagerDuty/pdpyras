@@ -299,7 +299,7 @@ obtained:
     # Support in the event of server errors (status 5xx):
     print(response.headers['x-request-id'])
 
-If using the ``j*`` methods, i.e. :attr:`APISession.jget`, the return value
+If using the ``j*`` methods, i.e. :attr:`pdpyras.APISession.jget`, the return value
 will be the full body of the response from the API after JSON-decoding, and
 the ``json`` keyword argument is not modified.
 
@@ -316,7 +316,7 @@ Note these analogues in structure between the JSON schema and the object
 in Python:
 
 * If the data type documented in the schema is
-  "object" <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#object>`_,
+  `"object" <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#object>`_,
   then the corresponding type of the Python object will be ``dict``.
 * If the data type documented in the schema is
   `array <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#array>`_,
