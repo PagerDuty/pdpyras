@@ -853,15 +853,14 @@ def successful_response(r: requests.Response, context=None) \
         A description of when the HTTP request is happening, for error reporting
     :returns: The response object, if it was successful
     """
-    message = http_error_message(r, context=context)
     if r.ok and bool(r.status_code):
         return r
     elif r.status_code / 100 == 5:
-        raise PDServerError(message, r)
+        raise PDServerError(http_error_message(r, context=context), r)
     elif bool(r.status_code):
-        raise PDHTTPError(message, r)
+        raise PDHTTPError(http_error_message(r, context=context), r)
     else:
-        raise PDClientError(message)
+        raise PDClientError(http_error_message(r, context=context))
 
 def truncate_text(text: str):
     """Truncates a string longer than :attr:`TEXT_LEN_LIMIT`
