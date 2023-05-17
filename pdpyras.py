@@ -18,7 +18,7 @@ from deprecation import deprecated, DeprecatedWarning
 from urllib3.exceptions import HTTPError, PoolError
 from requests.exceptions import RequestException
 
-__version__ = '5.0.1'
+__version__ = '5.0.2'
 
 #######################
 ### CLIENT DEFAULTS ###
