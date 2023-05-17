@@ -1,4 +1,11 @@
-**2023-05-01: Version 5.0.0:**
+**2023-05-17: Version 5.0.3:**
+
+* Incorporate bugfix from `#103 <https://github.com/PagerDuty/pdpyras/issues/103>`_ by @av1m
+* Fix the generic issue behind `#102 <https://github.com/PagerDuty/pdpyras/issues/102>`_ (unsafe mix of string formatting styles)
+* In HTTP retry exhaustion messages, print only the limit that got reached and not necessarily the per-status HTTP retry
+
+**2023-05-01: Version 5.0:**
+Note: version 5.0.0 has been yanked; patch release v5.0.1 addresses an issue in ``setup.py``.
 
 * **New features:**
     * Methods that assume entity wrapping like ``rget`` and ``iter_all`` now support all API endpoints
