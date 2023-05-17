@@ -61,7 +61,7 @@ itself and ``default_from`` is not necessary.
 
 When encountering status ``401 Unauthorized``, the client will immediately raise
 ``pdpyras.PDClientError``; this is a non-transient error caused by an invalid
-credential. When encountering ``403 Forbidden``,
+credential.
 
 Basic Usage Examples
 --------------------
