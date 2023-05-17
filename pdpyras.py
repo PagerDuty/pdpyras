@@ -612,19 +612,19 @@ def unwrap(response: requests.Response, wrapper):
         # There is a wrapped entity to unpack:
         bod_type = type(body)
         error_msg = f"Expected response body from {endpoint} after JSON-" \
-            f"decoding to be a dictionary with a key \"{wrapper}\", but %s."
+            f"decoding to be a dictionary with a key \"{wrapper}\", but "
         if bod_type is dict:
             if wrapper in body:
                 return body[wrapper]
             else:
                 keys = truncate_text(', '.join(body.keys()))
                 raise PDServerError(
-                    error_msg%(f"its keys are: {keys}",),
+                    error_msg + f"its keys are: {keys}",
                     response
                 )
         else:
             raise PDServerError(
-                error_msg%(f"its type is {bod_type}.",),
+                error_msg + f"its type is {bod_type}.",
                 response
             )
     else:
@@ -777,17 +777,14 @@ def http_error_message(r: requests.Response, context=None):
             err_type = 'client'
         elif r.status_code / 100 == 5:
             err_type = 'server'
-        return (
-            f"{endpoint}: API responded with {err_type} error (status %d)" \
-            f"{context_msg}: %s"
-        ) % (r.status_code, truncate_text(r.text))
+        tr_bod = truncate_text(r.text)
+        return f"{endpoint}: API responded with {err_type} error (status " \
+            f"{r.status_code}){context_msg}: {tr_bod}"
     elif not received_http_response:
         return f"{endpoint}: Network or other unknown error{context_msg}"
     else:
-        return (
-            f"{endpoint}: Success (status {r.status_code}) but an expectation still " \
-            f"failed{context_msg}"
-        )
+        return f"{endpoint}: Success (status {r.status_code}) but an " \
+            f"expectation still failed{context_msg}"
 
 def last_4(secret: str):
     """Returns an abbreviation of the input"""
@@ -1152,9 +1149,9 @@ class PDSession(requests.Session):
         http_attempts = {}
         method = method.strip().upper()
         if method not in self.permitted_methods:
-            raise PDClientError(
-                "Method %s not supported by this API. Permitted methods: %s"%(
-                    method, ', '.join(self.permitted_methods)))
+            m_str = ', '.join(self.permitted_methods)
+            raise PDClientError(f"Method {method} not supported by this API. " \
+                f"Permitted methods: {m_str}")
         req_kw = deepcopy(kwargs)
         full_url = self.normalize_url(url)
         endpoint = "%s %s"%(method.upper(), full_url)
@@ -1179,10 +1176,9 @@ class PDSession(requests.Session):
             except (HTTPError, PoolError, RequestException) as e:
                 network_attempts += 1
                 if network_attempts > self.max_network_attempts:
-                    raise PDClientError(
-                        (f"{endpoint}: Non-transient network error; exceeded " \
-                        'maximum number of attempts (%d) to connect to the ' \
-                        'API.')%self.max_network_attempts
+                    raise PDClientError(f"{endpoint}: Non-transient network " \
+                        'error; exceeded maximum number of attempts ' \
+                        f"({self.max_network_attempts}) to connect to the API.")
                     )
                 sleep_timer *= self.cooldown_factor()
                 self.log.warning(
@@ -1200,10 +1196,10 @@ class PDSession(requests.Session):
                     if http_attempts.get(status, 0)>=retry_logic or \
                             sum(http_attempts.values())>self.max_http_attempts:
                         self.log.error(
-                            f"{endpoint}: Non-transient HTTP error: exceeded " \
+                            f"%s: Non-transient HTTP error: exceeded " \
                             'maximum number of attempts (%d) to make a ' \
                             'successful request. Currently encountering ' \
-                            'status %d.', self.retry[status], status)
+                            'status %d.', endpoint, self.retry[status], status)
                         return response
                     http_attempts[status] = 1 + http_attempts.get(status, 0)
                 sleep_timer *= self.cooldown_factor()
