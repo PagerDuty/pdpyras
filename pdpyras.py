@@ -1194,11 +1194,14 @@ class PDSession(requests.Session):
                     # Retry a specific number of times (-1 implies infinite)
                     if http_attempts.get(status, 0)>=retry_logic or \
                             sum(http_attempts.values())>self.max_http_attempts:
+                        lower_limit = retry_logic
+                        if lower_limit > self.max_http_attempts:
+                            lower_limit = self.max_http_attempts
                         self.log.error(
                             f"%s: Non-transient HTTP error: exceeded " \
                             'maximum number of attempts (%d) to make a ' \
                             'successful request. Currently encountering ' \
-                            'status %d.', endpoint, self.retry[status], status)
+                            'status %d.', endpoint, lower_limit, status)
                         return response
                     http_attempts[status] = 1 + http_attempts.get(status, 0)
                 sleep_timer *= self.cooldown_factor()
