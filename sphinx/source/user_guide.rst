@@ -15,9 +15,9 @@ If ``pip`` is available, it can be installed via:
 
     pip install pdpyras
 
-Alternately, if the Requests_ Python library has already been installed
-locally, one can simply download ``pdpyras.py`` into the directory where it
-will be used.
+Alternately, if the dependencies (Requests_ and "deprecation" Python libraries)
+have been installed locally, one can download ``pdpyras.py`` into the directory
+where it will be used.
 
 Authentication
 --------------
@@ -674,11 +674,11 @@ response or if they encounter a network error. This behavior is configurable
 through the following properties:
 implementation details:
 
-* :attr:`pdpyras.PDSession.max_http_attempts`
-* :attr:`pdpyras.PDSession.max_network_attempts`
-* :attr:`pdpyras.PDSession.sleep_timer`
-* :attr:`pdpyras.PDSession.sleep_timer_base`
-* :attr:`pdpyras.PDSession.stagger_cooldown`
+* :attr:`pdpyras.PDSession.max_http_attempts`: The maximum total number of unsuccessful requests to make in the retry loop of :attr:`pdpyras.PDSession.request` before returning
+* :attr:`pdpyras.PDSession.max_network_attempts`: The maximum number of retries that will be attempted in the case of network or non-HTTP error
+* :attr:`pdpyras.PDSession.sleep_timer`: The initial cooldown factor
+* :attr:`pdpyras.PDSession.sleep_timer_base`: Factor by which the cooldown time is increased after each unsuccessful attempt
+* :attr:`pdpyras.PDSession.stagger_cooldown`: Randomizing factor for increasing successive cooldown wait times
 
 Exponential Cooldown
 ********************
