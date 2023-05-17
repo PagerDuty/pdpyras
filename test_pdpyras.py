@@ -506,7 +506,8 @@ class APISessionTest(SessionTest):
             Response(200, json.dumps(page(1, 30, 10))),
             Response(200, json.dumps(page(2, 30, 10))),
         ]
-        weirdurl='https://api.pagerduty.com/users?number=1'
+        # Follow-up to #103: add more odd parameters to the URL
+        weirdurl='https://api.pagerduty.com/users?number=1&filters[]=foo'
         hook = MagicMock()
         items = list(sess.iter_all(weirdurl, item_hook=hook, total=True, page_size=10))
         self.assertEqual(3, get.call_count)
