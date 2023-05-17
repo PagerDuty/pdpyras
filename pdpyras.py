@@ -1178,7 +1178,6 @@ class PDSession(requests.Session):
                     raise PDClientError(f"{endpoint}: Non-transient network " \
                         'error; exceeded maximum number of attempts ' \
                         f"({self.max_network_attempts}) to connect to the API.")
-                    )
                 sleep_timer *= self.cooldown_factor()
                 self.log.warning(
                     "%s: HTTP or network error: %s. retrying in %g seconds.",
