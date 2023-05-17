@@ -987,7 +987,8 @@ class PDSession(requests.Session):
 
     Each time that the request makes a followup request, there will be a delay
     in seconds equal to this number times :attr:`sleep_timer_base` to the power
-    of how many attempts have already been made so far.
+    of how many attempts have already been made so far, unless
+    :attr:`stagger_cooldown` is nonzero.
     """
 
     sleep_timer_base = 2
