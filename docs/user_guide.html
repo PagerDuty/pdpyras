@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>User Guide &#8212; PagerDuty Python REST API Sessions 5.0.0 documentation</title>
+    <title>User Guide &#8212; PagerDuty Python REST API Sessions 5.0.3 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -45,9 +45,9 @@ has in-depth documentation on client classes and methods.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip install pdpyras
 </pre></div>
 </div>
-<p>Alternately, if the <a class="reference external" href="https://docs.python-requests.org/en/master/.._`Errors`:https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors">Requests</a> Python library has already been installed
-locally, one can simply download <code class="docutils literal notranslate"><span class="pre">pdpyras.py</span></code> into the directory where it
-will be used.</p>
+<p>Alternately, if the dependencies (<a class="reference external" href="https://docs.python-requests.org/en/master/.._`Errors`:https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors">Requests</a> and “deprecation” Python libraries)
+have been installed locally, one can download <code class="docutils literal notranslate"><span class="pre">pdpyras.py</span></code> into the directory
+where it will be used.</p>
 </section>
 <section id="authentication">
 <h2>Authentication<a class="headerlink" href="#authentication" title="Permalink to this heading">¶</a></h2>
@@ -85,7 +85,7 @@ Settings” tab of the user’s profile), the user will be derived from the key
 itself and <code class="docutils literal notranslate"><span class="pre">default_from</span></code> is not necessary.</p>
 <p>When encountering status <code class="docutils literal notranslate"><span class="pre">401</span> <span class="pre">Unauthorized</span></code>, the client will immediately raise
 <code class="docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code>; this is a non-transient error caused by an invalid
-credential. When encountering <code class="docutils literal notranslate"><span class="pre">403</span> <span class="pre">Forbidden</span></code>,</p>
+credential.</p>
 </section>
 <section id="basic-usage-examples">
 <h2>Basic Usage Examples<a class="headerlink" href="#basic-usage-examples" title="Permalink to this heading">¶</a></h2>
@@ -161,15 +161,15 @@ matching a string using the <code class="docutils literal notranslate"><span cla
     <span class="n">updated_user</span> <span class="o">=</span> <span class="kc">None</span>
 </pre></div>
 </div>
-<p>Updating/creating using <code class="docutils literal notranslate"><span class="pre">persist</span></code>, an idempotent create/update function:</p>
+<p><strong>Idempotent create/update:</strong></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a user if one doesn&#39;t already exist based on the dictionary object</span>
-<span class="c1"># user_data, using the &#39;email&#39; key as the uniquely identifying property, and</span>
-<span class="c1"># update it if it exists and differs from user_data:</span>
+<span class="c1"># user_data, using the &#39;email&#39; key as the uniquely identifying property,</span>
+<span class="c1"># and update it if it exists and differs from user_data:</span>
 <span class="n">user_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;email&#39;</span><span class="p">:</span> <span class="s1">&#39;user123@example.com&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;User McUserson&#39;</span><span class="p">}</span>
 <span class="n">updated_user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">persist</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="s1">&#39;email&#39;</span><span class="p">,</span> <span class="n">user_data</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Using multi-valued set filters: set the value in the <code class="docutils literal notranslate"><span class="pre">params</span></code> dictionary at
+<p><strong>Using multi-valued set filters:</strong> set the value in the <code class="docutils literal notranslate"><span class="pre">params</span></code> dictionary at
 the appropriate key to a list, and include <code class="docutils literal notranslate"><span class="pre">[]</span></code> at the end of the paramter
 name:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Query all open incidents assigned to a user:</span>
@@ -179,7 +179,7 @@ name:</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>Performing multi-update (for endpoints that support it only):</p>
+<p><strong>Performing multi-update:</strong> for endpoints that support it only, i.e. <code class="docutils literal notranslate"><span class="pre">PUT</span> <span class="pre">/incidents</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Acknowledge all triggered incidents assigned to a user:</span>
 <span class="n">incidents</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">list_all</span><span class="p">(</span>
     <span class="s1">&#39;incidents&#39;</span><span class="p">,</span>
@@ -193,20 +193,20 @@ name:</p>
 </section>
 <section id="events-api-v2">
 <h3>Events API v2<a class="headerlink" href="#events-api-v2" title="Permalink to this heading">¶</a></h3>
-<p>Trigger and resolve an alert, getting its deduplication key from the API, using <code class="xref py py-class docutils literal notranslate"><span class="pre">EventsAPISession</span></code>:</p>
+<p><strong>Trigger and resolve an alert,</strong> getting its deduplication key from the API, using <code class="xref py py-class docutils literal notranslate"><span class="pre">EventsAPISession</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dedup_key</span> <span class="o">=</span> <span class="n">events_session</span><span class="o">.</span><span class="n">trigger</span><span class="p">(</span><span class="s2">&quot;Server is on fire&quot;</span><span class="p">,</span> <span class="s1">&#39;dusty.old.server.net&#39;</span><span class="p">)</span>
 <span class="c1"># ...</span>
 <span class="n">events_session</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">dedup_key</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Trigger an and acknowledge an alert, using a custom deduplication key:</p>
+<p><strong>Trigger an alert and acknowledge it</strong> using a custom deduplication key:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">events_session</span><span class="o">.</span><span class="n">trigger</span><span class="p">(</span><span class="s2">&quot;Server is on fire&quot;</span><span class="p">,</span> <span class="s1">&#39;dusty.old.server.net&#39;</span><span class="p">,</span>
     <span class="n">dedup_key</span><span class="o">=</span><span class="s1">&#39;abc123&#39;</span><span class="p">)</span>
 <span class="c1"># ...</span>
 <span class="n">events_session</span><span class="o">.</span><span class="n">acknowledge</span><span class="p">(</span><span class="s1">&#39;abc123&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Submit a change event using a <code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeEventsAPISession</span></code> instance:</p>
+<p><strong>Submit a change event</strong> using a <code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeEventsAPISession</span></code> instance:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">change_events_session</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="s2">&quot;new build finished at latest HEAD&quot;</span><span class="p">,</span>
     <span class="n">source</span><span class="o">=</span><span class="s2">&quot;automation&quot;</span><span class="p">)</span>
 </pre></div>
@@ -290,7 +290,7 @@ obtained:</p>
 <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;x-request-id&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>If using the <code class="docutils literal notranslate"><span class="pre">j*</span></code> methods, i.e. <code class="xref py py-attr docutils literal notranslate"><span class="pre">APISession.jget</span></code>, the return value
+<p>If using the <code class="docutils literal notranslate"><span class="pre">j*</span></code> methods, i.e. <a class="reference internal" href="module_reference.html#pdpyras.APISession.jget" title="pdpyras.APISession.jget"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.APISession.jget</span></code></a>, the return value
 will be the full body of the response from the API after JSON-decoding, and
 the <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument is not modified.</p>
 <p>When using the <code class="docutils literal notranslate"><span class="pre">r*</span></code> methods, the <code class="docutils literal notranslate"><span class="pre">json</span></code> keyword argument is modified before
@@ -304,7 +304,7 @@ endpoint returns wrapped entities. For more details, refer to <a class="referenc
 in Python:</p>
 <ul class="simple">
 <li><p>If the data type documented in the schema is
-“object” &lt;<a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#object">https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#object</a>&gt;`_,
+<a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#object">“object”</a>,
 then the corresponding type of the Python object will be <code class="docutils literal notranslate"><span class="pre">dict</span></code>.</p></li>
 <li><p>If the data type documented in the schema is
 <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#array">array</a>,
@@ -632,11 +632,11 @@ response or if they encounter a network error. This behavior is configurable
 through the following properties:
 implementation details:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="module_reference.html#pdpyras.PDSession.max_http_attempts" title="pdpyras.PDSession.max_http_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.max_http_attempts</span></code></a></p></li>
-<li><p><a class="reference internal" href="module_reference.html#pdpyras.PDSession.max_network_attempts" title="pdpyras.PDSession.max_network_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.max_network_attempts</span></code></a></p></li>
-<li><p><a class="reference internal" href="module_reference.html#pdpyras.PDSession.sleep_timer" title="pdpyras.PDSession.sleep_timer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.sleep_timer</span></code></a></p></li>
-<li><p><a class="reference internal" href="module_reference.html#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.sleep_timer_base</span></code></a></p></li>
-<li><p><a class="reference internal" href="module_reference.html#pdpyras.PDSession.stagger_cooldown" title="pdpyras.PDSession.stagger_cooldown"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.stagger_cooldown</span></code></a></p></li>
+<li><p><a class="reference internal" href="module_reference.html#pdpyras.PDSession.max_http_attempts" title="pdpyras.PDSession.max_http_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.max_http_attempts</span></code></a>: The maximum total number of unsuccessful requests to make in the retry loop of <a class="reference internal" href="module_reference.html#pdpyras.PDSession.request" title="pdpyras.PDSession.request"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.request</span></code></a> before returning</p></li>
+<li><p><a class="reference internal" href="module_reference.html#pdpyras.PDSession.max_network_attempts" title="pdpyras.PDSession.max_network_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.max_network_attempts</span></code></a>: The maximum number of retries that will be attempted in the case of network or non-HTTP error</p></li>
+<li><p><a class="reference internal" href="module_reference.html#pdpyras.PDSession.sleep_timer" title="pdpyras.PDSession.sleep_timer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.sleep_timer</span></code></a>: The initial cooldown factor</p></li>
+<li><p><a class="reference internal" href="module_reference.html#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.sleep_timer_base</span></code></a>: Factor by which the cooldown time is increased after each unsuccessful attempt</p></li>
+<li><p><a class="reference internal" href="module_reference.html#pdpyras.PDSession.stagger_cooldown" title="pdpyras.PDSession.stagger_cooldown"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.stagger_cooldown</span></code></a>: Randomizing factor for increasing successive cooldown wait times</p></li>
 </ul>
 <section id="exponential-cooldown">
 <h3>Exponential Cooldown<a class="headerlink" href="#exponential-cooldown" title="Permalink to this heading">¶</a></h3>
