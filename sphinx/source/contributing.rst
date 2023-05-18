@@ -131,7 +131,7 @@ Publishing
 **********
 
 Once the changes are merged and tagged, make sure your local repository clone
-has the ``main`` branch checked out at the latest avialable commit, and the
+has the ``main`` branch checked out at the latest available commit, and the
 local file tree is clean (has no uncommitted changes). Then run:
 
 .. code-block:: shell
@@ -139,3 +139,14 @@ local file tree is clean (has no uncommitted changes). Then run:
     make publish
 
 When prompted, enter ``__token__`` as your username and your API token as the password.
+
+Finally, `create a new release
+<https://github.com/PagerDuty/pdpyras/releases/new>`_, and fill in some
+details:
+
+* Select "Choose a tag" and select the new latest tag.
+* If a new patch version is being released, update the existing release for
+  that major and minor version.
+* Name the release after the major and minor version, i.e. 5.1, and very brief
+  summary of changes.
+* Compose a description from the pull requests whose changes are included.
