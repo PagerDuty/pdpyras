@@ -16,7 +16,7 @@ Note: version 5.0.0 has been yanked; patch release v5.0.1 addresses an issue in 
 * **Deprecations:** the following will be removed in the next minor release, and use of them in v5.0.0 will trigger warnings:
     * Keyword argument ``name`` of the session constructor: this previously set the name of the logger; now it has no effect.
     * Keyword argument ``paginate`` of ``APISession.iter_all``: this previously could be set to ``False`` to make ``iter_all`` stop iteration after the first page of results; now it has no effect.
-    * Keyword argument ``attribute`` of ``APISession.iter_all``: this previously could be used to specify the entity wrapper name of results. The wrapper is now determined automatically and this argument has no effect.
+    * Keyword argument ``attribute`` of ``APISession.iter_cursor``: this previously could be used to specify the entity wrapper name of results. The wrapper is now determined automatically and this argument has no effect.
     * Function ``tokenize_url_path``
     * Function (decorator) ``resource_envelope``
     * Function ``object_type``
@@ -28,7 +28,7 @@ Note: version 5.0.0 has been yanked; patch release v5.0.1 addresses an issue in 
 **2022-10-13: Version 4.5.2**
 
 * The default value for request timeouts is now 60s.
-* Method ``api_key_access`` is now implemented as :attr:`APISession.api_key_access`; formerly it was implemented in the parent class and inherited in classes that did not need it and could not use it.
+* Method ``api_key_access`` is now implemented as a property in the class ``APISession``. Formerly it was implemented in the parent class ``PDSession`` and inherited in classes that did not need it and could not use it.
 * Bug in version 4.5.1 (removed) in package distribution/build fixed
 
 **2022-02-22: Version 4.5.0**
