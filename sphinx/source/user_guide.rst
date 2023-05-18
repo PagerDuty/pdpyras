@@ -15,9 +15,9 @@ If ``pip`` is available, it can be installed via:
 
     pip install pdpyras
 
-Alternately, if the Requests_ Python library has already been installed
-locally, one can simply download ``pdpyras.py`` into the directory where it
-will be used.
+Alternately, if the dependencies (Requests_ and "deprecation" Python libraries)
+have been installed locally, one can download ``pdpyras.py`` into the directory
+where it will be used.
 
 Authentication
 --------------
@@ -61,7 +61,7 @@ itself and ``default_from`` is not necessary.
 
 When encountering status ``401 Unauthorized``, the client will immediately raise
 ``pdpyras.PDClientError``; this is a non-transient error caused by an invalid
-credential. When encountering ``403 Forbidden``,
+credential.
 
 Basic Usage Examples
 --------------------
@@ -149,17 +149,17 @@ matching a string using the ``query`` parameter on an index endpoint:
     except PDClientError:
         updated_user = None
 
-Updating/creating using ``persist``, an idempotent create/update function:
+**Idempotent create/update:**
 
 .. code-block:: python
 
     # Create a user if one doesn't already exist based on the dictionary object
-    # user_data, using the 'email' key as the uniquely identifying property, and
-    # update it if it exists and differs from user_data:
+    # user_data, using the 'email' key as the uniquely identifying property,
+    # and update it if it exists and differs from user_data:
     user_data = {'email': 'user123@example.com', 'name': 'User McUserson'}
     updated_user = session.persist('users', 'email', user_data, update=True)
 
-Using multi-valued set filters: set the value in the ``params`` dictionary at
+**Using multi-valued set filters:** set the value in the ``params`` dictionary at
 the appropriate key to a list, and include ``[]`` at the end of the paramter
 name:
 
@@ -171,7 +171,7 @@ name:
         params={'user_ids[]':['PHIJ789'],'statuses[]':['triggered', 'acknowledged']}
     )
 
-Performing multi-update (for endpoints that support it only):
+**Performing multi-update:** for endpoints that support it only, i.e. ``PUT /incidents``:
 
 .. code-block:: python
 
@@ -186,7 +186,7 @@ Performing multi-update (for endpoints that support it only):
 
 Events API v2
 *************
-Trigger and resolve an alert, getting its deduplication key from the API, using :class:`EventsAPISession`:
+**Trigger and resolve an alert,** getting its deduplication key from the API, using :class:`EventsAPISession`:
 
 .. code-block:: python
 
@@ -194,7 +194,7 @@ Trigger and resolve an alert, getting its deduplication key from the API, using 
     # ...
     events_session.resolve(dedup_key)
 
-Trigger an and acknowledge an alert, using a custom deduplication key:
+**Trigger an alert and acknowledge it** using a custom deduplication key:
 
 .. code-block:: python
 
@@ -203,7 +203,7 @@ Trigger an and acknowledge an alert, using a custom deduplication key:
     # ...
     events_session.acknowledge('abc123')
 
-Submit a change event using a :class:`ChangeEventsAPISession` instance:
+**Submit a change event** using a :class:`ChangeEventsAPISession` instance:
 
 .. code-block:: python
 
@@ -299,7 +299,7 @@ obtained:
     # Support in the event of server errors (status 5xx):
     print(response.headers['x-request-id'])
 
-If using the ``j*`` methods, i.e. :attr:`APISession.jget`, the return value
+If using the ``j*`` methods, i.e. :attr:`pdpyras.APISession.jget`, the return value
 will be the full body of the response from the API after JSON-decoding, and
 the ``json`` keyword argument is not modified.
 
@@ -316,7 +316,7 @@ Note these analogues in structure between the JSON schema and the object
 in Python:
 
 * If the data type documented in the schema is
-  "object" <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#object>`_,
+  `"object" <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#object>`_,
   then the corresponding type of the Python object will be ``dict``.
 * If the data type documented in the schema is
   `array <https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTU1-types#array>`_,
@@ -674,11 +674,11 @@ response or if they encounter a network error. This behavior is configurable
 through the following properties:
 implementation details:
 
-* :attr:`pdpyras.PDSession.max_http_attempts`
-* :attr:`pdpyras.PDSession.max_network_attempts`
-* :attr:`pdpyras.PDSession.sleep_timer`
-* :attr:`pdpyras.PDSession.sleep_timer_base`
-* :attr:`pdpyras.PDSession.stagger_cooldown`
+* :attr:`pdpyras.PDSession.max_http_attempts`: The maximum total number of unsuccessful requests to make in the retry loop of :attr:`pdpyras.PDSession.request` before returning
+* :attr:`pdpyras.PDSession.max_network_attempts`: The maximum number of retries that will be attempted in the case of network or non-HTTP error
+* :attr:`pdpyras.PDSession.sleep_timer`: The initial cooldown factor
+* :attr:`pdpyras.PDSession.sleep_timer_base`: Factor by which the cooldown time is increased after each unsuccessful attempt
+* :attr:`pdpyras.PDSession.stagger_cooldown`: Randomizing factor for increasing successive cooldown wait times
 
 Exponential Cooldown
 ********************

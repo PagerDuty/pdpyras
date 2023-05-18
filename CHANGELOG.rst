@@ -1,4 +1,11 @@
-**2023-05-01: Version 5.0.0:**
+**2023-05-17: Version 5.0.3:**
+
+* Incorporate bugfix from `#103 <https://github.com/PagerDuty/pdpyras/issues/103>`_ by @av1m
+* Fix the generic issue behind `#102 <https://github.com/PagerDuty/pdpyras/issues/102>`_ (unsafe mix of string formatting styles)
+* In HTTP retry exhaustion messages, print only the limit that got reached and not necessarily the per-status HTTP retry
+
+**2023-05-01: Version 5.0:**
+Note: version 5.0.0 has been yanked; patch release v5.0.1 addresses an issue in ``setup.py``.
 
 * **New features:**
     * Methods that assume entity wrapping like ``rget`` and ``iter_all`` now support all API endpoints
@@ -9,7 +16,7 @@
 * **Deprecations:** the following will be removed in the next minor release, and use of them in v5.0.0 will trigger warnings:
     * Keyword argument ``name`` of the session constructor: this previously set the name of the logger; now it has no effect.
     * Keyword argument ``paginate`` of ``APISession.iter_all``: this previously could be set to ``False`` to make ``iter_all`` stop iteration after the first page of results; now it has no effect.
-    * Keyword argument ``attribute`` of ``APISession.iter_all``: this previously could be used to specify the entity wrapper name of results. The wrapper is now determined automatically and this argument has no effect.
+    * Keyword argument ``attribute`` of ``APISession.iter_cursor``: this previously could be used to specify the entity wrapper name of results. The wrapper is now determined automatically and this argument has no effect.
     * Function ``tokenize_url_path``
     * Function (decorator) ``resource_envelope``
     * Function ``object_type``
@@ -21,7 +28,7 @@
 **2022-10-13: Version 4.5.2**
 
 * The default value for request timeouts is now 60s.
-* Method ``api_key_access`` is now implemented as :attr:`APISession.api_key_access`; formerly it was implemented in the parent class and inherited in classes that did not need it and could not use it.
+* Method ``api_key_access`` is now implemented as a property in the class ``APISession``. Formerly it was implemented in the parent class ``PDSession`` and inherited in classes that did not need it and could not use it.
 * Bug in version 4.5.1 (removed) in package distribution/build fixed
 
 **2022-02-22: Version 4.5.0**

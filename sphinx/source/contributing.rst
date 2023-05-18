@@ -46,12 +46,17 @@ lives. To rebuild the HTML documentation from the source, run:
 
     make docs
 
+To force a rebuild, run ``touch CHANGELOG.rst`` first.
+
 Releasing a New Version
 -----------------------
 
 You will first need valid user accounts on both ``pypi.org`` and ``test.pypi.org``
 that have the "Maintainer" role on the project, as well as the requirements
 installed (see above).
+
+It is strongly recommended that you `use an API token
+<https://pypi.org/help/#apitoken>`_ to upload new releases to PyPI.
 
 Perform end-to-end publish and installation testing
 ***************************************************
@@ -63,7 +68,7 @@ project as on ``pypi.org``.
 Note, once a release is uploaded, it is no longer possible to upload a release
 with the same version number, even if that release is deleted. For that reason,
 it is a good idea to first add a suffix, i.e. ``-dev001``, to ``__version__``
-in ``setup.py``.
+in ``setup.py`` while testing.
 
 To perform end-to-end tests, run the following, entering credentials for
 ``test.pypi.org`` when prompted:
@@ -113,7 +118,7 @@ After rebuilding the documentation, it can then be viewed by opening the file
 reviewers by not requiring them to have the documentation-building tools
 installed.
 
-Once the pull request is approved, merge, then checkout main and tag:
+Once the pull request is approved, merge. Then (locally) checkout main and tag:
 
 .. code-block:: shell
 
@@ -126,11 +131,22 @@ Publishing
 **********
 
 Once the changes are merged and tagged, make sure your local repository clone
-has the ``main`` branch checked out at the latest avialable commit, and the
+has the ``main`` branch checked out at the latest available commit, and the
 local file tree is clean (has no uncommitted changes). Then run:
 
 .. code-block:: shell
 
     make publish
 
+When prompted, enter ``__token__`` as your username and your API token as the password.
 
+Finally, `create a new release
+<https://github.com/PagerDuty/pdpyras/releases/new>`_, and fill in some
+details:
+
+* Select "Choose a tag" and select the new latest tag.
+* If a new patch version is being released, update the existing release for
+  that major and minor version.
+* Name the release after the major and minor version, i.e. 5.1, and very brief
+  summary of changes.
+* Compose a description from the pull requests whose changes are included.

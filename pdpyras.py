@@ -41,7 +41,7 @@ The default timeout in seconds for any given HTTP request.
 
 Modifying this value will not affect any preexisting API session instances.
 Rather, it will only affect new instances. It is recommended to use
-:attr:`pdpyras.PDSession.timeout` to configure the timeout for a given session.
+:attr:`PDSession.timeout` to configure the timeout for a given session.
 """
 
 TEXT_LEN_LIMIT = 100
@@ -438,11 +438,14 @@ def endpoint_matches(endpoint_pattern: str, method: str, path: str):
     This is the filtering logic  used for finding the appropriate entry in
     :attr:`ENTITY_WRAPPER_CONFIG` to use for a given method and API path.
 
-    :param e: The endpoint pattern in the form ``METHOD PATH`` where ``METHOD``
-        is the HTTP method in uppercase or ``*`` to match all methods, and
-        ``PATH`` is a canonical API path.
-    :param m: The HTTP method
-    :param p: The canonical API path (i.e. as returned by ``canonical_path``)
+    :param endpoint_pattern:
+        The endpoint pattern in the form ``METHOD PATH`` where ``METHOD`` is the
+        HTTP method in uppercase or ``*`` to match all methods, and ``PATH`` is
+        a canonical API path.
+    :param method:
+        The HTTP method.
+    :param path:
+        The canonical API path (i.e. as returned by :func:`canonical_path`)
     :rtype: boolean
     """
     return (
@@ -987,7 +990,8 @@ class PDSession(requests.Session):
 
     Each time that the request makes a followup request, there will be a delay
     in seconds equal to this number times :attr:`sleep_timer_base` to the power
-    of how many attempts have already been made so far.
+    of how many attempts have already been made so far, unless
+    :attr:`stagger_cooldown` is nonzero.
     """
 
     sleep_timer_base = 2
