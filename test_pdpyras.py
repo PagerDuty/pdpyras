@@ -79,7 +79,11 @@ class URLHandlingTest(unittest.TestCase):
             (
                 '/{entity_type}/{id}/change_tags',
                 '/services/POOPBUG/change_tags',
-            )
+            ),
+            ( # for https://github.com/PagerDuty/pdpyras/pull/109
+                '/users/me',
+                '/users/me',
+            ),
         ]
         for (pattern, url) in identified_urls:
             base_url = 'https://api.pagerduty.com'
