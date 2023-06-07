@@ -1,3 +1,7 @@
+**2023-06-07: Version 5.0.4:**
+
+* Fix bug: ``/users/me`` is also ambiguously matched by canonical path ``/users/{id}``; the solution by @asmith-pd short-circuits if there is an exact match for the URL to a canonical path
+
 **2023-05-17: Version 5.0.3:**
 
 * Incorporate bugfix from `#103 <https://github.com/PagerDuty/pdpyras/issues/103>`_ by @av1m
