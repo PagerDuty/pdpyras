@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Changelog &#8212; PagerDuty Python REST API Sessions 5.0.4 documentation</title>
+    <title>Changelog &#8212; PagerDuty Python REST API Sessions 5.1.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -36,6 +36,51 @@
             
   <section id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Permalink to this heading">¶</a></h1>
+<p><strong>2023-06-26: Version 5.1.0:</strong></p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>New features:</strong></dt><dd><ul>
+<li><p>Add the ability to specify a timestamp when submitting a change event by supplying keyword argument <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> to <code class="docutils literal notranslate"><span class="pre">ChangeEventsAPISession.submit</span></code></p></li>
+<li><p>Explicitly include the upstream exception as cause when raising due to a non-transient network error</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Breaking Changes:</strong></dt><dd><ul>
+<li><dl class="simple">
+<dt>Removal of deprecated functions:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdpyras.tokenize_url_path</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdpyras.resource_envelope</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdpyras.object_type</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdpyras.resource_name</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdpyras.raise_on_error</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Removal of deprecated keyword arguments:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">__init__</span></code> for all session classes no longer accepts <code class="docutils literal notranslate"><span class="pre">name</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdpyras.APISession.iter_all</span></code> no longer accepts <code class="docutils literal notranslate"><span class="pre">paginate</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdpyras.APISession.iter_cursor</span></code> no longer accepts <code class="docutils literal notranslate"><span class="pre">attribute</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Removal of deprecated object methods/properties:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdpyras.APISession.profiler_key</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdpyras.APISession.raise_if_http_error</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
 <p><strong>2023-06-07: Version 5.0.4:</strong></p>
 <ul class="simple">
 <li><p>Fix bug: <code class="docutils literal notranslate"><span class="pre">/users/me</span></code> is also ambiguously matched by canonical path <code class="docutils literal notranslate"><span class="pre">/users/{id}</span></code>; the solution by &#64;asmith-pd short-circuits if there is an exact match for the URL to a canonical path</p></li>
@@ -50,7 +95,7 @@
 Note: version 5.0.0 has been yanked; patch release v5.0.1 addresses an issue in <code class="docutils literal notranslate"><span class="pre">setup.py</span></code>.</p>
 <ul class="simple">
 <li><dl class="simple">
-<dt><strong>New features:</strong></dt><dd><ul>
+<dt><strong>New Features:</strong></dt><dd><ul>
 <li><p>Methods that assume entity wrapping like <code class="docutils literal notranslate"><span class="pre">rget</span></code> and <code class="docutils literal notranslate"><span class="pre">iter_all</span></code> now support all API endpoints</p></li>
 <li><p>Property <code class="docutils literal notranslate"><span class="pre">PDSession.print_debug</span></code> enables printing verbose log messages to <code class="docutils literal notranslate"><span class="pre">sys.stderr</span></code></p></li>
 </ul>
@@ -130,7 +175,7 @@ Note: version 5.0.0 has been yanked; patch release v5.0.1 addresses an issue in 
 <ul class="simple">
 <li><p>Use documented method for including the routing key in the request for API V2 (addresses <a class="reference external" href="https://github.com/PagerDuty/pdpyras/issues/53">#53</a>)</p></li>
 <li><p>Add warning for Python 2.7</p></li>
-<li><p>Configurable timeout: argument to <code class="docutils literal notranslate"><span class="pre">requests.Session.request</span></code> set in default args to backwards-compatible 5 second value that can be set at the module level (&#64;ctrlaltdel / <cite>#48 &lt;https://github.com/PagerDuty/pdpyras/pull/48&gt;</cite>)</p></li>
+<li><p>Configurable timeout: argument to <code class="docutils literal notranslate"><span class="pre">requests.Session.request</span></code> set in default args to backwards-compatible 5 second value that can be set at the module level (&#64;ctrlaltdel / <a class="reference external" href="https://github.com/PagerDuty/pdpyras/pull/48">#48</a>)</p></li>
 </ul>
 <p><strong>2020-09-15: Version 4.1.2</strong></p>
 <ul class="simple">
