@@ -1525,7 +1525,8 @@ class ChangeEventsAPISession(PDSession):
         ))
         return response_body.get("id", None)
 
-    def submit(self, summary, source=None, custom_details=None, links=None):
+    def submit(self, summary, source=None, custom_details=None, links=None,
+            timestamp=None):
         """
         Submit an incident change
 
@@ -1537,20 +1538,25 @@ class ChangeEventsAPISession(PDSession):
             The ``payload.custom_details`` property of the payload.
         :param links:
             Set the ``links`` property of the event.
+        :param timestamp:
+            Specifies an event timestamp. Must be an ISO8601-format date/time.
         :type summary: str
         :type source: str
         :type custom_details: dict
         :type links: list
+        :type timestamp: str
         :rtype: str
         """
         local_var = locals()['custom_details']
         if not (local_var is None or isinstance(local_var, dict)):
             raise ValueError("custom_details must be a dict")
+        if timestamp is None:
+            timestamp = self.event_timestamp
         event = {
                 'routing_key': self.api_key,
                 'payload': {
                     'summary': summary,
-                    'timestamp': self.event_timestamp,
+                    'timestamp': timestamp,
                     }
                 }
         if isinstance(source, str):

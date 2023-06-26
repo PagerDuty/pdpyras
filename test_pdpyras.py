@@ -911,6 +911,25 @@ class ChangeEventsSessionTest(SessionTest):
                     'links': [{'href':'https://http.cat/502.jpg'}]
                 },
                 parent.request.call_args[1]['json'])
+        # Same as above but with a custom timestamp:
+        sess = pdpyras.ChangeEventsAPISession('routingkey')
+        parent = MagicMock()
+        parent.request = MagicMock()
+        parent.request.side_effect = [ Response(202, '{"id":"abc123"}') ]
+        with patch.object(sess, 'parent', new=parent):
+            custom_timestamp = '2023-06-26T00:00:00Z'
+            ddk = sess.submit(
+                'testing 123',
+                'triggered.from.pdpyras',
+                custom_details={"this":"that"},
+                links=[{'href':'https://http.cat/502.jpg'}],
+                timestamp=custom_timestamp,
+            )
+            self.assertEqual(
+                parent.request.call_args[1]['json']['payload']['timestamp'],
+                custom_timestamp
+            )
+
     @patch('pdpyras.ChangeEventsAPISession.event_timestamp',
         '2020-03-25T00:00:00Z')
     def test_submit_lite_change_event(self):
