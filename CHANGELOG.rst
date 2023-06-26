@@ -1,3 +1,23 @@
+**2023-06-26: Version 5.1.0:**
+
+* **New features:**
+    * Add the ability to specify a timestamp when submitting a change event by supplying keyword argument ``timestamp`` to ``ChangeEventsAPISession.submit``
+    * Explicitly include the upstream exception as cause when raising due to a non-transient network error
+* **Breaking Changes:**
+    * Removal of deprecated functions:
+        * ``pdpyras.tokenize_url_path``
+        * ``pdpyras.resource_envelope``
+        * ``pdpyras.object_type``
+        * ``pdpyras.resource_name``
+        * ``pdpyras.raise_on_error``
+    * Removal of deprecated keyword arguments:
+        * ``__init__`` for all session classes no longer accepts ``name``
+        * ``pdpyras.APISession.iter_all`` no longer accepts ``paginate``
+        * ``pdpyras.APISession.iter_cursor`` no longer accepts ``attribute``
+    * Removal of deprecated object methods/properties:
+        * ``pdpyras.APISession.profiler_key``
+        * ``pdpyras.APISession.raise_if_http_error``
+
 **2023-06-07: Version 5.0.4:**
 
 * Fix bug: ``/users/me`` is also ambiguously matched by canonical path ``/users/{id}``; the solution by @asmith-pd short-circuits if there is an exact match for the URL to a canonical path
@@ -11,7 +31,7 @@
 **2023-05-01: Version 5.0:**
 Note: version 5.0.0 has been yanked; patch release v5.0.1 addresses an issue in ``setup.py``.
 
-* **New features:**
+* **New Features:**
     * Methods that assume entity wrapping like ``rget`` and ``iter_all`` now support all API endpoints
     * Property ``PDSession.print_debug`` enables printing verbose log messages to ``sys.stderr``
 * **Breaking Changes:**
@@ -72,7 +92,7 @@ Note: version 5.0.0 has been yanked; patch release v5.0.1 addresses an issue in 
 
 * Use documented method for including the routing key in the request for API V2 (addresses `#53 <https://github.com/PagerDuty/pdpyras/issues/53>`_)
 * Add warning for Python 2.7
-* Configurable timeout: argument to ``requests.Session.request`` set in default args to backwards-compatible 5 second value that can be set at the module level (@ctrlaltdel / `#48 <https://github.com/PagerDuty/pdpyras/pull/48>`)
+* Configurable timeout: argument to ``requests.Session.request`` set in default args to backwards-compatible 5 second value that can be set at the module level (@ctrlaltdel / `#48 <https://github.com/PagerDuty/pdpyras/pull/48>`_)
 
 **2020-09-15: Version 4.1.2**
 
