@@ -808,12 +808,19 @@ class APISessionTest(SessionTest):
 
                 # Now test handling a non-transient error when the client
                 # library itself hits odd issues that it can't handle, i.e.
-                # network:
+                # network, and that the raised exception includes context:
                 raises = [pdpyras.RequestException("D'oh!")]*(
-                    sess.max_network_attempts-1)
-                raises.extend([pdpyras.HTTPError("D'oh!")]*2)
+                    sess.max_network_attempts+1)
                 request.side_effect = raises
-                self.assertRaises(pdpyras.PDClientError, sess.get, '/users')
+                try:
+                    sess.get('/users')
+                    self.assertTrue(False, msg='Exception not raised after ' \
+                        'retry maximum count reached')
+                except pdpyras.PDClientError as e:
+                    self.assertEqual(e.__cause__, raises[-1])
+                except Exception as e:
+                    self.assertTrue(False, msg='Raised exception not of the ' \
+                        f"expected class; was {e.__class__}")
                 self.assertEqual(sess.max_network_attempts+1,
                     request.call_count)
                 self.assertEqual(sess.max_network_attempts, sleep.call_count)
