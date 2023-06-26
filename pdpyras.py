@@ -490,38 +490,6 @@ def normalize_url(base_url: str, url: str):
             f"URL {url} does not start with the API base URL {base_url}"
         )
 
-@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
-        current_version=__version__, details='Use canonical_path instead ' \
-            'to identify and classify URLs.')
-def tokenize_url_path(url, baseurl='https://api.pagerduty.com'):
-    """Return a tuple of path nodes.
-
-    This function is the implementation of URL parsing logic from versions
-    previous to v5.0.0. It is based on assumptions of patterns that are no
-    longer universal in REST API v2 but were once much more common.
-    """
-    urlnparams = url.split('#')[0].split('?')
-    url_nodes = urlnparams[0].lstrip('/').split('/')
-    path_index = 0
-    invalid_url = ValueError('Invalid API resource URL: '+url[:99])
-    if url.startswith(baseurl):
-        path_index = 3
-    elif url.startswith('http') and url_nodes[0].endswith(':'):
-        raise invalid_url
-    if len(url_nodes) - path_index < 1:
-        raise invalid_url
-    path_nodes = tuple(url_nodes[path_index:])
-    if '' in path_nodes:
-        raise invalid_url
-    tokenized_nodes = [path_nodes[0]]
-    if len(path_nodes) >= 3:
-        tokenized_nodes.extend(('{id}', path_nodes[2]))
-    final_node_type = '{id}'
-    if len(path_nodes)%2 == 1:
-        final_node_type = '{index}'
-    tokenized_nodes.append(final_node_type)
-    return tuple(tokenized_nodes)
-
 #######################
 ### ENTITY WRAPPING ###
 #######################
@@ -667,16 +635,6 @@ def requires_success(method):
     call.__doc__ = doc
     return call
 
-@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
-    current_version=__version__, details='Use wrapped_entities instead.')
-def resource_envelope(method):
-    """
-    Convenience and consistency decorator for HTTP verb functions.
-
-    DEPRECATED. Use wrapped_entities instead.
-    """
-    return wrapped_entities(method)
-
 def resource_url(method):
     """
     API call decorator that allows passing a resource dict as the path/URL
@@ -799,11 +757,6 @@ def last_4(secret: str):
     """Returns an abbreviation of the input"""
     return '*'+str(secret)[-4:]
 
-@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
-        current_version=__version__, details='Use singular_name instead.')
-def object_type(r_name):
-    return singular_name(r_name)
-
 def plural_name(obj_type: str):
     """
     Pluralizes a name, i.e. the API name from the ``type`` property
@@ -822,16 +775,6 @@ def plural_name(obj_type: str):
         return obj_type[:-1]+'ies'
     else:
         return obj_type+'s'
-
-@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
-        current_version=__version__, details='Use successful_response instead.')
-def raise_on_error(r):
-    return successful_response(r)
-
-@deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
-        current_version=__version__, details='Use plural_name instead.')
-def resource_name(obj_type):
-    return plural_name(obj_type)
 
 def singular_name(r_name: str):
     """
@@ -926,8 +869,6 @@ class PDSession(requests.Session):
     :param debug:
         Sets :attr:`print_debug`. Set to True to enable verbose command line
         output.
-    :param name:
-        Deprecated in v5.0.0; will be removed in v5.1.0.
     :type token: str
     :type debug: bool
     """
@@ -1014,10 +955,7 @@ class PDSession(requests.Session):
 
     url = ""
 
-    def __init__(self, api_key: str, name=None, debug=False):
-        if name is not None:
-            deprecated_kwarg('name', 'It has no effect and will be removed ' \
-                'in v5.1.0.')
+    def __init__(self, api_key: str, debug=False):
         self.parent = super(PDSession, self)
         self.parent.__init__()
         self.api_key = api_key
@@ -1235,21 +1173,6 @@ class PDSession(requests.Session):
             else:
                 # All went according to plan.
                 return response
-
-    @property
-    @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
-        current_version=__version__)
-    def raise_if_http_error(self):
-        """
-        (DEPRECATED) Raise an exception in iteration if there is a HTTP error.
-        """
-        return True
-
-    @raise_if_http_error.setter
-    @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
-        current_version=__version__)
-    def raise_if_http_error(self, val: bool):
-        pass
 
     @property
     def stagger_cooldown(self):
@@ -1580,8 +1503,6 @@ class APISession(PDSession):
 
     :param api_key:
         REST API access token to use for HTTP requests
-    :param name:
-        Deprecated and has no effect as of v5.0.0
     :param default_from:
         The default email address to use in the ``From`` header when making
         API calls using an account-level API access key.
@@ -1619,12 +1540,12 @@ class APISession(PDSession):
     url = 'https://api.pagerduty.com'
     """Base URL of the REST API"""
 
-    def __init__(self, api_key, name=None, default_from=None,
+    def __init__(self, api_key, default_from=None,
             auth_type='token', debug=False):
         self.api_call_counts = {}
         self.api_time = {}
         self.auth_type = auth_type
-        super(APISession, self).__init__(api_key, name=name, debug=debug)
+        super(APISession, self).__init__(api_key, debug=debug)
         self.default_from = default_from
         self.headers.update({
             'Accept': 'application/vnd.pagerduty+json;version=2',
@@ -1749,8 +1670,8 @@ class APISession(PDSession):
         obj_iter = self.iter_all(resource, params=query_params)
         return next(iter(filter(equiv, obj_iter)), None)
 
-    def iter_all(self, url, params=None, paginate=None, page_size=None,
-            item_hook=None, total=False):
+    def iter_all(self, url, params=None, page_size=None, item_hook=None,
+            total=False):
         """
         Iterator for the contents of an index endpoint or query.
 
@@ -1770,13 +1691,6 @@ class APISession(PDSession):
             The index endpoint URL to use.
         :param params:
             Additional URL parameters to include.
-        :param paginate:
-            In versions before v5.0.0, this could be set to False to disable
-            many of the features of numeric pagination. As of v5.0.0, this
-            keyword argument is deprecated and has no effect. The method can
-            still be used on endpoints that don't fully support pagination yet,
-            i.e. that don't return a ``more`` property in the response, although
-            it will raise a warning.
         :param page_size:
             If set, the ``page_size`` argument will override the
             ``default_page_size`` parameter on the session and set the ``limit``
@@ -1802,9 +1716,6 @@ class APISession(PDSession):
         :type page_size: int or None
         :type total: bool
         """
-        if paginate is not None:
-            deprecated_kwarg('paginate', details='It has no effect as of ' \
-                'v5.0.0 and will be removed in v5.1.0.')
         # Get entity wrapping and validate that the URL being requested is
         # likely to support pagination:
         path = canonical_path(self.url, url)
@@ -1905,23 +1816,17 @@ class APISession(PDSession):
                     item_hook(result, n, total_count)
                 yield result
 
-    def iter_cursor(self, url, attribute=None, params=None, item_hook=None):
+    def iter_cursor(self, url, params=None, item_hook=None):
         """
         Iterator for results from an endpoint using cursor-based pagination.
 
         :param url:
             The index endpoint URL to use.
-        :param attribute:
-            User-specified entity wrapper to use. Deprecated and has no effect
-            as of v5.0.0, and will be removed in v5.1.0.
         :param params:
             Query parameters to include in the request.
         :param item_hook:
             A callable object that accepts 3 positional arguments; see
         """
-        if attribute is not None:
-            deprecated_kwarg('attribute', details='It has no effect as of ' \
-                'v5.0.0 and will be removed in v5.1.0.')
         path = canonical_path(self.url, url)
         if path not in CURSOR_BASED_PAGINATION_PATHS:
             raise URLError(f"{path} does not support cursor-based pagination.")
@@ -2088,17 +1993,6 @@ class APISession(PDSession):
         if user_headers:
             headers.update(user_headers)
         return headers
-
-    @deprecated(deprecated_in='5.0.0', removed_in='5.1.0',
-        current_version=__version__, details='Use canonical_path to identify ' \
-            'REST API v2 URLs instead.')
-    def profiler_key(self, method, path, suffix=None):
-        """
-        Generates a fixed-format key to classify a request
-        """
-        my_suffix = "" if suffix is None else "#"+suffix
-        path_str = '/'.join(tokenize_url_path(path, baseurl=self.url))
-        return '%s:%s'%(method.lower(), path_str)+my_suffix
 
     @resource_url
     @requires_success
