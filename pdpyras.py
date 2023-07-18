@@ -1719,6 +1719,9 @@ class APISession(PDSession):
         # Get entity wrapping and validate that the URL being requested is
         # likely to support pagination:
         path = canonical_path(self.url, url)
+        # Short-circuit to cursor-based iteration:
+        if path in CURSOR_BASED_PAGINATION_PATHS:
+            return self.iter_cursor(url, params=params)
         endpoint = f"GET {path}"
         nodes = path.split('/')
         if is_path_param(nodes[-1]):
@@ -1734,10 +1737,6 @@ class APISession(PDSession):
         _, wrapper = entity_wrappers('GET', path)
         if wrapper is None:
             raise URLError(f"Pagination is not supported for GET {path}.")
-
-        # Short-circuit to cursor-based iteration:
-        if path in CURSOR_BASED_PAGINATION_PATHS:
-            return self.iter_cursor(url, attribute=res_w, params=params)
 
         # Parameters to send:
         data = {}
