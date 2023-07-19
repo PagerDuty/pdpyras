@@ -1,3 +1,7 @@
+**2023-07-18: Version 5.1.1:**
+
+* Fix bug: using ``iter_all`` on an endpoint that supports cursor-based pagination should correctly call out to ``iter_cursor`` (it was making the call but with a removed keyword argument)
+
 **2023-06-26: Version 5.1.0:**
 
 * **New features:**

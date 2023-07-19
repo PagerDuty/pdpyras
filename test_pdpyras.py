@@ -473,10 +473,20 @@ class APISessionTest(SessionTest):
         )
         iter_all.assert_called_with('users', params={'query':'some1@me.me'})
 
+    @patch.object(pdpyras.APISession, 'iter_cursor')
     @patch.object(pdpyras.APISession, 'get')
-    def test_iter_all(self, get):
+    def test_iter_all(self, get, iter_cursor):
         sess = pdpyras.APISession('token')
         sess.log = MagicMock()
+
+        # Test: user uses iter_all on an endpoint that supports cursor-based
+        # pagination, short-circuit to iter_cursor
+        path = '/audit/records'
+        cpath = pdpyras.canonical_path('https://api.pagerduty.com', path)
+        self.assertTrue(cpath in pdpyras.CURSOR_BASED_PAGINATION_PATHS)
+        iter_cursor.return_value = []
+        self.assertEqual([], list(sess.iter_all('/audit/records')))
+        iter_cursor.assert_called_once_with('/audit/records', params=None)
 
         # Test: user tries to use iter_all on a singular resource, raise error:
         self.assertRaises(
