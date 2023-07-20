@@ -48,6 +48,8 @@ context managers. For example:
     with pdpyras.APISession(API_KEY) as session:
         do_application(session)
 
+The From header
+***************
 If the `REST API v2`_ session will be used for API endpoints that require a
 ``From`` header, such as those that take actions on incidents, and if it is
 using an account-level API key (created by an administrator via the "API Access
@@ -59,9 +61,19 @@ Otherwise, if using a user's API key (created under "API Access" in the "User
 Settings" tab of the user's profile), the user will be derived from the key
 itself and ``default_from`` is not necessary.
 
-When encountering status ``401 Unauthorized``, the client will immediately raise
-``pdpyras.PDClientError``; this is a non-transient error caused by an invalid
-credential.
+Using Non-US Service Regions
+****************************
+
+If your PagerDuty account is in the EU or other service region outside the US, set the ``url`` attribute according to the
+documented `API Access URLs
+<https://support.pagerduty.com/docs/service-regions#api-access-urls>`_, i.e. for the EU:
+
+:: code-block:: python
+
+    # REST API
+    session.url = 'https://api.eu.pagerduty.com'
+    # Events API:
+    events_session.url = 'https://events.eu.pagerduty.com'
 
 Basic Usage Examples
 --------------------
@@ -376,7 +388,6 @@ inside of another object with a single key at the root level of the
 another object that contains a single key. Endpoints with such request/response
 schemas are said to wrap entities.
 
-
 Wrapped-entity-aware Functions
 ******************************
 The following methods will automatically extract and return the wrapped content
@@ -666,13 +677,11 @@ To configure the client to use a host as a proxy for HTTPS traffic, update the
     # Host 10.42.187.3 port 4012 protocol https:
     session.proxies.update({'https': '10.42.187.3:4012'})
 
-
 HTTP Retry Configuration
 ------------------------
 Session objects support retrying API requests if they receive a non-success
 response or if they encounter a network error. This behavior is configurable
 through the following properties:
-implementation details:
 
 * :attr:`pdpyras.PDSession.max_http_attempts`: The maximum total number of unsuccessful requests to make in the retry loop of :attr:`pdpyras.PDSession.request` before returning
 * :attr:`pdpyras.PDSession.max_network_attempts`: The maximum number of retries that will be attempted in the case of network or non-HTTP error
@@ -693,7 +702,6 @@ Let:
 * ρ = :attr:`pdpyras.PDSession.stagger_cooldown`
 * r = a random real number between 0 and 1, generated once per request
 
-
 Assuming ρ = 0:
 
 t\ :sub:`n` = t\ :sub:`0` a\ :sup:`n`
@@ -702,8 +710,8 @@ If ρ is nonzero:
 
 t\ :sub:`n` = a (1 + ρ r) t\ :sub:`n-1`
 
-Rate Limiting
-*************
+Default Behavior
+****************
 By default, after receiving a status 429 response, sessions will retry the
 request indefinitely until it receives a status other than 429, and this
 behavior cannot be overridden. This is a sane approach; if it is ever
@@ -711,10 +719,14 @@ responding with 429, the REST API is receiving (for the given REST API key) too
 many requests, and the issue should by nature be transient unless there is a
 rogue process using the same API key and saturating its rate limit.
 
-It has been considered to make this also configurable so that processes won't
-hang indefinitely in the event of persistent rate limit saturation. If you have
-a use case where this would help and/or believe it would be generally useful,
-please `file an issue <https://github.com/PagerDuty/pdpyras/issues/new>`_.
+Also, it is default behavior when encountering status ``401 Unauthorized`` for
+the client to immediately raise ``pdpyras.PDClientError``; this is a
+non-transient error caused by an invalid credential.
+
+However, both of these behaviors can be overridden by adding entries in the
+retry dictionary. For instance, it may be preferable to error out instead of
+hanging indefinitely to continually retry if another API process is saturating
+the rate limit.
 
 Setting the retry property
 **************************
