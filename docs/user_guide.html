@@ -18,7 +18,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Module Reference" href="module_reference.html" />
-    <link rel="prev" title="PDPYRAS: PagerDuty Python REST API Sessions" href="index.html" />
+    <link rel="prev" title="Changelog" href="changelog.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -74,6 +74,8 @@ context managers. For example:</p>
     <span class="n">do_application</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
 </pre></div>
 </div>
+<section id="the-from-header">
+<h3>The From header<a class="headerlink" href="#the-from-header" title="Permalink to this heading">¶</a></h3>
 <p>If the <a class="reference external" href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUw-rest-api-v2-overview">REST API v2</a> session will be used for API endpoints that require a
 <code class="docutils literal notranslate"><span class="pre">From</span></code> header, such as those that take actions on incidents, and if it is
 using an account-level API key (created by an administrator via the “API Access
@@ -83,9 +85,19 @@ when making requests to such endpoints.</p>
 <p>Otherwise, if using a user’s API key (created under “API Access” in the “User
 Settings” tab of the user’s profile), the user will be derived from the key
 itself and <code class="docutils literal notranslate"><span class="pre">default_from</span></code> is not necessary.</p>
-<p>When encountering status <code class="docutils literal notranslate"><span class="pre">401</span> <span class="pre">Unauthorized</span></code>, the client will immediately raise
-<code class="docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code>; this is a non-transient error caused by an invalid
-credential.</p>
+</section>
+<section id="using-non-us-service-regions">
+<h3>Using Non-US Service Regions<a class="headerlink" href="#using-non-us-service-regions" title="Permalink to this heading">¶</a></h3>
+<p>If your PagerDuty account is in the EU or other service region outside the US, set the <code class="docutils literal notranslate"><span class="pre">url</span></code> attribute according to the
+documented <a class="reference external" href="https://support.pagerduty.com/docs/service-regions#api-access-urls">API Access URLs</a>, i.e. for the EU:</p>
+<p>:: code-block:: python</p>
+<blockquote>
+<div><p># REST API
+session.url = ‘<a class="reference external" href="https://api.eu.pagerduty.com">https://api.eu.pagerduty.com</a>’
+# Events API:
+events_session.url = ‘<a class="reference external" href="https://events.eu.pagerduty.com">https://events.eu.pagerduty.com</a>’</p>
+</div></blockquote>
+</section>
 </section>
 <section id="basic-usage-examples">
 <h2>Basic Usage Examples<a class="headerlink" href="#basic-usage-examples" title="Permalink to this heading">¶</a></h2>
@@ -629,8 +641,7 @@ production systems.</p>
 <h2>HTTP Retry Configuration<a class="headerlink" href="#http-retry-configuration" title="Permalink to this heading">¶</a></h2>
 <p>Session objects support retrying API requests if they receive a non-success
 response or if they encounter a network error. This behavior is configurable
-through the following properties:
-implementation details:</p>
+through the following properties:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="module_reference.html#pdpyras.PDSession.max_http_attempts" title="pdpyras.PDSession.max_http_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.max_http_attempts</span></code></a>: The maximum total number of unsuccessful requests to make in the retry loop of <a class="reference internal" href="module_reference.html#pdpyras.PDSession.request" title="pdpyras.PDSession.request"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.request</span></code></a> before returning</p></li>
 <li><p><a class="reference internal" href="module_reference.html#pdpyras.PDSession.max_network_attempts" title="pdpyras.PDSession.max_network_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pdpyras.PDSession.max_network_attempts</span></code></a>: The maximum number of retries that will be attempted in the case of network or non-HTTP error</p></li>
@@ -655,18 +666,21 @@ increases exponentially with each retry.</p>
 <p>If ρ is nonzero:</p>
 <p>t<sub>n</sub> = a (1 + ρ r) t<sub>n-1</sub></p>
 </section>
-<section id="rate-limiting">
-<h3>Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permalink to this heading">¶</a></h3>
+<section id="default-behavior">
+<h3>Default Behavior<a class="headerlink" href="#default-behavior" title="Permalink to this heading">¶</a></h3>
 <p>By default, after receiving a status 429 response, sessions will retry the
 request indefinitely until it receives a status other than 429, and this
 behavior cannot be overridden. This is a sane approach; if it is ever
 responding with 429, the REST API is receiving (for the given REST API key) too
 many requests, and the issue should by nature be transient unless there is a
 rogue process using the same API key and saturating its rate limit.</p>
-<p>It has been considered to make this also configurable so that processes won’t
-hang indefinitely in the event of persistent rate limit saturation. If you have
-a use case where this would help and/or believe it would be generally useful,
-please <a class="reference external" href="https://github.com/PagerDuty/pdpyras/issues/new">file an issue</a>.</p>
+<p>Also, it is default behavior when encountering status <code class="docutils literal notranslate"><span class="pre">401</span> <span class="pre">Unauthorized</span></code> for
+the client to immediately raise <code class="docutils literal notranslate"><span class="pre">pdpyras.PDClientError</span></code>; this is a
+non-transient error caused by an invalid credential.</p>
+<p>However, both of these behaviors can be overridden by adding entries in the
+retry dictionary. For instance, it may be preferable to error out instead of
+hanging indefinitely to continually retry if another API process is saturating
+the rate limit.</p>
 </section>
 <section id="setting-the-retry-property">
 <h3>Setting the retry property<a class="headerlink" href="#setting-the-retry-property" title="Permalink to this heading">¶</a></h3>
@@ -716,9 +730,14 @@ lower.</p>
 <script>document.getElementById('searchbox').style.display = "block"</script>
 <h3><a href="index.html">Table of Contents</a></h3>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">User Guide</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#authentication">Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#authentication">Authentication</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-from-header">The From header</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-non-us-service-regions">Using Non-US Service Regions</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#basic-usage-examples">Basic Usage Examples</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#rest-api-v2">REST API v2</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#events-api-v2">Events API v2</a></li>
@@ -749,7 +768,7 @@ lower.</p>
 <li class="toctree-l2"><a class="reference internal" href="#using-a-proxy-server">Using a Proxy Server</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#http-retry-configuration">HTTP Retry Configuration</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#exponential-cooldown">Exponential Cooldown</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#rate-limiting">Rate Limiting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#default-behavior">Default Behavior</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#setting-the-retry-property">Setting the retry property</a></li>
 </ul>
 </li>
@@ -757,7 +776,6 @@ lower.</p>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_reference.html">Module Reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 </ul>
 
         </div>
