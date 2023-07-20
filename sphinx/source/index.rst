@@ -15,7 +15,7 @@ Table of Contents
 .. toctree::
    :maxdepth: 3
 
+   changelog
    user_guide
    module_reference
    contributing
-   changelog
