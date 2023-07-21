@@ -68,7 +68,7 @@ If your PagerDuty account is in the EU or other service region outside the US, s
 documented `API Access URLs
 <https://support.pagerduty.com/docs/service-regions#api-access-urls>`_, i.e. for the EU:
 
-:: code-block:: python
+.. code-block:: python
 
     # REST API
     session.url = 'https://api.eu.pagerduty.com'
