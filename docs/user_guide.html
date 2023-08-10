@@ -90,13 +90,12 @@ itself and <code class="docutils literal notranslate"><span class="pre">default_
 <h3>Using Non-US Service Regions<a class="headerlink" href="#using-non-us-service-regions" title="Permalink to this heading">¶</a></h3>
 <p>If your PagerDuty account is in the EU or other service region outside the US, set the <code class="docutils literal notranslate"><span class="pre">url</span></code> attribute according to the
 documented <a class="reference external" href="https://support.pagerduty.com/docs/service-regions#api-access-urls">API Access URLs</a>, i.e. for the EU:</p>
-<p>:: code-block:: python</p>
-<blockquote>
-<div><p># REST API
-session.url = ‘<a class="reference external" href="https://api.eu.pagerduty.com">https://api.eu.pagerduty.com</a>’
-# Events API:
-events_session.url = ‘<a class="reference external" href="https://events.eu.pagerduty.com">https://events.eu.pagerduty.com</a>’</p>
-</div></blockquote>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># REST API</span>
+<span class="n">session</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;https://api.eu.pagerduty.com&#39;</span>
+<span class="c1"># Events API:</span>
+<span class="n">events_session</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;https://events.eu.pagerduty.com&#39;</span>
+</pre></div>
+</div>
 </section>
 </section>
 <section id="basic-usage-examples">
