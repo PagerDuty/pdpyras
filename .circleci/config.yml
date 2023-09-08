@@ -1,9 +1,5 @@
 version: 2.1
 
-#pip: &pip
-  #name: Install Pip
-  #command: |
-  #  sudo apt update && sudo apt install python3-virtualenv
 venv: &venv
   name: Setup Virtualenv
   command: |
@@ -34,8 +30,6 @@ jobs:
       - image: cimg/python:3.6
     steps:
       - checkout
-#      - run:
-#          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -50,8 +44,6 @@ jobs:
       - image: cimg/python:3.7
     steps:
       - checkout
-#      - run:
-#          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -66,8 +58,6 @@ jobs:
       - image: cimg/python:3.8
     steps:
       - checkout
-#      - run:
-#          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -82,8 +72,6 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - checkout
-#      - run:
-#          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -98,8 +86,6 @@ jobs:
       - image: cimg/python:3.10
     steps:
       - checkout
-#      - run:
-#          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -114,8 +100,6 @@ jobs:
       - image: cimg/python:3.11
     steps:
       - checkout
-#      - run:
-#          <<: *pip
       - run:
           <<: *venv
       - run:
