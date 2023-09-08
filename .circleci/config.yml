@@ -111,7 +111,7 @@ jobs:
 
   py3_11:
     docker:
-      - image: circleci/python:3.11-bullseye
+      - image: circleci/python:3.11-bookworm
     steps:
       - checkout
       - run:
