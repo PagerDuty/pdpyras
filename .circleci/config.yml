@@ -1,9 +1,9 @@
 version: 2.1
 
-pip: &pip
-  name: Install Pip
-  command: |
-    sudo apt update && sudo apt install python3-virtualenv
+#pip: &pip
+  #name: Install Pip
+  #command: |
+  #  sudo apt update && sudo apt install python3-virtualenv
 venv: &venv
   name: Setup Virtualenv
   command: |
@@ -31,11 +31,11 @@ jobs:
 
   py3_6:
     docker:
-      - image: cimg/python:3.6-bullseye
+      - image: cimg/python:3.6
     steps:
       - checkout
-      - run:
-          <<: *pip
+#      - run:
+#          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -47,11 +47,11 @@ jobs:
 
   py3_7:
     docker:
-      - image: cimg/python:3.7-bullseye
+      - image: cimg/python:3.7
     steps:
       - checkout
-      - run:
-          <<: *pip
+#      - run:
+#          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -63,11 +63,11 @@ jobs:
 
   py3_8:
     docker:
-      - image: cimg/python:3.8-bullseye
+      - image: cimg/python:3.8
     steps:
       - checkout
-      - run:
-          <<: *pip
+#      - run:
+#          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -79,11 +79,11 @@ jobs:
 
   py3_9:
     docker:
-      - image: cimg/python:3.9-bullseye
+      - image: cimg/python:3.9
     steps:
       - checkout
-      - run:
-          <<: *pip
+#      - run:
+#          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -95,11 +95,11 @@ jobs:
 
   py3_10:
     docker:
-      - image: cimg/python:3.10-bullseye
+      - image: cimg/python:3.10
     steps:
       - checkout
-      - run:
-          <<: *pip
+#      - run:
+#          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -111,11 +111,11 @@ jobs:
 
   py3_11:
     docker:
-      - image: cimg/python:3.11-bookworm
+      - image: cimg/python:3.11
     steps:
       - checkout
-      - run:
-          <<: *pip
+#      - run:
+#          <<: *pip
       - run:
           <<: *venv
       - run:
