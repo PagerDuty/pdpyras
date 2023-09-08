@@ -172,15 +172,16 @@ matching a string using the ``query`` parameter on an index endpoint:
     updated_user = session.persist('users', 'email', user_data, update=True)
 
 **Using multi-valued set filters:** set the value in the ``params`` dictionary at
-the appropriate key to a list, and include ``[]`` at the end of the paramter
-name:
+the appropriate key to a list. Ordinarily one must include ``[]`` at the end of the paramter
+name; in the case of this client, the brackets are automatically appended to
+the names of list-type-value parameters as necessary:
 
 .. code-block:: python
 
     # Query all open incidents assigned to a user:
     incidents = session.list_all(
         'incidents',
-        params={'user_ids[]':['PHIJ789'],'statuses[]':['triggered', 'acknowledged']}
+        params={'user_ids':['PHIJ789'],'statuses':['triggered', 'acknowledged']}
     )
 
 **Performing multi-update:** for endpoints that support it only, i.e. ``PUT /incidents``:
@@ -190,7 +191,7 @@ name:
     # Acknowledge all triggered incidents assigned to a user:
     incidents = session.list_all(
         'incidents',
-        params={'user_ids[]':['PHIJ789'],'statuses[]':['triggered']}
+        params={'user_ids':['PHIJ789'],'statuses':['triggered']}
     )
     for i in incidents:
         i['status'] = 'acknowledged'
