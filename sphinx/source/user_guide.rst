@@ -291,6 +291,7 @@ then ``[]`` will be automatically appended to the parameter name.
     })
     # GET https://api.pagerduty.com/services?query=foo&include%5B%5D=escalation_policies&include%5B%5D=teams&limit=50&offset=0
     # GET https://api.pagerduty.com/services?query=foo&include%5B%5D=escalation_policies&include%5B%5D=teams&limit=50&offset=50
+    # >>> foo_services
     # [{"type": "service" ...}, ... ]
 
 
@@ -470,7 +471,7 @@ entity is wrapped as appropriate. For instance:
     # >>> created_overrides
     # [
     #     {'status': 201, 'override': {...}},
-    #     {'status': 400, errors: ['Override must end after its start'], 'override': {...}}
+    #     {'status': 400, 'errors': ['Override must end after its start'], 'override': {...}}
     # ]
 
 Pagination
