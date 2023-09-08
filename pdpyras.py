@@ -1246,6 +1246,13 @@ class EventsAPISession(PDSession):
 
     url = "https://events.pagerduty.com"
 
+    def __init__(self, api_key: str, debug=False):
+        super(EventsAPISession, self).__init__(api_key, debug)
+        # See: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgw-events-api-v2-overview#response-codes--retry-logic
+        self.retry[500] = 2 # internal server error, 3 requests total
+        self.retry[502] = 4 # bad gateway, 5 requests total
+        self.retry[503] = 6 # service unavailable, 7 requests total
+
     @property
     def auth_header(self):
         return {}
@@ -1410,6 +1417,13 @@ class ChangeEventsAPISession(PDSession):
     permitted_methods = ('POST',)
 
     url = "https://events.pagerduty.com"
+
+    def __init__(self, api_key: str, debug=False):
+        super(ChangeEventsAPISession, self).__init__(api_key, debug)
+        # See: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgw-events-api-v2-overview#response-codes--retry-logic
+        self.retry[500] = 2 # internal server error, 3 requests total
+        self.retry[502] = 4 # bad gateway, 5 requests total
+        self.retry[503] = 6 # service unavailable, 7 requests total
 
     @property
     def auth_header(self):
