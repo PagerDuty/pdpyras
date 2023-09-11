@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>User Guide &#8212; PagerDuty Python REST API Sessions 5.1.1 documentation</title>
+    <title>User Guide &#8212; PagerDuty Python REST API Sessions 5.1.2 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -180,21 +180,28 @@ matching a string using the <code class="docutils literal notranslate"><span cla
 <span class="n">updated_user</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">persist</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="s1">&#39;email&#39;</span><span class="p">,</span> <span class="n">user_data</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><strong>Using multi-valued set filters:</strong> set the value in the <code class="docutils literal notranslate"><span class="pre">params</span></code> dictionary at
-the appropriate key to a list, and include <code class="docutils literal notranslate"><span class="pre">[]</span></code> at the end of the paramter
-name:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Query all open incidents assigned to a user:</span>
+<p><strong>Using multi-valued set filters:</strong> set the value in the <code class="docutils literal notranslate"><span class="pre">params</span></code> dictionary
+at the appropriate key to a list. Square brackets will then be automatically
+appended to the names of list-type-value parameters as necessary. Ordinarily
+(and in pdpyras versions prior to 4.4.0) one must include <code class="docutils literal notranslate"><span class="pre">[]</span></code> at the end of
+the paramter name to denote a set type filter. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Query all open incidents assigned to a user</span>
 <span class="n">incidents</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">list_all</span><span class="p">(</span>
     <span class="s1">&#39;incidents&#39;</span><span class="p">,</span>
-    <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;user_ids[]&#39;</span><span class="p">:[</span><span class="s1">&#39;PHIJ789&#39;</span><span class="p">],</span><span class="s1">&#39;statuses[]&#39;</span><span class="p">:[</span><span class="s1">&#39;triggered&#39;</span><span class="p">,</span> <span class="s1">&#39;acknowledged&#39;</span><span class="p">]}</span>
+    <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+      <span class="s1">&#39;user_ids[]&#39;</span><span class="p">:[</span><span class="s1">&#39;PHIJ789&#39;</span><span class="p">],</span> <span class="c1"># (Necessary in &lt; 4.4.0, compatible with &gt;= 4.4.0)</span>
+      <span class="s1">&#39;statuses&#39;</span><span class="p">:[</span><span class="s1">&#39;triggered&#39;</span><span class="p">,</span> <span class="s1">&#39;acknowledged&#39;</span><span class="p">]</span> <span class="c1"># (&gt;= 4.4.0)</span>
+    <span class="p">}</span>
 <span class="p">)</span>
+<span class="c1"># API calls will look like the following:</span>
+<span class="c1"># GET /incidents?user_ids%5B%5D=PHIJ789&amp;statuses%5B%5D=triggered&amp;statuses%5B%5D=acknowledged&amp;offset=0&amp;limit=100</span>
 </pre></div>
 </div>
 <p><strong>Performing multi-update:</strong> for endpoints that support it only, i.e. <code class="docutils literal notranslate"><span class="pre">PUT</span> <span class="pre">/incidents</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Acknowledge all triggered incidents assigned to a user:</span>
 <span class="n">incidents</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">list_all</span><span class="p">(</span>
     <span class="s1">&#39;incidents&#39;</span><span class="p">,</span>
-    <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;user_ids[]&#39;</span><span class="p">:[</span><span class="s1">&#39;PHIJ789&#39;</span><span class="p">],</span><span class="s1">&#39;statuses[]&#39;</span><span class="p">:[</span><span class="s1">&#39;triggered&#39;</span><span class="p">]}</span>
+    <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;user_ids&#39;</span><span class="p">:[</span><span class="s1">&#39;PHIJ789&#39;</span><span class="p">],</span><span class="s1">&#39;statuses&#39;</span><span class="p">:[</span><span class="s1">&#39;triggered&#39;</span><span class="p">]}</span>
 <span class="p">)</span>
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">incidents</span><span class="p">:</span>
     <span class="n">i</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;acknowledged&#39;</span>
@@ -282,6 +289,7 @@ then <code class="docutils literal notranslate"><span class="pre">[]</span></cod
 <span class="p">})</span>
 <span class="c1"># GET https://api.pagerduty.com/services?query=foo&amp;include%5B%5D=escalation_policies&amp;include%5B%5D=teams&amp;limit=50&amp;offset=0</span>
 <span class="c1"># GET https://api.pagerduty.com/services?query=foo&amp;include%5B%5D=escalation_policies&amp;include%5B%5D=teams&amp;limit=50&amp;offset=50</span>
+<span class="c1"># &gt;&gt;&gt; foo_services</span>
 <span class="c1"># [{&quot;type&quot;: &quot;service&quot; ...}, ... ]</span>
 </pre></div>
 </div>
@@ -445,7 +453,7 @@ entity is wrapped as appropriate. For instance:</p>
 <span class="c1"># &gt;&gt;&gt; created_overrides</span>
 <span class="c1"># [</span>
 <span class="c1">#     {&#39;status&#39;: 201, &#39;override&#39;: {...}},</span>
-<span class="c1">#     {&#39;status&#39;: 400, errors: [&#39;Override must end after its start&#39;], &#39;override&#39;: {...}}</span>
+<span class="c1">#     {&#39;status&#39;: 400, &#39;errors&#39;: [&#39;Override must end after its start&#39;], &#39;override&#39;: {...}}</span>
 <span class="c1"># ]</span>
 </pre></div>
 </div>
