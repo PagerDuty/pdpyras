@@ -22,7 +22,7 @@ manipulated through APIs are left to the user or implementer to make.
 Features
 --------
 - Uses Requests' automatic HTTP connection pooling and persistence
-- Tested in / support for Python 3.6 through 3.10
+- Tested in / support for Python 3.6 through 3.11
 - Abstraction layer for authentication, pagination, filtering and wrapped
   entities
 - Configurable cooldown/reattempt logic for handling rate limiting and

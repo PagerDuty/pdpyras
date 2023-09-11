@@ -171,17 +171,25 @@ matching a string using the ``query`` parameter on an index endpoint:
     user_data = {'email': 'user123@example.com', 'name': 'User McUserson'}
     updated_user = session.persist('users', 'email', user_data, update=True)
 
-**Using multi-valued set filters:** set the value in the ``params`` dictionary at
-the appropriate key to a list, and include ``[]`` at the end of the paramter
-name:
+**Using multi-valued set filters:** set the value in the ``params`` dictionary
+at the appropriate key to a list. Square brackets will then be automatically
+appended to the names of list-type-value parameters as necessary. Ordinarily
+(and in pdpyras versions prior to 4.4.0) one must include ``[]`` at the end of
+the paramter name to denote a set type filter. For example:
 
 .. code-block:: python
 
-    # Query all open incidents assigned to a user:
+    # Query all open incidents assigned to a user
     incidents = session.list_all(
         'incidents',
-        params={'user_ids[]':['PHIJ789'],'statuses[]':['triggered', 'acknowledged']}
+        params={
+          'user_ids[]':['PHIJ789'], # (Necessary in < 4.4.0, compatible with >= 4.4.0)
+          'statuses':['triggered', 'acknowledged'] # (>= 4.4.0)
+        }
     )
+    # API calls will look like the following:
+    # GET /incidents?user_ids%5B%5D=PHIJ789&statuses%5B%5D=triggered&statuses%5B%5D=acknowledged&offset=0&limit=100
+
 
 **Performing multi-update:** for endpoints that support it only, i.e. ``PUT /incidents``:
 
@@ -190,7 +198,7 @@ name:
     # Acknowledge all triggered incidents assigned to a user:
     incidents = session.list_all(
         'incidents',
-        params={'user_ids[]':['PHIJ789'],'statuses[]':['triggered']}
+        params={'user_ids':['PHIJ789'],'statuses':['triggered']}
     )
     for i in incidents:
         i['status'] = 'acknowledged'
@@ -290,6 +298,7 @@ then ``[]`` will be automatically appended to the parameter name.
     })
     # GET https://api.pagerduty.com/services?query=foo&include%5B%5D=escalation_policies&include%5B%5D=teams&limit=50&offset=0
     # GET https://api.pagerduty.com/services?query=foo&include%5B%5D=escalation_policies&include%5B%5D=teams&limit=50&offset=50
+    # >>> foo_services
     # [{"type": "service" ...}, ... ]
 
 
@@ -469,7 +478,7 @@ entity is wrapped as appropriate. For instance:
     # >>> created_overrides
     # [
     #     {'status': 201, 'override': {...}},
-    #     {'status': 400, errors: ['Override must end after its start'], 'override': {...}}
+    #     {'status': 400, 'errors': ['Override must end after its start'], 'override': {...}}
     # ]
 
 Pagination

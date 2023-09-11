@@ -1,9 +1,5 @@
 version: 2.1
 
-pip: &pip
-  name: Install Pip
-  command: |
-    sudo apt update && sudo apt install python-pip python-virtualenv
 venv: &venv
   name: Setup Virtualenv
   command: |
@@ -31,11 +27,9 @@ jobs:
 
   py3_6:
     docker:
-      - image: circleci/python:3.6-buster
+      - image: cimg/python:3.6
     steps:
       - checkout
-      - run:
-          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -47,11 +41,9 @@ jobs:
 
   py3_7:
     docker:
-      - image: circleci/python:3.7-buster
+      - image: cimg/python:3.7
     steps:
       - checkout
-      - run:
-          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -63,11 +55,9 @@ jobs:
 
   py3_8:
     docker:
-      - image: circleci/python:3.8-buster
+      - image: cimg/python:3.8
     steps:
       - checkout
-      - run:
-          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -79,11 +69,9 @@ jobs:
 
   py3_9:
     docker:
-      - image: circleci/python:3.9-buster
+      - image: cimg/python:3.9
     steps:
       - checkout
-      - run:
-          <<: *pip
       - run:
           <<: *venv
       - run:
@@ -95,11 +83,23 @@ jobs:
 
   py3_10:
     docker:
-      - image: circleci/python:3.10-buster
+      - image: cimg/python:3.10
     steps:
       - checkout
       - run:
-          <<: *pip
+          <<: *venv
+      - run:
+          <<: *getenv
+      - run:
+          <<: *depinst
+      - run:
+          <<: *test
+
+  py3_11:
+    docker:
+      - image: cimg/python:3.11
+    steps:
+      - checkout
       - run:
           <<: *venv
       - run:
@@ -118,4 +118,5 @@ workflows:
       - py3_8
       - py3_9
       - py3_10
+      - py3_11
 
