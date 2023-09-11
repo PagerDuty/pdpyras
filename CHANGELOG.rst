@@ -1,3 +1,9 @@
+**2023-09-12: Version 5.1.2:**
+
+* Address issue `#115 <https://github.com/PagerDuty/pdpyras/issues/115>`_ by adding default values to :attr:`pdpyras.PDSession.retry` for Events and Change Events API client classes
+* Upgrade CI images
+* Add support for Python 3.11
+
 **2023-07-18: Version 5.1.1:**
 
 * Fix bug: using ``iter_all`` on an endpoint that supports cursor-based pagination should correctly call out to ``iter_cursor`` (it was making the call but with a removed keyword argument)
