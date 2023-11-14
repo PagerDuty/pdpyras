@@ -194,7 +194,8 @@ production settings.</p>
 post or delete.</p></li>
 <li><p><strong>url</strong> (<em>str</em>) – The path/URL to request. If it does not start with the base URL, the
 base URL will be prepended.</p></li>
-<li><p><strong>**kwargs</strong> – Additional keyword arguments to pass to <a class="reference external" href="https://docs.python-requests.org/en/master/">Requests</a></p></li>
+<li><p><strong>**kwargs</strong> – <p>Custom keyword arguments to pass to <code class="docutils literal notranslate"><span class="pre">requests.Session.request</span></code>.</p>
+</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -547,7 +548,8 @@ with the values supplied.</p></li>
 <li><p><strong>resource</strong> (<em>str</em><em> or </em><em>dict</em>) – The path/URL to which to send the request, or a dict object
 representing an API resource that contains an item with key <code class="docutils literal notranslate"><span class="pre">self</span></code>
 whose value is the URL of the resource.</p></li>
-<li><p><strong>**kw</strong> – Keyword arguments to pass to <code class="docutils literal notranslate"><span class="pre">requests.Session.delete</span></code></p></li>
+<li><p><strong>**kw</strong> – <p>Custom keyword arguments to pass to <code class="docutils literal notranslate"><span class="pre">requests.Session.delete</span></code></p>
+</p></li>
 </ul>
 </dd>
 </dl>
@@ -565,7 +567,8 @@ response.</p>
 <li><p><strong>resource</strong> (<em>str</em><em> or </em><em>dict</em>) – The path/URL to which to send the request, or a dict object
 representing an API resource that contains an item with key <code class="docutils literal notranslate"><span class="pre">self</span></code>
 whose value is the URL of the resource.</p></li>
-<li><p><strong>**kw</strong> – Keyword arguments to pass to <code class="docutils literal notranslate"><span class="pre">requests.Session.get</span></code></p></li>
+<li><p><strong>**kw</strong> – <p>Custom keyword arguments to pass to <code class="docutils literal notranslate"><span class="pre">requests.Session.get</span></code></p>
+</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -587,7 +590,8 @@ whose value is the URL of the resource.</p></li>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>path</strong> (<em>str</em>) – The path/URL to which to send the POST request, which should be an
 index endpoint.</p></li>
-<li><p><strong>**kw</strong> – Keyword arguments to pass to <code class="docutils literal notranslate"><span class="pre">requests.Session.post</span></code></p></li>
+<li><p><strong>**kw</strong> – <p>Custom keyword arguments to pass to <code class="docutils literal notranslate"><span class="pre">requests.Session.post</span></code></p>
+</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -610,7 +614,8 @@ index endpoint.</p></li>
 <li><p><strong>resource</strong> – The path/URL to which to send the request, or a dict object
 representing an API resource that contains an item with key <code class="docutils literal notranslate"><span class="pre">self</span></code>
 whose value is the URL of the resource.</p></li>
-<li><p><strong>**kw</strong> – Keyword arguments to pass to <code class="docutils literal notranslate"><span class="pre">requests.Session.put</span></code></p></li>
+<li><p><strong>**kw</strong> – <p>Custom keyword arguments to pass to <code class="docutils literal notranslate"><span class="pre">requests.Session.put</span></code></p>
+</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -719,8 +724,9 @@ this API, refer to the <a class="reference external" href="https://developer.pag
 or resolve.</p></li>
 <li><p><strong>dedup_key</strong> (<em>str</em>) – The deduplication key; used for determining event uniqueness and
 associating actions with existing incidents.</p></li>
-<li><p><strong>**properties</strong> – Additional properties to set, i.e. if <code class="docutils literal notranslate"><span class="pre">action</span></code> is <code class="docutils literal notranslate"><span class="pre">trigger</span></code>
-this would include <code class="docutils literal notranslate"><span class="pre">payload</span></code></p></li>
+<li><p><strong>**properties</strong> – <p>Additional properties to set, i.e. if <code class="docutils literal notranslate"><span class="pre">action</span></code> is <code class="docutils literal notranslate"><span class="pre">trigger</span></code>
+this would include <code class="docutils literal notranslate"><span class="pre">payload</span></code>.</p>
+</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -781,7 +787,8 @@ for more details.</p>
 <p>See: <a class="reference external" href="https://developer.pagerduty.com/docs/events-api-v2/send-change-events/">https://developer.pagerduty.com/docs/events-api-v2/send-change-events/</a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>**properties</strong> – Properties to set, i.e. <code class="docutils literal notranslate"><span class="pre">payload</span></code> and <code class="docutils literal notranslate"><span class="pre">links</span></code></p>
+<dd class="field-odd"><p><strong>**properties</strong> – <p>Properties to set, i.e. <code class="docutils literal notranslate"><span class="pre">payload</span></code> and <code class="docutils literal notranslate"><span class="pre">links</span></code></p>
+</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The response ID</p>
