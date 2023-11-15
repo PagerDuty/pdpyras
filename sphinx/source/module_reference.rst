@@ -50,7 +50,7 @@ URL Handling
 URL related functions.
 
 .. automodule:: pdpyras
-    :members: canonical_path, endpoint_matches, is_path_param, normalize_url, tokenize_url_path
+    :members: canonical_path, endpoint_matches, is_path_param, normalize_url
 
 Entity Wrapping
 ***************
@@ -66,7 +66,7 @@ of `requests.Session`_, i.e. that would otherwise return a `requests.Response`_
 object.
 
 .. automodule:: pdpyras
-    :members: auto_json, requires_success, resource_envelope, resource_url, wrapped_entities
+    :members: auto_json, requires_success, resource_url, wrapped_entities
 
 Helpers
 *******
