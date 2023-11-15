@@ -1,3 +1,8 @@
+**2023-11-15: Version 5.1.3:**
+
+* Remove deprecated escape sequences, which were causing downstream linter/unit test errors, from docstrings
+* Remove references to removed properties from the module reference that were causing Sphinx warnings
+
 **2023-09-12: Version 5.1.2:**
 
 * Address issue `#115 <https://github.com/PagerDuty/pdpyras/issues/115>`_ by adding default values to :attr:`pdpyras.PDSession.retry` for Events and Change Events API client classes
