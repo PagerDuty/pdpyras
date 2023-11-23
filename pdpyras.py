@@ -8,13 +8,11 @@ import sys
 import time
 from copy import deepcopy
 from datetime import datetime
-from logging import StreamHandler
 from random import random
 from warnings import warn
 
 # Libraries from PyPI
 import requests
-from deprecation import deprecated, DeprecatedWarning
 from urllib3.exceptions import HTTPError, PoolError
 from requests.exceptions import RequestException
 
