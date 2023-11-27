@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 __version__ = '5.1.3'
 
@@ -12,7 +12,7 @@ if __name__ == '__main__':
         license='MIT',
         url='https://pagerduty.github.io/pdpyras',
         download_url='https://pypi.org/project/pdpyras/',
-        install_requires=['requests', 'urllib3', 'deprecation'],
+        install_requires=['requests', 'urllib3'],
         author='PagerDuty',
         author_email='support@pagerduty.com',
         python_requires='>=3.6'
