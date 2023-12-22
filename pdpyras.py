@@ -9,14 +9,16 @@ import time
 from copy import deepcopy
 from datetime import datetime
 from random import random
+from typing import Union
 from warnings import warn
 
 # Libraries from PyPI
 import requests
 from urllib3.exceptions import HTTPError, PoolError
+from requests import Response,Session
 from requests.exceptions import RequestException
 
-__version__ = '5.1.3'
+__version__ = '5.2.0'
 
 #######################
 ### CLIENT DEFAULTS ###
@@ -383,7 +385,7 @@ properties in request bodies.
 ### URL HANDLING ###
 ####################
 
-def canonical_path(base_url: str, url: str):
+def canonical_path(base_url: str, url: str) -> str:
     """
     Returns the canonical REST API path corresponding to a URL.
 
@@ -398,7 +400,6 @@ def canonical_path(base_url: str, url: str):
 
     :param base_url: The base URL of the API
     :param url: A non-normalized URL (a path or full URL)
-    :rtype: str
     """
     full_url = normalize_url(base_url, url)
     # Starting with / after hostname up until the parameters:
@@ -435,7 +436,7 @@ def canonical_path(base_url: str, url: str):
     else:
         return patterns[0]
 
-def endpoint_matches(endpoint_pattern: str, method: str, path: str):
+def endpoint_matches(endpoint_pattern: str, method: str, path: str) -> bool:
     """
     Returns true if a method and path match an endpoint pattern.
 
@@ -450,23 +451,21 @@ def endpoint_matches(endpoint_pattern: str, method: str, path: str):
         The HTTP method.
     :param path:
         The canonical API path (i.e. as returned by :func:`canonical_path`)
-    :rtype: boolean
     """
     return (
         endpoint_pattern.startswith(method.upper()) \
             or endpoint_pattern.startswith('*')
     ) and endpoint_pattern.endswith(f" {path}")
 
-def is_path_param(path_node: str):
+def is_path_param(path_node: str) -> bool:
     """
     Returns true if a given node in a canonical path represents a parameter.
 
     :param path_node: The node (value between slashes) in the path
-    :rtype: bool
     """
     return path_node.startswith('{') and path_node.endswith('}')
 
-def normalize_url(base_url: str, url: str):
+def normalize_url(base_url: str, url: str) -> str:
     """
     Normalize a URL to a complete API URL.
 
@@ -477,7 +476,6 @@ def normalize_url(base_url: str, url: str):
         The base API URL, excluding any trailing slash, i.e.
         "https://api.pagerduty.com"
     :returns: The full API endpoint URL
-    :rtype: str
     """
     if url.startswith(base_url):
         return url
@@ -492,7 +490,7 @@ def normalize_url(base_url: str, url: str):
 ### ENTITY WRAPPING ###
 #######################
 
-def entity_wrappers(method: str, path: str):
+def entity_wrappers(method: str, path: str) -> tuple:
     """
     Obtains entity wrapping information for a given endpoint (path and method)
 
@@ -504,7 +502,6 @@ def entity_wrappers(method: str, path: str):
 
     :param method: The HTTP method
     :param path: A canonical API path i.e. as returned by ``canonical_path``
-    :rtype: tuple
     """
     m = method.upper()
     endpoint = "%s %s"%(m, path)
@@ -544,7 +541,7 @@ def entity_wrappers(method: str, path: str):
         raise Exception(f"{endpoint} matches more than one pattern:" + \
             f"{matches_str}; this is most likely a bug in pdpyras.")
 
-def infer_entity_wrapper(method: str, path: str):
+def infer_entity_wrapper(method: str, path: str) -> str:
     """
     Infer the entity wrapper name from the endpoint using orthodox patterns.
 
@@ -556,7 +553,6 @@ def infer_entity_wrapper(method: str, path: str):
 
     :param method: The HTTP method
     :param path: A canonical API path i.e. as returned by ``canonical_path``
-    :rtype: str
     """
     m = method.upper()
     path_nodes = path.split('/')
@@ -573,7 +569,7 @@ def infer_entity_wrapper(method: str, path: str):
         # Plural if listing via GET to the index endpoint, or doing a multi-put:
         return path_nodes[-1]
 
-def unwrap(response: requests.Response, wrapper):
+def unwrap(response: requests.Response, wrapper) -> Union[list, dict]:
     """
     Unwraps and returns a wrapped entity.
 
@@ -722,7 +718,7 @@ def deprecated_kwarg(deprecated_name: str, details=None):
         details_msg = f" {details}"
     warn(f"Keyword argument \"{deprecated_name}\" is deprecated.{details_msg}")
 
-def http_error_message(r: requests.Response, context=None):
+def http_error_message(r: requests.Response, context=None) -> str:
     """
     Formats a message describing a HTTP error.
 
@@ -751,11 +747,11 @@ def http_error_message(r: requests.Response, context=None):
         return f"{endpoint}: Success (status {r.status_code}) but an " \
             f"expectation still failed{context_msg}"
 
-def last_4(secret: str):
+def last_4(secret: str) -> str:
     """Returns an abbreviation of the input"""
     return '*'+str(secret)[-4:]
 
-def plural_name(obj_type: str):
+def plural_name(obj_type: str) -> str:
     """
     Pluralizes a name, i.e. the API name from the ``type`` property
 
@@ -763,7 +759,6 @@ def plural_name(obj_type: str):
         The object type, i.e. ``user`` or ``user_reference``
     :returns: The name of the resource, i.e. the last part of the URL for the
         resource's index URL
-    :rtype: str
     """
     if obj_type.endswith('_reference'):
         # Strip down to basic type if it's a reference
@@ -774,7 +769,7 @@ def plural_name(obj_type: str):
     else:
         return obj_type+'s'
 
-def singular_name(r_name: str):
+def singular_name(r_name: str) -> str:
     """
     Singularizes a name, i.e. for the entity wrapper in a POST request
 
@@ -783,7 +778,6 @@ def singular_name(r_name: str):
         forms the part of the canonical path identifying what kind of resource
         lives in the collection there, for an API that follows classic wrapped
         entity naming patterns.
-    :rtype: str
     """
     if r_name.endswith('ies'):
         # Because English
@@ -1072,7 +1066,7 @@ class PDSession(requests.Session):
             delattr(self, '_debugHandler')
         # else: no-op; only happens if debug is set to the same value twice
 
-    def request(self, method, url, **kwargs):
+    def request(self, method, url, **kwargs) -> requests.Response:
         """
         Make a generic PagerDuty API request.
 
@@ -1087,7 +1081,6 @@ class PDSession(requests.Session):
         :type method: str
         :type url: str
         :returns: the HTTP response object
-        :rtype: `requests.Response`_
         """
         sleep_timer = self.sleep_timer
         network_attempts = 0
@@ -1287,7 +1280,7 @@ class EventsAPISession(PDSession):
         """
         return self.send_event('resolve', dedup_key=dedup_key)
 
-    def send_event(self, action, dedup_key=None, **properties):
+    def send_event(self, action, dedup_key=None, **properties) -> str:
         """
         Send an event to the v2 Events API.
 
@@ -1343,7 +1336,7 @@ class EventsAPISession(PDSession):
         return super(EventsAPISession, self).post(*args, **kw)
 
     def trigger(self, summary, source, dedup_key=None, severity='critical',
-            payload=None, custom_details=None, images=None, links=None):
+            payload=None, custom_details=None, images=None, links=None) -> str:
         """
         Trigger an incident
 
@@ -1378,7 +1371,6 @@ class EventsAPISession(PDSession):
         :type severity: str
         :type source: str
         :type summary: str
-        :rtype: str
         """
         for local in ('payload', 'custom_details'):
             local_var = locals()[local]
@@ -2023,7 +2015,7 @@ class APISession(PDSession):
 
     @resource_url
     @wrapped_entities
-    def rget(self, resource, **kw):
+    def rget(self, resource, **kw) -> dict:
         """
         Wrapped-entity-aware GET function.
 
@@ -2039,12 +2031,11 @@ class APISession(PDSession):
         :returns:
             Dictionary representation of the object.
         :type resource: str or dict
-        :rtype: dict
         """
         return self.get(resource, **kw)
 
     @wrapped_entities
-    def rpost(self, path, **kw):
+    def rpost(self, path, **kw) -> dict:
         """
         Wrapped-entity-aware POST function.
 
@@ -2058,13 +2049,12 @@ class APISession(PDSession):
         :returns:
             Dictionary representation of the created object
         :type path: str
-        :rtype: dict
         """
         return self.post(path, **kw)
 
     @resource_url
     @wrapped_entities
-    def rput(self, resource, **kw):
+    def rput(self, resource, **kw) -> dict:
         """
         Wrapped-entity-aware PUT function.
 
@@ -2078,7 +2068,6 @@ class APISession(PDSession):
             Custom keyword arguments to pass to ``requests.Session.put``
         :returns:
             Dictionary representation of the updated object
-        :rtype: dict
         """
         return self.put(resource, **kw)
 
