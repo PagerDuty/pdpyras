@@ -1,3 +1,7 @@
+**2023-12-28: Version 5.2.0:**
+
+* Return type hints introduced, which replace/supersede ``:rtype:`` Phoenix directives in docstrings.
+
 **2023-11-15: Version 5.1.3:**
 
 * Remove deprecated escape sequences, which were causing downstream linter/unit test errors, from docstrings
