@@ -29,12 +29,6 @@ EXPAND_PATHS = {
         '/tags/{id}/'+et for et in ('users', 'teams', 'escalation_policies')
     ]
 }
-# ...And finally, if the API in question ALSO doesn't follow the classic entity
-# wrapping convention (where the end of the URL is the same as the entity
-# wrapper name) and for any reason the API cannot be updated to follow said
-# convention, please consider adding it to the following list of shame in order
-# to avoid generating confusing errors for the end user.
-UNSUPPORTED_PATHS = []
 
 import sys
 from yaml import load, dump
@@ -57,8 +51,6 @@ def main():
 
     print('CANONICAL_PATHS = [')
     for path in public_endpoints:
-        if path in UNSUPPORTED_PATHS:
-            continue
         print_paths = EXPAND_PATHS.get(path, [path])
         for path in print_paths:
             print(f"    '{path}',")
