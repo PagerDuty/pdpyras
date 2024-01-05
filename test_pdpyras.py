@@ -132,6 +132,8 @@ class EntityWrappingTest(unittest.TestCase):
 
     def test_entity_wrappers(self):
         io_expected = [
+            # Special endpoint (broken support v5.0.0 - 5.1.x) managed by script
+            (('get', '/tags/{id}/users'), ('users', 'users')),
             # Conventional endpoint: singular read
             (('get', '/services/{id}'), ('service', 'service')),
             # Conventional endpoint: singular update
