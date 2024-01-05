@@ -12,10 +12,12 @@ from random import random
 from typing import Union
 from warnings import warn
 
-# Libraries from PyPI
-import requests
+# Upstream components on which this client is based:
+from requests import Response, Session
+from requests import __version__ as REQUESTS_VERSION
+
+# HTTP client exceptions:
 from urllib3.exceptions import HTTPError, PoolError
-from requests import Response,Session
 from requests.exceptions import RequestException
 
 __version__ = '5.2.0'
@@ -571,7 +573,7 @@ def infer_entity_wrapper(method: str, path: str) -> str:
         # Plural if listing via GET to the index endpoint, or doing a multi-put:
         return path_nodes[-1]
 
-def unwrap(response: requests.Response, wrapper) -> Union[list, dict]:
+def unwrap(response: Response, wrapper) -> Union[dict, list]:
     """
     Unwraps and returns a wrapped entity.
 
@@ -720,7 +722,7 @@ def deprecated_kwarg(deprecated_name: str, details=None):
         details_msg = f" {details}"
     warn(f"Keyword argument \"{deprecated_name}\" is deprecated.{details_msg}")
 
-def http_error_message(r: requests.Response, context=None) -> str:
+def http_error_message(r: Response, context=None) -> str:
     """
     Formats a message describing a HTTP error.
 
@@ -787,8 +789,7 @@ def singular_name(r_name: str) -> str:
     else:
         return r_name.rstrip('s')
 
-def successful_response(r: requests.Response, context=None) \
-        -> requests.Response:
+def successful_response(r: Response, context=None) -> Response:
     """Validates the response as successful.
 
     Returns the response if it was successful; otherwise, raises an exception.
@@ -808,7 +809,7 @@ def successful_response(r: requests.Response, context=None) \
     else:
         raise PDClientError(http_error_message(r, context=context))
 
-def truncate_text(text: str):
+def truncate_text(text: str) -> str:
     """Truncates a string longer than :attr:`TEXT_LEN_LIMIT`
 
     :param text: The string to truncate if longer than the limit.
@@ -818,7 +819,7 @@ def truncate_text(text: str):
     else:
         return text
 
-def try_decoding(r: requests.Response):
+def try_decoding(r: Response) -> Union[dict, list, str]:
     """
     JSON-decode a response body
 
@@ -840,7 +841,7 @@ def try_decoding(r: requests.Response):
 ### CLASSES ###
 ###############
 
-class PDSession(requests.Session):
+class PDSession(Session):
     """
     Base class for making HTTP requests to PagerDuty APIs
 
@@ -1068,7 +1069,7 @@ class PDSession(requests.Session):
             delattr(self, '_debugHandler')
         # else: no-op; only happens if debug is set to the same value twice
 
-    def request(self, method, url, **kwargs) -> requests.Response:
+    def request(self, method, url, **kwargs) -> Response:
         """
         Make a generic PagerDuty API request.
 
@@ -1217,7 +1218,7 @@ class PDSession(requests.Session):
     def user_agent(self):
         return 'pdpyras/%s python-requests/%s Python/%d.%d'%(
             __version__,
-            requests.__version__,
+            REQUESTS_VERSION,
             sys.version_info.major,
             sys.version_info.minor
         )
@@ -1949,7 +1950,7 @@ class APISession(PDSession):
         else:
             return self.rpost(resource, json=values)
 
-    def postprocess(self, response: requests.Response, suffix=None):
+    def postprocess(self, response: Response, suffix=None):
         """
         Records performance information / request metadata about the API call.
 
@@ -2003,7 +2004,7 @@ class APISession(PDSession):
 
     @resource_url
     @requires_success
-    def rdelete(self, resource, **kw) -> requests.Response:
+    def rdelete(self, resource, **kw) -> Response:
         """
         Delete a resource.
 
@@ -2168,7 +2169,7 @@ class PDHTTPError(PDClientError):
             print("HTTP error: "+str(e.response.status_code))
     """
 
-    def __init__(self, message, response: requests.Response):
+    def __init__(self, message, response: Response):
         super(PDHTTPError, self).__init__(message, response=response)
 
 class PDServerError(PDHTTPError):
