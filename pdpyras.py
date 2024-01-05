@@ -1673,7 +1673,7 @@ class APISession(PDSession):
         iterator = self.iter_all(path, **kw)
         return {obj[by]:obj for obj in iterator}
 
-    def find(self, resource, query, attribute='name', params=None)
+    def find(self, resource, query, attribute='name', params=None) \
             -> Union[dict, None]:
         """
         Finds an object of a given resource type exactly matching a query.
