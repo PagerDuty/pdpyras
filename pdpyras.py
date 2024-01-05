@@ -404,9 +404,9 @@ def canonical_path(base_url: str, url: str) -> str:
     :param url: A non-normalized URL (a path or full URL)
     """
     full_url = normalize_url(base_url, url)
-    # Starting with / after hostname up until the parameters:
+    # Starting with / after hostname before the query string:
     url_path = full_url.replace(base_url.rstrip('/'), '').split('?')[0]
-    # Root node (blank) counts so we include it
+    # Root node (blank) counts so we include it:
     n_nodes = url_path.count('/')
     # First winnow the list down to paths with the same number of nodes:
     patterns = list(filter(
