@@ -1,6 +1,8 @@
 **2023-12-28: Version 5.2.0:**
 
 * Return type hints introduced, which replace/supersede ``:rtype:`` Phoenix directives in docstrings.
+* Remove unused dependency ``deprecation``
+* Fix bug: path ``/tags/{id}/{entity_type}`` breaks entity wrapping logic.
 
 **2023-11-15: Version 5.1.3:**
 
