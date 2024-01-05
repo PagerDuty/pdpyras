@@ -1,8 +1,8 @@
 **2023-12-28: Version 5.2.0:**
 
-* Return type hints introduced, which replace/supersede ``:rtype:`` Phoenix directives in docstrings.
+* Expanded use of type hints in place of ``:rtype`` Sphinx directive
 * Remove unused dependency ``deprecation``
-* Fix bug: path ``/tags/{id}/{entity_type}`` breaks entity wrapping logic.
+* Fix bug: path ``/tags/{id}/{entity_type}`` breaks entity wrapping logic (`issue #130 <https://github.com/PagerDuty/pdpyras/issues/130>`_)
 
 **2023-11-15: Version 5.1.3:**
 
