@@ -197,7 +197,9 @@ CANONICAL_PATHS = [
     '/status_dashboards/url_slugs/{url_slug}/service_impacts',
     '/tags',
     '/tags/{id}',
-    '/tags/{id}/{entity_type}',
+    '/tags/{id}/users',
+    '/tags/{id}/teams',
+    '/tags/{id}/escalation_policies',
     '/teams',
     '/teams/{id}',
     '/teams/{id}/audit/records',
@@ -1723,24 +1725,26 @@ class APISession(PDSession):
         # Get entity wrapping and validate that the URL being requested is
         # likely to support pagination:
         path = canonical_path(self.url, url)
-        # Short-circuit to cursor-based iteration:
+        endpoint = f"GET {path}"
+
+        # Short-circuit to cursor-based pagination if appropriate:
         if path in CURSOR_BASED_PAGINATION_PATHS:
             return self.iter_cursor(url, params=params)
-        endpoint = f"GET {path}"
+
         nodes = path.split('/')
         if is_path_param(nodes[-1]):
-            # This is based on an as-yet universal pattern, but like classic
-            # entity wrapping conventions, it isn't explicitly in the API
-            # contract and so it may be subject to change. Therefore, I can only
-            # hope our API developers do not deviate from it. If ever a path
-            # parameter refers to a resource type versus a unique ID, we will
-            # have to distinguish between types of path parameters somehow.
-            raise URLError(f"Path {path} (URL={url}) is for accessing an " \
-                "individual resource, versus a resource collection, and as " \
-                "such does not feature pagination.")
+            # NOTE: If this happens for a newer API, the path might need to be
+            # added to the EXPAND_PATHS dictionary in
+            # scripts/get_path_list/get_path_list.py, after which
+            # CANONICAL_PATHS will then need to be updated accordingly based on
+            # the new output of the script.
+            raise URLError(f"Path {path} (URL={url}) is formatted like an " \
+                "individual resource versus a resource collection. It is " \
+                "therefore assumed to not support pagination.")
         _, wrapper = entity_wrappers('GET', path)
+
         if wrapper is None:
-            raise URLError(f"Pagination is not supported for GET {path}.")
+            raise URLError(f"Pagination is not supported for {endpoint}.")
 
         # Parameters to send:
         data = {}

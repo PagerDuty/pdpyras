@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+# Usage: get_path_list.py PATH
+#
+#   PATH must be a path to "reference/v2/Index.yaml" within a clone of the API
+#   source code repository.
+
 # This script is not part of the pdpyras library. Rather, it can be used for the
 # by PagerDuty engineers to assist the development and maintenance of pdpyras.
 # It automatically generates the declaration of module variables
@@ -7,8 +12,23 @@
 # documentation source code (which is kept in a private repository in the
 # PagerDuty GitHub org).
 #
-# To use, run this script with its sole argument a path to
-# "reference/v2/Index.yaml" inside a clone of the repo:
+# It is meant to minimize the amount of work that has to be done to allow
+# pdpyras to support new APIs by generating the client's specific knowledge
+# of APIs directly from the documentation programatically.
+
+# NOTE:
+#
+# If any new API introduces an endpoint that is designed to work as a resource
+# collection and support pagination, but whose path ends in a variable parameter
+# that refers to a value in a fixed list of well-recognized entity types (as
+# opposed to a separate documentation page per distinct entity type), THE
+# CANONICAL PATH WILL NEED TO BE ADDED TO THE FOLLOWING DICTIONARY, OR ENTITY
+# WRAPPING WILL END UP BROKEN FOR THAT ENDPOINT:
+EXPAND_PATHS = {
+    '/tags/{id}/{entity_type}': [
+        '/tags/{id}/'+et for et in ('users', 'teams', 'escalation_policies')
+    ]
+}
 
 import sys
 from yaml import load, dump
@@ -31,7 +51,9 @@ def main():
 
     print('CANONICAL_PATHS = [')
     for path in public_endpoints:
-        print(f"    '{path}',")
+        print_paths = EXPAND_PATHS.get(path, [path])
+        for path in print_paths:
+            print(f"    '{path}',")
     print("]")
     print('"""'+"\nExplicit list of supported canonical REST API v2 paths")
     print("\n:meta hide-value:\n"+'"""'+"\n")
