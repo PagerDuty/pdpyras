@@ -9,7 +9,7 @@ import time
 from copy import deepcopy
 from datetime import datetime
 from random import random
-from typing import Union
+from typing import Iterator, Union
 from warnings import warn
 
 # Upstream components on which this client is based:
@@ -988,7 +988,7 @@ class PDSession(Session):
         pass
 
     @property
-    def api_key(self):
+    def api_key(self) -> str:
         """
         API Key property getter.
 
@@ -1005,16 +1005,16 @@ class PDSession(Session):
         self.after_set_api_key()
 
     @property
-    def auth_header(self):
+    def auth_header(self) -> dict:
         """
         Generates the header with the API credential used for authentication.
         """
         raise NotImplementedError
 
-    def cooldown_factor(self):
+    def cooldown_factor(self) -> float:
         return self.sleep_timer_base*(1+self.stagger_cooldown*random())
 
-    def normalize_params(self, params):
+    def normalize_params(self, params) -> dict:
         """
         Modify the user-supplied parameters to ease implementation
 
@@ -1036,7 +1036,7 @@ class PDSession(Session):
                 updated_params[param] = value
         return updated_params
 
-    def normalize_url(self, url):
+    def normalize_url(self, url) -> str:
         """Compose the URL whether it is a path or an already-complete URL"""
         return normalize_url(self.url, url)
 
@@ -1049,7 +1049,7 @@ class PDSession(Session):
         """
         pass
 
-    def prepare_headers(self, method, user_headers={}):
+    def prepare_headers(self, method, user_headers={}) -> dict:
         """
         Append special additional per-request headers.
 
@@ -1066,7 +1066,7 @@ class PDSession(Session):
         return headers
 
     @property
-    def print_debug(self):
+    def print_debug(self) -> bool:
         """
         Printing debug flag
 
@@ -1083,7 +1083,7 @@ class PDSession(Session):
         return self._debug
 
     @print_debug.setter
-    def print_debug(self, debug):
+    def print_debug(self, debug: bool):
         self._debug = debug
         if debug and not hasattr(self, '_debugHandler'):
             self.log.setLevel(logging.DEBUG)
@@ -1237,12 +1237,12 @@ class PDSession(Session):
         self._stagger_cooldown = val
 
     @property
-    def trunc_key(self):
+    def trunc_key(self) -> str:
         """Truncated key for secure display/identification purposes."""
         return last_4(self.api_key)
 
     @property
-    def user_agent(self):
+    def user_agent(self) -> str:
         return 'pdpyras/%s python-requests/%s Python/%d.%d'%(
             __version__,
             REQUESTS_VERSION,
@@ -1275,19 +1275,21 @@ class EventsAPISession(PDSession):
         self.retry[503] = 6 # service unavailable, 7 requests total
 
     @property
-    def auth_header(self):
+    def auth_header(self) -> dict:
         return {}
 
-    def acknowledge(self, dedup_key):
+    def acknowledge(self, dedup_key) -> str:
         """
         Acknowledge an alert via Events API.
 
         :param dedup_key:
             The deduplication key of the alert to set to the acknowledged state.
+        :returns:
+            The deduplication key
         """
         return self.send_event('acknowledge', dedup_key=dedup_key)
 
-    def prepare_headers(self, method, user_headers={}):
+    def prepare_headers(self, method, user_headers={}) -> dict:
         """
         Add user agent and content type headers for Events API requests.
 
@@ -1304,7 +1306,7 @@ class EventsAPISession(PDSession):
         headers.update(user_headers)
         return headers
 
-    def resolve(self, dedup_key):
+    def resolve(self, dedup_key) -> str:
         """
         Resolve an alert via Events API.
 
@@ -1331,7 +1333,7 @@ class EventsAPISession(PDSession):
         :type action: str
         :type dedup_key: str
         :returns:
-            The deduplication key of the incident, if any.
+            The deduplication key of the incident
         """
 
         actions = ('trigger', 'acknowledge', 'resolve')
@@ -1451,14 +1453,14 @@ class ChangeEventsAPISession(PDSession):
         self.retry[503] = 6 # service unavailable, 7 requests total
 
     @property
-    def auth_header(self):
+    def auth_header(self) -> dict:
         return {}
 
     @property
-    def event_timestamp(self):
+    def event_timestamp(self) -> str:
         return datetime.utcnow().isoformat()+'Z'
 
-    def prepare_headers(self, method, user_headers={}):
+    def prepare_headers(self, method, user_headers={}) -> dict:
         """
         Add user agent and content type headers for Change Events API requests.
 
@@ -1628,7 +1630,7 @@ class APISession(PDSession):
         return self._api_key_access
 
     @property
-    def auth_type(self):
+    def auth_type(self) -> str:
         """
         Defines the method of API authentication.
 
@@ -1644,7 +1646,7 @@ class APISession(PDSession):
         self._auth_type = value
 
     @property
-    def auth_header(self):
+    def auth_header(self) -> dict:
         if self.auth_type in ('bearer', 'oauth2'):
             return {"Authorization": "Bearer "+self.api_key}
         else:
@@ -1671,7 +1673,8 @@ class APISession(PDSession):
         iterator = self.iter_all(path, **kw)
         return {obj[by]:obj for obj in iterator}
 
-    def find(self, resource, query, attribute='name', params=None):
+    def find(self, resource, query, attribute='name', params=None)
+            -> Union[dict, None]:
         """
         Finds an object of a given resource type exactly matching a query.
 
@@ -1715,7 +1718,7 @@ class APISession(PDSession):
         return next(iter(filter(equiv, obj_iter)), None)
 
     def iter_all(self, url, params=None, page_size=None, item_hook=None,
-            total=False):
+            total=False) -> Iterator[dict]:
         """
         Iterator for the contents of an index endpoint or query.
 
@@ -1861,7 +1864,7 @@ class APISession(PDSession):
                     item_hook(result, n, total_count)
                 yield result
 
-    def iter_cursor(self, url, params=None, item_hook=None):
+    def iter_cursor(self, url, params=None, item_hook=None) -> Iterator[dict]:
         """
         Iterator for results from an endpoint using cursor-based pagination.
 
@@ -1908,7 +1911,7 @@ class APISession(PDSession):
 
     @resource_url
     @auto_json
-    def jget(self, url, **kw):
+    def jget(self, url, **kw) -> Union[dict, list]:
         """
         Performs a GET request, returning the JSON-decoded body as a dictionary
         """
@@ -1916,7 +1919,7 @@ class APISession(PDSession):
 
     @resource_url
     @auto_json
-    def jpost(self, url, **kw):
+    def jpost(self, url, **kw) -> Union[dict, list]:
         """
         Performs a POST request, returning the JSON-decoded body as a dictionary
         """
@@ -1924,13 +1927,13 @@ class APISession(PDSession):
 
     @resource_url
     @auto_json
-    def jput(self, url, **kw):
+    def jput(self, url, **kw) -> Union[dict, list]:
         """
         Performs a PUT request, returning the JSON-decoded body as a dictionary
         """
         return self.put(url, **kw)
 
-    def list_all(self, url, **kw):
+    def list_all(self, url, **kw) -> list:
         """
         Returns a list of all objects from a given index endpoint.
 
@@ -2057,7 +2060,7 @@ class APISession(PDSession):
 
     @resource_url
     @wrapped_entities
-    def rget(self, resource, **kw) -> dict:
+    def rget(self, resource, **kw) -> Union[dict, list]:
         """
         Wrapped-entity-aware GET function.
 
@@ -2077,7 +2080,7 @@ class APISession(PDSession):
         return self.get(resource, **kw)
 
     @wrapped_entities
-    def rpost(self, path, **kw) -> dict:
+    def rpost(self, path, **kw) -> Union[dict, list]:
         """
         Wrapped-entity-aware POST function.
 
@@ -2096,7 +2099,7 @@ class APISession(PDSession):
 
     @resource_url
     @wrapped_entities
-    def rput(self, resource, **kw) -> dict:
+    def rput(self, resource, **kw) -> Union[dict, list]:
         """
         Wrapped-entity-aware PUT function.
 
@@ -2114,7 +2117,7 @@ class APISession(PDSession):
         return self.put(resource, **kw)
 
     @property
-    def subdomain(self):
+    def subdomain(self) -> str:
         """
         Subdomain of the PagerDuty account of the API access token.
 
@@ -2131,17 +2134,17 @@ class APISession(PDSession):
         return self._subdomain
 
     @property
-    def total_call_count(self):
+    def total_call_count(self) -> int:
         """The total number of API calls made by this instance."""
         return sum(self.api_call_counts.values())
 
     @property
-    def total_call_time(self):
+    def total_call_time(self) -> float:
         """The total time spent making API calls."""
         return sum(self.api_time.values())
 
     @property
-    def trunc_token(self):
+    def trunc_token(self) -> str:
         """Truncated token for secure display/identification purposes."""
         return last_4(self.api_key)
 
