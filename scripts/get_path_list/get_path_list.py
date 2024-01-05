@@ -32,7 +32,7 @@ EXPAND_PATHS = {
 # ...And finally, if the API in question ALSO doesn't follow the classic entity
 # wrapping convention (where the end of the URL is the same as the entity
 # wrapper name) and for any reason the API cannot be updated to follow said
-# convention, please consider adding it to the following list-of-shame in order
+# convention, please consider adding it to the following list of shame in order
 # to avoid generating confusing errors for the end user.
 UNSUPPORTED_PATHS = []
 

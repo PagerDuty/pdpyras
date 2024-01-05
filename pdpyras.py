@@ -1374,6 +1374,8 @@ class EventsAPISession(PDSession):
         :type severity: str
         :type source: str
         :type summary: str
+        :returns:
+            The deduplication key of the incident, if any.
         """
         for local in ('payload', 'custom_details'):
             local_var = locals()[local]
