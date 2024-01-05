@@ -391,7 +391,7 @@ properties in request bodies.
 
 def canonical_path(base_url: str, url: str) -> str:
     """
-    Returns the canonical REST API path corresponding to a URL.
+    The canonical path from the API documentation corresponding to a URL
 
     This is used to identify and classify URLs according to which particular API
     within REST API v2 it belongs to.
@@ -404,6 +404,8 @@ def canonical_path(base_url: str, url: str) -> str:
 
     :param base_url: The base URL of the API
     :param url: A non-normalized URL (a path or full URL)
+    :returns:
+        The canonical REST API v2 path corresponding to a URL.
     """
     full_url = normalize_url(base_url, url)
     # Starting with / after hostname before the query string:
@@ -442,7 +444,7 @@ def canonical_path(base_url: str, url: str) -> str:
 
 def endpoint_matches(endpoint_pattern: str, method: str, path: str) -> bool:
     """
-    Returns true if a method and path match an endpoint pattern.
+    Whether an endpoint (method and canonical path) matches a given pattern
 
     This is the filtering logic  used for finding the appropriate entry in
     :attr:`ENTITY_WRAPPER_CONFIG` to use for a given method and API path.
@@ -455,6 +457,8 @@ def endpoint_matches(endpoint_pattern: str, method: str, path: str) -> bool:
         The HTTP method.
     :param path:
         The canonical API path (i.e. as returned by :func:`canonical_path`)
+    :returns:
+        True or False based on whether the pattern matches the endpoint
     """
     return (
         endpoint_pattern.startswith(method.upper()) \
@@ -463,9 +467,11 @@ def endpoint_matches(endpoint_pattern: str, method: str, path: str) -> bool:
 
 def is_path_param(path_node: str) -> bool:
     """
-    Returns true if a given node in a canonical path represents a parameter.
+    Whether a part of a canonical path represents a variable parameter
 
     :param path_node: The node (value between slashes) in the path
+    :returns:
+        True if the node is an arbitrary variable, False if it is a fixed value
     """
     return path_node.startswith('{') and path_node.endswith('}')
 
@@ -498,14 +504,14 @@ def entity_wrappers(method: str, path: str) -> tuple:
     """
     Obtains entity wrapping information for a given endpoint (path and method)
 
-    Returns a 2-tuple. The first element is the wrapper name that should be used
-    for the request body, and the second is the wrapper name to be used for the
-    response body. For either elements, if ``None`` is returned, that signals to
-    disable wrapping and pass the user-supplied request body or API response
-    body object unmodified.
-
     :param method: The HTTP method
     :param path: A canonical API path i.e. as returned by ``canonical_path``
+    :returns:
+        A 2-tuple. The first element is the wrapper name that should be used for
+        the request body, and the second is the wrapper name to be used for the
+        response body. For either elements, if ``None`` is returned, that
+        signals to disable wrapping and pass the user-supplied request body or
+        API response body object unmodified.
     """
     m = method.upper()
     endpoint = "%s %s"%(m, path)
@@ -575,11 +581,14 @@ def infer_entity_wrapper(method: str, path: str) -> str:
 
 def unwrap(response: Response, wrapper) -> Union[dict, list]:
     """
-    Unwraps and returns a wrapped entity.
+    Unwraps a wrapped entity.
 
     :param response: The response object
     :param wrapper: The entity wrapper
     :type wrapper: str or None
+    :returns:
+        The value associated with the wrapper key in the JSON-decoded body of
+        the response, which is expected to be a dictionary (map).
     """
     body = try_decoding(response)
     endpoint = "%s %s"%(response.request.method.upper(), response.request.url)
@@ -730,6 +739,8 @@ def http_error_message(r: Response, context=None) -> str:
         The response object.
     :param context:
         A description of when the error was received, or None to not include it
+    :returns:
+        The message to include in the HTTP error
     """
     received_http_response = bool(r.status_code)
     endpoint = "%s %s"%(r.request.method.upper(), r.request.url)
@@ -752,7 +763,13 @@ def http_error_message(r: Response, context=None) -> str:
             f"expectation still failed{context_msg}"
 
 def last_4(secret: str) -> str:
-    """Returns an abbreviation of the input"""
+    """
+    Truncate a sensitive value to its last 4 characters
+
+    :param secret: text to truncate
+    :returns:
+        The truncated text
+    """
     return '*'+str(secret)[-4:]
 
 def plural_name(obj_type: str) -> str:
@@ -761,7 +778,8 @@ def plural_name(obj_type: str) -> str:
 
     :param obj_type:
         The object type, i.e. ``user`` or ``user_reference``
-    :returns: The name of the resource, i.e. the last part of the URL for the
+    :returns:
+        The name of the resource, i.e. the last part of the URL for the
         resource's index URL
     """
     if obj_type.endswith('_reference'):
@@ -782,6 +800,8 @@ def singular_name(r_name: str) -> str:
         forms the part of the canonical path identifying what kind of resource
         lives in the collection there, for an API that follows classic wrapped
         entity naming patterns.
+    :returns:
+        The singularized name
     """
     if r_name.endswith('ies'):
         # Because English
@@ -798,7 +818,8 @@ def successful_response(r: Response, context=None) -> Response:
         Response object corresponding to the response received.
     :param context:
         A description of when the HTTP request is happening, for error reporting
-    :returns: The response object, if it was successful
+    :returns:
+        The response object, if it was successful
     """
     if r.ok and bool(r.status_code):
         return r
@@ -995,7 +1016,7 @@ class PDSession(Session):
 
     def normalize_params(self, params):
         """
-        Modify the user-supplied parameters.
+        Modify the user-supplied parameters to ease implementation
 
         Current behavior:
 
@@ -1003,6 +1024,9 @@ class PDSession(Session):
           not already end in "[]", then the square brackets are appended to keep
           in line with the requirement that all set filters' parameter names end
           in "[]".
+
+        :returns:
+            The query parameters after modification
         """
         updated_params = {}
         for param, value in params.items():
@@ -1033,6 +1057,8 @@ class PDSession(Session):
             The HTTP method, in upper case.
         :param user_headers:
             Headers that can be specified to override default values.
+        :returns:
+            The final list of headers to use in the request
         """
         headers = deepcopy(self.headers)
         if user_headers:
@@ -1083,7 +1109,8 @@ class PDSession(Session):
             Custom keyword arguments to pass to ``requests.Session.request``.
         :type method: str
         :type url: str
-        :returns: the HTTP response object
+        :returns:
+            The `requests.Response`_ object corresponding to the HTTP response
         """
         sleep_timer = self.sleep_timer
         network_attempts = 0
@@ -1169,7 +1196,7 @@ class PDSession(Session):
                 return response
 
     @property
-    def stagger_cooldown(self):
+    def stagger_cooldown(self) -> float:
         """
         Randomizing factor for wait times between retries during rate limiting.
 
@@ -1261,9 +1288,12 @@ class EventsAPISession(PDSession):
         return self.send_event('acknowledge', dedup_key=dedup_key)
 
     def prepare_headers(self, method, user_headers={}):
-        """Add user agent and content type headers for Events API requests.
+        """
+        Add user agent and content type headers for Events API requests.
 
         :param user_headers: User-supplied headers that will override defaults
+        :returns:
+            The final list of headers to use in the request
         """
         headers = {}
         headers.update(self.headers)
@@ -1328,7 +1358,7 @@ class EventsAPISession(PDSession):
             raise PDServerError(err_msg, response)
         return response_body['dedup_key']
 
-    def post(self, *args, **kw):
+    def post(self, *args, **kw) -> Response:
         """
         Override of ``requests.Session.post``
 
@@ -1399,7 +1429,7 @@ class EventsAPISession(PDSession):
 class ChangeEventsAPISession(PDSession):
 
     """
-    Session class for submitting change events to the PagerDuty v2 Change Events API.
+    Session class for submitting events to the PagerDuty v2 Change Events API.
 
     Implements methods for submitting change events to PagerDuty's change events
     API. See the `Change Events API documentation
@@ -1429,7 +1459,13 @@ class ChangeEventsAPISession(PDSession):
         return datetime.utcnow().isoformat()+'Z'
 
     def prepare_headers(self, method, user_headers={}):
-        """Add user agent and content type headers for Change Events API requests."""
+        """
+        Add user agent and content type headers for Change Events API requests.
+
+        :param user_headers: User-supplied headers that will override defaults
+        :returns:
+            The final list of headers to use in the request
+        """
         headers = deepcopy(self.headers)
         headers.update({
             'Content-Type': 'application/json',
@@ -1459,7 +1495,7 @@ class ChangeEventsAPISession(PDSession):
         return response_body.get("id", None)
 
     def submit(self, summary, source=None, custom_details=None, links=None,
-            timestamp=None):
+            timestamp=None) -> str:
         """
         Submit an incident change
 
@@ -1478,7 +1514,8 @@ class ChangeEventsAPISession(PDSession):
         :type custom_details: dict
         :type links: list
         :type timestamp: str
-        :rtype: str
+        :returns:
+            The response ID
         """
         local_var = locals()['custom_details']
         if not (local_var is None or isinstance(local_var, dict)):
@@ -1549,7 +1586,7 @@ class APISession(PDSession):
     url = 'https://api.pagerduty.com'
     """Base URL of the REST API"""
 
-    def __init__(self, api_key, default_from=None,
+    def __init__(self, api_key: str, default_from=None,
             auth_type='token', debug=False):
         self.api_call_counts = {}
         self.api_time = {}
@@ -1564,7 +1601,7 @@ class APISession(PDSession):
         self._subdomain = None
 
     @property
-    def api_key_access(self):
+    def api_key_access(self) -> str:
         """
         Memoized API key access type getter.
 
@@ -1613,9 +1650,9 @@ class APISession(PDSession):
         else:
             return {"Authorization": "Token token="+self.api_key}
 
-    def dict_all(self, path, **kw):
+    def dict_all(self, path: str, **kw) -> dict:
         """
-        Returns a dictionary of all objects from a given index endpoint.
+        Dictionary representation of resource collection results
 
         With the exception of ``by``, all keyword arguments passed to this
         method are also passed to :attr:`iter_all`; see the documentation on
@@ -1637,10 +1674,6 @@ class APISession(PDSession):
     def find(self, resource, query, attribute='name', params=None):
         """
         Finds an object of a given resource type exactly matching a query.
-
-        Returns a dict if a result is found. The structure will be that of an
-        entry in the index endpoint schema's array of results. Otherwise, it
-        will return ``None`` if no result is found or an error is encountered.
 
         Works by querying a given resource index endpoint using the ``query``
         parameter. To use this function on any given resource, the resource's
@@ -1666,7 +1699,9 @@ class APISession(PDSession):
         :type query: str
         :type attribute: str
         :type params: dict or None
-        :rtype: dict
+        :returns:
+            The dictionary representation of the result, if found; ``None`` will
+            be returned if there is no exact match result.
         """
         query_params = {}
         if params is not None:
@@ -1993,7 +2028,7 @@ class APISession(PDSession):
                 "and reference x_request_id=%s / date=%s",
                 status, request_id, request_date)
 
-    def prepare_headers(self, method, user_headers={}):
+    def prepare_headers(self, method, user_headers={}) -> dict:
         headers = deepcopy(self.headers)
         headers['User-Agent'] = self.user_agent
         if self.default_from is not None:
@@ -2036,7 +2071,7 @@ class APISession(PDSession):
         :param **kw:
             Custom keyword arguments to pass to ``requests.Session.get``
         :returns:
-            Dictionary representation of the object.
+            Dictionary representation of the requested object
         :type resource: str or dict
         """
         return self.get(resource, **kw)
