@@ -464,15 +464,20 @@ class APISessionTest(SessionTest):
     def test_find(self, iter_all):
         sess = pdpyras.APISession('token')
         iter_all.return_value = iter([
-            {'type':'user', 'name': 'Someone Else', 'email':'some1@me.me.me'},
-            {'type':'user', 'name': 'Space Person', 'email':'some1@me.me '},
-            {'type':'user', 'name': 'Someone Personson', 'email':'some1@me.me'},
+            {'type':'user', 'name': 'Someone Else', 'email':'some1@me.me.me', 'f':1},
+            {'type':'user', 'name': 'Space Person', 'email':'some1@me.me ', 'f':2},
+            {'type':'user', 'name': 'Someone Personson', 'email':'some1@me.me', 'f':3},
+            {'type':'user', 'name': 'Numeric Fields', 'email': 'test@example.com', 'f':5}
         ])
         self.assertEqual(
             'Someone Personson',
             sess.find('users', 'some1@me.me', attribute='email')['name']
         )
         iter_all.assert_called_with('users', params={'query':'some1@me.me'})
+        self.assertEqual(
+            'Numeric Fields',
+            sess.find('users', 5, attribute='f')['name']
+        )
 
     @patch.object(pdpyras.APISession, 'iter_cursor')
     @patch.object(pdpyras.APISession, 'get')
