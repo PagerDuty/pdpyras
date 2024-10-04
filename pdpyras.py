@@ -20,7 +20,7 @@ from requests import __version__ as REQUESTS_VERSION
 from urllib3.exceptions import HTTPError, PoolError
 from requests.exceptions import RequestException
 
-__version__ = '5.2.0'
+__version__ = '5.3.0'
 
 #######################
 ### CLIENT DEFAULTS ###
@@ -1687,6 +1687,17 @@ class APISession(PDSession):
         index will be downloaded and compared against the query up until a
         matching result is found or all results have been checked.
 
+        The comparison between the query and matching results is case-insenitive. When
+        determining uniqueness, APIs are mostly case-insensitive, and therefore objects
+        with similar characters but differing case can't even exist. All results (and
+        the search query) are for this reason reduced pre-comparison to a common form
+        (all-lowercase strings) so that case doesn't need to match in the query argument
+        (which is also interpreted by the API as case-insensitive).
+
+        If said behavior differs for a given API, i.e. the uniqueness constraint on a
+        field is case-sensitive, it should still return the correct results because the
+        search term sent to the index in the querystring is not lower-cased.
+
         :param resource:
             The name of the resource endpoint to query, i.e.
             ``escalation_policies``
@@ -1710,8 +1721,7 @@ class APISession(PDSession):
         if params is not None:
             query_params.update(params)
         query_params.update({'query':query})
-        # When determining uniqueness, web/the API is largely case-insensitive:
-        simplify = lambda s: s.lower()
+        simplify = lambda s: str(s).lower()
         search_term = simplify(query)
         equiv = lambda s: simplify(s[attribute]) == search_term
         obj_iter = self.iter_all(resource, params=query_params)
