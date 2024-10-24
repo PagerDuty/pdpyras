@@ -492,7 +492,7 @@ methods :attr:`pdpyras.APISession.list_all` and
 :attr:`pdpyras.APISession.dict_all` will request all pages of the collection
 and return the results as a list or dictionary, respectively.
 
-Pagination functions require that the API endpoint being requested has entity
+Pagination functions require that the API endpoint being requested have entity
 wrapping enabled, and respond with either a ``more`` or ``cursor`` property
 indicating how and if to fetch the next page of results.
 
@@ -689,14 +689,27 @@ To configure the client to use a host as a proxy for HTTPS traffic, update the
 HTTP Retry Configuration
 ------------------------
 Session objects support retrying API requests if they receive a non-success
-response or if they encounter a network error. This behavior is configurable
-through the following properties:
+response or if they encounter a network error.
 
+This behavior is configurable through the following properties:
+
+* :attr:`pdpyras.PDSession.retry`: a dictionary that allows defining per-HTTP-status retry limits
 * :attr:`pdpyras.PDSession.max_http_attempts`: The maximum total number of unsuccessful requests to make in the retry loop of :attr:`pdpyras.PDSession.request` before returning
 * :attr:`pdpyras.PDSession.max_network_attempts`: The maximum number of retries that will be attempted in the case of network or non-HTTP error
 * :attr:`pdpyras.PDSession.sleep_timer`: The initial cooldown factor
 * :attr:`pdpyras.PDSession.sleep_timer_base`: Factor by which the cooldown time is increased after each unsuccessful attempt
 * :attr:`pdpyras.PDSession.stagger_cooldown`: Randomizing factor for increasing successive cooldown wait times
+
+Default Behavior
+****************
+By default, after receiving a status 429 response, sessions will retry an
+unlimited number of times, increasing the wait time before retry each
+successive time.  When encountering status ``401 Unauthorized``, the client
+will immediately raise ``pdpyras.PDClientError``; this is a non-transient error
+caused by an invalid credential.
+
+For all other success or error statuses, the underlying request method in the
+client will return the `requests.Response`_ object.
 
 Exponential Cooldown
 ********************
@@ -709,7 +722,7 @@ Let:
 * t\ :sub:`0` = ``sleep_timer``
 * t\ :sub:`n` = Sleep time after n attempts
 * ρ = :attr:`pdpyras.PDSession.stagger_cooldown`
-* r = a random real number between 0 and 1, generated once per request
+* r\ :sub:`n` = a randomly-generated real number between 0 and 1, distinct for each n-th request
 
 Assuming ρ = 0:
 
@@ -717,35 +730,32 @@ t\ :sub:`n` = t\ :sub:`0` a\ :sup:`n`
 
 If ρ is nonzero:
 
-t\ :sub:`n` = a (1 + ρ r) t\ :sub:`n-1`
-
-Default Behavior
-****************
-By default, after receiving a status 429 response, sessions will retry the
-request indefinitely until it receives a status other than 429, and this
-behavior cannot be overridden. This is a sane approach; if it is ever
-responding with 429, the REST API is receiving (for the given REST API key) too
-many requests, and the issue should by nature be transient unless there is a
-rogue process using the same API key and saturating its rate limit.
-
-Also, it is default behavior when encountering status ``401 Unauthorized`` for
-the client to immediately raise ``pdpyras.PDClientError``; this is a
-non-transient error caused by an invalid credential.
-
-However, both of these behaviors can be overridden by adding entries in the
-retry dictionary. For instance, it may be preferable to error out instead of
-hanging indefinitely to continually retry if another API process is saturating
-the rate limit.
+t\ :sub:`n` = a (1 + ρ r\ :sub:`n`) t\ :sub:`n-1`
 
 Setting the retry property
 **************************
-The property :attr:`pdpyras.PDSession.retry` allows customization of HTTP retry
-logic. The client can be made to retry on other statuses (i.e.  502/400), up to
-a set number of times. The total number of HTTP error responses that the client
-will tolerate before returning the response object is defined in
-:attr:`pdpyras.PDSession.max_http_attempts`, and this will supersede the
-maximum number of retries defined in :attr:`pdpyras.PDSession.retry` if it is
-lower.
+The dictionary property :attr:`pdpyras.PDSession.retry` allows customization of
+HTTP retry limits on a per-HTTP-status basis. This includes the ability to
+override the above defaults for 401 and 429, although that is not recommended.
+
+Each key in the dictionary represents a HTTP status, and its associated value
+is the number of times that the client will retry the request if it receives
+that status. **Success statuses (2xx) will be ignored.**
+
+If a different error status is encountered on a retry, it won't count towards
+the limit of the first status, but will be counted separately. However, the
+total overall number of attempts that will be made to get a success status is
+limited by :attr:`pdpyras.PDSession.max_http_attempts`. This will always
+supersede the maximum number of retries for any status defined in
+:attr:`pdpyras.PDSession.retry` if it is lower.
+
+Low-level HTTP request functions in client classes, i.e. ``get``, will return
+`requests.Response`_ objects when they run out of retries. Higher-level
+functions that require a success status response, i.e.
+:attr:`pdpyras.APISession.list_all` and
+:attr:`pdpyras.EventsAPISession.trigger`, will raise exceptions that include
+the response object when they encounter error status responses, but only after
+the configured retry limits are reached in the underlying HTTP request methods.
 
 **Example:**
 
