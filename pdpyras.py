@@ -927,24 +927,18 @@ class PDSession(Session):
     """
     A dict defining the retry behavior for each HTTP response status code.
 
-    Note, any value set for this class variable will not be reflected in
-    instances and so it must be set separately for each instance.
-
     Each key in this dictionary is an int representing a HTTP response code. The
     behavior is specified by the int value at each key as follows:
 
-    * ``-1`` to retry infinitely
-    * ``0`` to return the `requests.Response`_ object and exit (which is the
-      default behavior)
+    * ``-1`` to retry without limit.
+    * ``0`` has no effect; the default behavior will take effect.
     * ``n``, where ``n > 0``, to retry ``n`` times (or up
       to :attr:`max_http_attempts` total for all statuses, whichever is
-      encountered first), and raise a :class:`PDClientError` after that many
-      attempts. For each successive attempt, the wait time will increase by a
-      factor of :attr:`sleep_timer_base`.
+      encountered first), and then return the final response.
 
-    The default behavior is to retry infinitely on a 429, and return the
-    response in any other case (assuming a HTTP response was received from the
-    server).
+    The default behavior is to retry without limit on status 429, raise an
+    exception on a 401, and return the `requests.Response`_ object in any other case
+    (assuming a HTTP response was received from the server).
     """
 
     sleep_timer = 1.5
@@ -1269,10 +1263,11 @@ class EventsAPISession(PDSession):
 
     def __init__(self, api_key: str, debug=False):
         super(EventsAPISession, self).__init__(api_key, debug)
-        # See: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgw-events-api-v2-overview#response-codes--retry-logic
-        self.retry[500] = 2 # internal server error, 3 requests total
-        self.retry[502] = 4 # bad gateway, 5 requests total
-        self.retry[503] = 6 # service unavailable, 7 requests total
+        # See: https://developer.pagerduty.com/docs/3d063fd4814a6-events-api-v2-overview#response-codes--retry-logic
+        self.retry[500] = 2 # internal server error
+        self.retry[502] = 4 # bad gateway
+        self.retry[503] = 6 # service unavailable
+        self.retry[504] = 6 # gateway timeout
 
     @property
     def auth_header(self) -> dict:
