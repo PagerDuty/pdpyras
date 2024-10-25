@@ -1,3 +1,7 @@
+**2024-10-04: Version 5.3.0:**
+
+* Add support for searching by non-string fields in :attr:`pdpyras.APISession.find`
+
 **2023-12-28: Version 5.2.0:**
 
 * Expanded use of type hints in place of ``:rtype`` Sphinx directive

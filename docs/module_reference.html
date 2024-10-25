@@ -216,23 +216,18 @@ base URL will be prepended.</p></li>
 <dt class="sig sig-object py" id="pdpyras.PDSession.retry">
 <span class="sig-name descname"><span class="pre">retry</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#pdpyras.PDSession.retry" title="Permalink to this definition">¶</a></dt>
 <dd><p>A dict defining the retry behavior for each HTTP response status code.</p>
-<p>Note, any value set for this class variable will not be reflected in
-instances and so it must be set separately for each instance.</p>
 <p>Each key in this dictionary is an int representing a HTTP response code. The
 behavior is specified by the int value at each key as follows:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">-1</span></code> to retry infinitely</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">0</span></code> to return the <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object and exit (which is the
-default behavior)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-1</span></code> to retry without limit.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">0</span></code> has no effect; the default behavior will take effect.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">n</span></code>, where <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>, to retry <code class="docutils literal notranslate"><span class="pre">n</span></code> times (or up
 to <a class="reference internal" href="#pdpyras.PDSession.max_http_attempts" title="pdpyras.PDSession.max_http_attempts"><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_http_attempts</span></code></a> total for all statuses, whichever is
-encountered first), and raise a <a class="reference internal" href="#pdpyras.PDClientError" title="pdpyras.PDClientError"><code class="xref py py-class docutils literal notranslate"><span class="pre">PDClientError</span></code></a> after that many
-attempts. For each successive attempt, the wait time will increase by a
-factor of <a class="reference internal" href="#pdpyras.PDSession.sleep_timer_base" title="pdpyras.PDSession.sleep_timer_base"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sleep_timer_base</span></code></a>.</p></li>
+encountered first), and then return the final response.</p></li>
 </ul>
-<p>The default behavior is to retry infinitely on a 429, and return the
-response in any other case (assuming a HTTP response was received from the
-server).</p>
+<p>The default behavior is to retry without limit on status 429, raise an
+exception on a 401, and return the <a class="reference external" href="https://docs.python-requests.org/en/master/api/#requests.Response">requests.Response</a> object in any other case
+(assuming a HTTP response was received from the server).</p>
 </dd></dl>
 
 <dl class="py attribute">
