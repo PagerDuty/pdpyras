@@ -109,7 +109,35 @@ jobs:
       - run:
           <<: *test
 
-workflows: 
+  py3_12:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - checkout
+      - run:
+          <<: *venv
+      - run:
+          <<: *getenv
+      - run:
+          <<: *depinst
+      - run:
+          <<: *test
+
+  py3_13:
+    docker:
+      - image: cimg/python:3.13
+    steps:
+      - checkout
+      - run:
+          <<: *venv
+      - run:
+          <<: *getenv
+      - run:
+          <<: *depinst
+      - run:
+          <<: *test
+
+workflows:
   version: 2.1
   run_tests:
     jobs:
@@ -119,4 +147,6 @@ workflows:
       - py3_9
       - py3_10
       - py3_11
+      - py3_12
+      - py3_13
 
