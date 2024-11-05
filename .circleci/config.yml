@@ -1,26 +1,15 @@
 version: 2.1
 
-venv: &venv
-  name: Setup Virtualenv
+test: &test
+  name: Setup Virtualenv, install dependencies and test
   command: |
     virtualenv .python
-getenv: &getenv
-  name: Get Environment Info
-  command: |
     . .python/bin/activate
     which python
     python -V
     which pip
     pip -V
-depinst: &depinst
-  name: Install Dependencies
-  command: |
-    . .python/bin/activate
     pip install -r requirements.txt
-test: &test
-  name: Run Unit Tests
-  command: |
-    . .python/bin/activate
     python ./test_pdpyras.py
 
 jobs:
@@ -31,12 +20,6 @@ jobs:
     steps:
       - checkout
       - run:
-          <<: *venv
-      - run:
-          <<: *getenv
-      - run:
-          <<: *depinst
-      - run:
           <<: *test
 
   py3_7:
@@ -44,12 +27,6 @@ jobs:
       - image: cimg/python:3.7
     steps:
       - checkout
-      - run:
-          <<: *venv
-      - run:
-          <<: *getenv
-      - run:
-          <<: *depinst
       - run:
           <<: *test
 
@@ -59,12 +36,6 @@ jobs:
     steps:
       - checkout
       - run:
-          <<: *venv
-      - run:
-          <<: *getenv
-      - run:
-          <<: *depinst
-      - run:
           <<: *test
 
   py3_9:
@@ -72,12 +43,6 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - checkout
-      - run:
-          <<: *venv
-      - run:
-          <<: *getenv
-      - run:
-          <<: *depinst
       - run:
           <<: *test
 
@@ -87,12 +52,6 @@ jobs:
     steps:
       - checkout
       - run:
-          <<: *venv
-      - run:
-          <<: *getenv
-      - run:
-          <<: *depinst
-      - run:
           <<: *test
 
   py3_11:
@@ -100,12 +59,6 @@ jobs:
       - image: cimg/python:3.11
     steps:
       - checkout
-      - run:
-          <<: *venv
-      - run:
-          <<: *getenv
-      - run:
-          <<: *depinst
       - run:
           <<: *test
 
@@ -115,12 +68,6 @@ jobs:
     steps:
       - checkout
       - run:
-          <<: *venv
-      - run:
-          <<: *getenv
-      - run:
-          <<: *depinst
-      - run:
           <<: *test
 
   py3_13:
@@ -128,12 +75,6 @@ jobs:
       - image: cimg/python:3.13
     steps:
       - checkout
-      - run:
-          <<: *venv
-      - run:
-          <<: *getenv
-      - run:
-          <<: *depinst
       - run:
           <<: *test
 
