@@ -10,18 +10,26 @@ For how-to, refer to the `User Guide
 
 Overview
 --------
-This library supplies classes extending `requests.Session`_ from the Requests_
+This library supplies classes extending `httpx.Client`_ from the HTTPX_
 HTTP library that serve as Python interfaces to the `REST API v2`_ and `Events
 API v2`_ of PagerDuty. One might call it an opinionated wrapper library. It was
-designed with the philosophy that Requests_ is a perfectly adequate HTTP
-client, and that abstraction should focus only on the most generally applicable
-and frequently-implemented core features, requirements and tasks. Design
-decisions concerning how any particular PagerDuty resource is accessed or
-manipulated through APIs are left to the user or implementer to make.
+designed based on these tenets:
+
+- The client should not reinvent the wheel when it comes to HTTP.
+- A successful API client should emphasize abstractions for only the most
+  broadly-applicable and frequently-implemented core patterns and requirements
+  of the API(s) that it was built to access.
+
+Decisions concerning how any particular PagerDuty resource is handled, and
+which API calls are made to accomplish a design goal, are left to the end user
+("implementer") to make. This client's focus is on removing barriers to getting
+the API's data into the hands of the implementer, and the implementer's data
+into the API, using basic Python types (``dict``, ``list``, ``str`` and
+``int``) to represent the data.
 
 Features
 --------
-- Uses Requests' automatic HTTP connection pooling and persistence
+- Uses HTTPX's automatic HTTP connection pooling and persistence
 - Tested in / support for Python 3.6 through 3.13
 - Abstraction layer for authentication, pagination, filtering and wrapped
   entities
@@ -31,7 +39,8 @@ Features
 History
 -------
 This module was borne of necessity for a basic API client to eliminate code
-duplication in some of PagerDuty Support's internal Python-based API tooling.
+duplication in some of the PagerDuty Customer Support team's internal
+Python-based API tooling.
 
 We found ourselves frequently performing REST API requests using beta or
 non-documented API endpoints for one reason or another, so we needed the client
@@ -39,8 +48,9 @@ that provided easy access to features of the underlying HTTP library (i.e. to
 obtain the response headers, or set special request headers). We also needed
 something that eliminated tedious tasks like querying objects by name,
 pagination and authentication. Finally, we discovered that the way we were
-using `Requests`_ wasn't making use of its connection pooling feature, and
-wanted a way to easily enforce this as a standard practice.
+using Requests (our erstwhile go-to HTTP client) wasn't leveraging its
+connection pooling feature, and wanted a way to easily enforce this as a
+standard practice.
 
 We evaluated at the time a few other open-source API libraries and deemed them
 to be either overkill for our purposes or not giving the implementer enough
@@ -84,14 +94,17 @@ Warranty
 .. References:
 .. -----------
 
-.. _`Requests`: https://docs.python-requests.org/en/master/
-.. _`Errors`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors
-.. _`Events API v2`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgw-events-api-v2-overview
+.. _`HTTPX`: https://www.python-httpx.org/
+.. _`Errors`: https://developer.pagerduty.com/docs/cd9f75aa7ac93-errors
+.. _`Events API v2`: https://developer.pagerduty.com/docs/3d063fd4814a6-events-api-v2-overview
 .. _`PagerDuty API Reference`: https://developer.pagerduty.com/api-reference/
-.. _`REST API v2`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUw-rest-api-v2-overview
+.. _`REST API v2`: https://developer.pagerduty.com/docs/531092d4c6658-rest-api-v2-overview
 .. _`setuptools`: https://pypi.org/project/setuptools/
-.. _requests.Response: https://docs.python-requests.org/en/master/api/#requests.Response
-.. _requests.Session: https://docs.python-requests.org/en/master/api/#request-sessions
+.. _httpx.Response: https://www.python-httpx.org/api/#response
+.. _httpx.Session: https://www.python-httpx.org/api/#client
 
 .. |circleci-build| image:: https://circleci.com/gh/PagerDuty/pdpyras.svg?style=svg
     :target: https://circleci.com/gh/PagerDuty/pdpyras
+
+.. role:: strike
+  :class: strike

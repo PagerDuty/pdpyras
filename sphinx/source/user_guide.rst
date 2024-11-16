@@ -40,7 +40,7 @@ constructor is the secret to use for accessing the API:
     # A special session class for the change events API (part of Events API v2):
     change_events_session = pdpyras.ChangeEventsAPISession(ROUTING_KEY)
 
-Session objects, being descendants of `requests.Session`_, can also be used as
+Session objects, being descendants of `httpx.Client`_, can also be used as
 context managers. For example:
 
 .. code-block:: python
@@ -232,14 +232,14 @@ Events API v2
 
 Generic Client Features
 -----------------------
-Generally, all of the features of `requests.Session`_ are available to the user
+Generally, all of the features of `httpx.Client`_ are available to the user
 as they would be if using the Requests Python library directly, since
 :class:`pdpyras.PDSession` and its subclasses for the REST/Events APIs are
 descendants of it. 
 
 The ``get``, ``post``, ``put`` and ``delete`` methods of REST/Events API
-session classes are similar to the analogous functions in `requests.Session`_.
-The arguments they accept are the same and they all return `requests.Response`_
+session classes are similar to the analogous functions in `httpx.Client`_.
+The arguments they accept are the same and they all return `httpx.Response`_
 objects.
 
 Any keyword arguments passed to the ``j*`` or ``r*`` methods will be passed
@@ -268,7 +268,7 @@ which case the URL at its ``self`` key will be used as the request target.
 
 Query Parameters
 ----------------
-As with `Requests`_, there is no need to compose the query string (everything
+As with `HTTPX`_, there is no need to compose the query string (everything
 that will follow ``?`` in the URL). Simply set the ``params`` keyword argument
 to a dictionary, and each of the key/value pairs will be serialized to the
 query string in the final URL of the request:
@@ -308,7 +308,7 @@ To set the request body in a post or put request, pass as the ``json`` keyword
 argument an object that will be JSON-encoded as the body.
 
 To obtain the response from the API, if using plain ``get``, ``post``, ``put``
-or ``delete``, use the returned `requests.Response`_ object. That object's
+or ``delete``, use the returned `httpx.Response`_ object. That object's
 ``json()`` method will return the result of JSON-decoding the response body (it
 will typically of type ``dict``). Other metadata such as headers can also be
 obtained:
@@ -590,14 +590,14 @@ the ``default_from`` keyword argument when constructing the session initially.
 
 Error Handling
 --------------
-For any of the methods that do not return `requests.Response`_, when the API
+For any of the methods that do not return `httpx.Response`_, when the API
 responds with a non-success HTTP status, the method will raise a
 :class:`pdpyras.PDClientError` exception. This way, these methods can always be
 expected to return the same structure of data based on the API being used, and
 there is no need to differentiate between the response schema for a successful
 request and one for an error response.
 
-The exception class has the `requests.Response`_ object as its ``response``
+The exception class has the `httpx.Response`_ object as its ``response``
 property whenever the exception pertains to a HTTP error. One can thus define
 specialized error handling logic in which the REST API response data (i.e.
 headers, code and body) are available in the catching scope.
@@ -709,7 +709,7 @@ will immediately raise ``pdpyras.PDClientError``; this is a non-transient error
 caused by an invalid credential.
 
 For all other success or error statuses, the underlying request method in the
-client will return the `requests.Response`_ object.
+client will return the `httpx.Response`_ object.
 
 Exponential Cooldown
 ********************
@@ -750,7 +750,7 @@ supersede the maximum number of retries for any status defined in
 :attr:`pdpyras.PDSession.retry` if it is lower.
 
 Low-level HTTP request functions in client classes, i.e. ``get``, will return
-`requests.Response`_ objects when they run out of retries. Higher-level
+`httpx.Response`_ objects when they run out of retries. Higher-level
 functions that require a success status response, i.e.
 :attr:`pdpyras.APISession.list_all` and
 :attr:`pdpyras.EventsAPISession.trigger`, will raise exceptions that include
@@ -778,11 +778,11 @@ the configured retry limits are reached in the underlying HTTP request methods.
 .. References:
 .. -----------
 
-.. _`Requests`: https://docs.python-requests.org/en/master/
+.. _`HTTPX`: https://docs.python-requests.org/en/master/
  .. _`Errors`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors
 .. _`Events API v2`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgw-events-api-v2-overview
 .. _`PagerDuty API Reference`: https://developer.pagerduty.com/api-reference/
 .. _`REST API v2`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUw-rest-api-v2-overview
 .. _`setuptools`: https://pypi.org/project/setuptools/
-.. _requests.Response: https://docs.python-requests.org/en/master/api/#requests.Response
-.. _requests.Session: https://docs.python-requests.org/en/master/api/#request-sessions
+.. _httpx.Response: https://docs.python-requests.org/en/master/api/#httpx.Response
+.. _httpx.Client: https://docs.python-requests.org/en/master/api/#request-sessions
