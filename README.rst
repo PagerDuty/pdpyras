@@ -29,10 +29,9 @@ into the API, using basic Python types (``dict``, ``list``, ``str`` and
 
 Features
 --------
-- Uses HTTPX's automatic HTTP connection pooling and persistence
-- Tested in / support for Python 3.6 through 3.13
-- Abstraction layer for authentication, pagination, filtering and wrapped
-  entities
+- Automatic HTTP connection pooling and persistence
+- Tested in / support for Python 3.8 through 3.13
+- Abstractions for authentication, pagination and entity wrapping
 - Configurable cooldown/reattempt logic for handling rate limiting and
   transient HTTP or network issues
 
@@ -40,17 +39,17 @@ History
 -------
 This module was borne of necessity for a basic API client to eliminate code
 duplication in some of the PagerDuty Customer Support team's internal
-Python-based API tooling.
+Python-based API tooling. We needed something to eliminate the toil of
+re-implementing common solutions such as querying objects by name, pagination
+and authentication.
 
-We found ourselves frequently performing REST API requests using beta or
+We also found ourselves frequently performing REST API requests using beta or
 non-documented API endpoints for one reason or another, so we needed the client
 that provided easy access to features of the underlying HTTP library (i.e. to
-obtain the response headers, or set special request headers). We also needed
-something that eliminated tedious tasks like querying objects by name,
-pagination and authentication. Finally, we discovered that the way we were
-using Requests (our erstwhile go-to HTTP client) wasn't leveraging its
-connection pooling feature, and wanted a way to easily enforce this as a
-standard practice.
+obtain the response headers, or set special request headers). Finally, we
+discovered that the way we were using Requests (our erstwhile go-to HTTP
+client) wasn't leveraging its connection pooling feature, which led to
+performance issues, and we wanted a way to easily enforce best practices.
 
 We evaluated at the time a few other open-source API libraries and deemed them
 to be either overkill for our purposes or not giving the implementer enough
