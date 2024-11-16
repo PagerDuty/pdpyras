@@ -117,7 +117,7 @@ Note: version 5.0.0 has been yanked; patch release v5.0.1 addresses an issue in 
 
 * Use documented method for including the routing key in the request for API V2 (addresses `#53 <https://github.com/PagerDuty/pdpyras/issues/53>`_)
 * Add warning for Python 2.7
-* Configurable timeout: argument to ``httpx.Client.request`` set in default args to backwards-compatible 5 second value that can be set at the module level (@ctrlaltdel / `#48 <https://github.com/PagerDuty/pdpyras/pull/48>`_)
+* Configurable timeout: argument to ``requests.Session.request`` set in default args to backwards-compatible 5 second value that can be set at the module level (@ctrlaltdel / `#48 <https://github.com/PagerDuty/pdpyras/pull/48>`_)
 
 **2020-09-15: Version 4.1.2**
 
