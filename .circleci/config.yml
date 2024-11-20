@@ -14,22 +14,6 @@ test: &test
 
 jobs:
 
-  py3_6:
-    docker:
-      - image: cimg/python:3.6
-    steps:
-      - checkout
-      - run:
-          <<: *test
-
-  py3_7:
-    docker:
-      - image: cimg/python:3.7
-    steps:
-      - checkout
-      - run:
-          <<: *test
-
   py3_8:
     docker:
       - image: cimg/python:3.8
@@ -82,8 +66,6 @@ workflows:
   version: 2.1
   run_tests:
     jobs:
-      - py3_6
-      - py3_7
       - py3_8
       - py3_9
       - py3_10

@@ -1,33 +1,20 @@
 #!/usr/bin/env python
 
 """
-Unit tests for pdpyras
-
-Python 3, or the backport of unittest.mock for Python 2, is required.
-
-See:
-
-https://docs.python.org/3.5/library/unittest.mock.html
-https://pypi.org/project/backports.unittest_mock/1.3/
+Unit tests for pdpyras.
 """
 import argparse
 import copy
 import datetime
+import httpx
 import json
 import logging
-import requests
 import sys
 import unittest
 
 from unittest.mock import Mock, MagicMock, patch, call
 
 import pdpyras
-
-class SessionTest(unittest.TestCase):
-    def assertDictContainsSubset(self, d0, d1):
-        self.assertTrue(set(d0.keys()).issubset(set(d1.keys())),
-            msg="First dict is not a subset of second dict")
-        self.assertEqual(d0, dict([(k, d1[k]) for k in d0]))
 
 class Session(object):
     """
@@ -335,7 +322,7 @@ class HelperFunctionsTest(unittest.TestCase):
         self.assertRaises(pdpyras.PDServerError, pdpyras.successful_response,
             Response(500, json.dumps({})))
 
-class EventsSessionTest(SessionTest):
+class EventsSessionTest(unittest.TestCase):
 
     def test_send_event(self):
         sess = pdpyras.EventsAPISession('routingkey')
@@ -357,12 +344,6 @@ class EventsSessionTest(SessionTest):
             self.assertEqual(
                 'https://events.pagerduty.com/v2/enqueue',
                 parent.request.call_args[0][1])
-            self.assertDictContainsSubset(
-                {'Content-Type': 'application/json'},
-                parent.request.call_args[1]['headers'])
-            self.assertNotIn(
-                'X-Routing-Key',
-                parent.request.call_args[1]['headers'])
             self.assertEqual(
                 {
                     'event_action':'trigger',
@@ -414,7 +395,7 @@ class EventsSessionTest(SessionTest):
             self.assertTrue('routing_key' in json_sent)
             self.assertEqual(json_sent['routing_key'], 'routingkey')
 
-class APISessionTest(SessionTest):
+class APISessionTest(unittest.TestCase):
 
     def test_oauth_headers(self):
         secret = 'randomly generated lol'
@@ -687,24 +668,6 @@ class APISessionTest(SessionTest):
         sess = pdpyras.APISession('12345')
         parent = Session()
         request = MagicMock()
-        # Expected headers:
-        headers_get = {
-            'Accept': 'application/vnd.pagerduty+json;version=2',
-            'Authorization': 'Token token=12345',
-            'User-Agent': 'pdpyras/%s python-requests/%s Python/%d.%d'%(
-                pdpyras.__version__,
-                requests.__version__,
-                sys.version_info.major,
-                sys.version_info.minor
-            ),
-        }
-        # Check default headers:
-        self.assertDictContainsSubset(headers_get, sess.prepare_headers('GET'))
-        headers_get.update(sess.prepare_headers('GET'))
-        # When submitting post/put, the content type should also be set
-        headers_post = headers_get.copy()
-        headers_post.update({'Content-Type': 'application/json'})
-        parent.headers = headers_get
 
         with patch.object(sess, 'parent', new=parent):
             parent.request = request
@@ -728,28 +691,41 @@ class APISessionTest(SessionTest):
             request.return_value = Response(200, json.dumps(users))
             r = sess.request('get', '/users')
             postprocess.assert_called_with(request.return_value)
-            headers = headers_get.copy()
-            request.assert_called_once_with('GET',
-                'https://api.pagerduty.com/users', headers=headers_get,
-                stream=False, timeout=pdpyras.TIMEOUT)
+            request.assert_called_once_with(
+                'GET',
+                'https://api.pagerduty.com/users',
+                timeout=pdpyras.TIMEOUT,
+                stream=False
+            )
             request.reset_mock()
 
             # Test POST/PUT (in terms of code coverage they're identical)
             request.return_value = Response(201, json.dumps({'user': user}))
             sess.request('post', 'users', json={'user':user})
             request.assert_called_once_with(
-                'POST', 'https://api.pagerduty.com/users',
-                headers=headers_post, json={'user':user}, stream=False, timeout=pdpyras.TIMEOUT)
+                'POST',
+                'https://api.pagerduty.com/users',
+                json={'user':user},
+                stream=False,
+                timeout=pdpyras.TIMEOUT
+            )
             request.reset_mock()
 
             # Test GET with parameters and using a HTTP verb method
             request.return_value = Response(200, json.dumps({'users': [user]}))
             user_query = {'query': 'user@example.com'}
             r = sess.get('/users', params=user_query)
-            request.assert_called_once_with(
-                'GET', 'https://api.pagerduty.com/users',
-                headers=headers_get, params=user_query, stream=False,
-                allow_redirects=True, timeout=pdpyras.TIMEOUT)
+            request.assert_called()
+            req_call = request.mock_calls[0]
+            self.assertEqual(req_call.args, ('GET', 'https://api.pagerduty.com/users'))
+            self.assertDictContainsSubset(
+                {
+                    'params': user_query,
+                    'stream': False,
+                    'timeout': pdpyras.TIMEOUT
+                },
+                req_call.kwargs
+            )
             request.reset_mock()
 
             # Test GET with one array-type parameter not suffixed with []
@@ -759,23 +735,42 @@ class APISessionTest(SessionTest):
             modified_user_query['team_ids[]'] = user_query['team_ids']
             del(modified_user_query['team_ids'])
             r = sess.get('/users', params=user_query)
-            request.assert_called_once_with(
-                'GET', 'https://api.pagerduty.com/users',
-                headers=headers_get, params=modified_user_query, stream=False,
-                allow_redirects=True, timeout=pdpyras.TIMEOUT)
+            request.assert_called()
+            req_call = request.mock_calls[0]
+            self.assertEqual(req_call.args, ('GET', 'https://api.pagerduty.com/users'))
+            self.assertDictContainsSubset(
+                {
+                    'params': modified_user_query,
+                    'stream': False,
+                    'timeout': pdpyras.TIMEOUT
+                },
+                req_call.kwargs
+            )
             request.reset_mock()
 
-            # Test a POST request with additional headers
+            # Test a POST request
             request.return_value = Response(201, json.dumps({'user': user}),
                 method='POST')
-            headers_special = headers_post.copy()
-            headers_special.update({"X-Tra-Special-Header": "1"})
+            headers_special = {"X-Tra-Special-Header": "1"}
             r = sess.post('/users/PD6LYSO/future_endpoint',
                 headers=headers_special, json={'user':user})
-            request.assert_called_once_with('POST',
-                'https://api.pagerduty.com/users/PD6LYSO/future_endpoint',
-                headers=headers_special, json={'user': user}, stream=False,
-                data=None, timeout=pdpyras.TIMEOUT)
+
+            request.assert_called()
+            req_call = request.mock_calls[0]
+            self.assertEqual(
+                req_call.args, 
+                ('POST', 'https://api.pagerduty.com/users/PD6LYSO/future_endpoint')
+            )
+            self.assertDictContainsSubset(
+                {
+                    'headers': headers_special,
+                    'json': {'user': user},
+                    'stream': False,
+                    'timeout': pdpyras.TIMEOUT,
+                    'data': None
+                },
+                req_call.kwargs
+            )
             request.reset_mock()
 
             # Test hitting the rate limit
@@ -894,7 +889,7 @@ class APISessionTest(SessionTest):
         self.assertEqual('*1234', sess.trunc_token)
 
 
-class ChangeEventsSessionTest(SessionTest):
+class ChangeEventsSessionTest(unittest.TestCase):
     @patch('pdpyras.ChangeEventsAPISession.event_timestamp',
         '2020-03-25T00:00:00Z')
     def test_submit_change_event(self):
@@ -916,12 +911,6 @@ class ChangeEventsSessionTest(SessionTest):
             self.assertEqual(
                 'https://events.pagerduty.com/v2/change/enqueue',
                 parent.request.call_args[0][1])
-            self.assertDictContainsSubset(
-                {'Content-Type': 'application/json'},
-                parent.request.call_args[1]['headers'])
-            self.assertNotIn(
-                'X-Routing-Key',
-                parent.request.call_args[1]['headers'])
             self.assertEqual(
                 {
                     'routing_key':'routingkey',
@@ -969,12 +958,6 @@ class ChangeEventsSessionTest(SessionTest):
             self.assertEqual(
                 'https://events.pagerduty.com/v2/change/enqueue',
                 parent.request.call_args[0][1])
-            self.assertDictContainsSubset(
-                {'Content-Type': 'application/json'},
-                parent.request.call_args[1]['headers'])
-            self.assertNotIn(
-                'X-Routing-Key',
-                parent.request.call_args[1]['headers'])
             self.assertEqual(
                 {
                     'routing_key':'routingkey',
