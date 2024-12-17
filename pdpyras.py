@@ -957,7 +957,7 @@ class PDSession(Client):
 
     timeout = TIMEOUT
     """
-    This is the value sent to `Requests`_ as the ``timeout`` parameter that
+    This is the value sent to `HTTPX`_ as the ``timeout`` parameter that
     determines the TCP read timeout.
     """
 
@@ -1134,7 +1134,6 @@ class PDSession(Client):
         # Add in any headers specified in keyword arguments:
         headers = kwargs.get('headers', {})
         req_kw.update({
-            'stream': False,
             'timeout': self.timeout
         })
 

@@ -700,7 +700,6 @@ class APISessionTest(unittest.TestCase):
                 'GET',
                 'https://api.pagerduty.com/users',
                 timeout=pdpyras.TIMEOUT,
-                stream=False
             )
             request.reset_mock()
 
@@ -711,7 +710,6 @@ class APISessionTest(unittest.TestCase):
                 'POST',
                 'https://api.pagerduty.com/users',
                 json={'user':user},
-                stream=False,
                 timeout=pdpyras.TIMEOUT
             )
             request.reset_mock()
@@ -726,7 +724,6 @@ class APISessionTest(unittest.TestCase):
             assertDictContainsSubset(self,
                 {
                     'params': user_query,
-                    'stream': False,
                     'timeout': pdpyras.TIMEOUT
                 },
                 req_call.kwargs
@@ -746,7 +743,6 @@ class APISessionTest(unittest.TestCase):
             assertDictContainsSubset(self,
                 {
                     'params': modified_user_query,
-                    'stream': False,
                     'timeout': pdpyras.TIMEOUT
                 },
                 req_call.kwargs
@@ -770,7 +766,6 @@ class APISessionTest(unittest.TestCase):
                 {
                     'headers': headers_special,
                     'json': {'user': user},
-                    'stream': False,
                     'timeout': pdpyras.TIMEOUT,
                     'data': None
                 },
