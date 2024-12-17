@@ -17,8 +17,9 @@ from unittest.mock import Mock, MagicMock, patch, call
 import pdpyras
 
 def assertDictContainsSubset(self, dict1, dict2):
-    self.assertTrue(dict1, dict2, "First dict is not a subset of the second. "\
-        "Keys (1): "+", ".join(dict1.keys())+"; Keys (2): "+", ".join(dict2.keys()))
+    self.assertTrue(dict1.items() <= dict2.items(), "First dict is not a subset"\
+        "of the second. Keys (1): "+", ".join(dict1.keys())+"; Keys (2): "+\
+        ", ".join(dict2.keys()))
 
 class Session(object):
     """
@@ -806,7 +807,7 @@ class APISessionTest(unittest.TestCase):
             with patch.object(pdpyras.time, 'sleep') as sleep:
                 # Test getting a connection error and succeeding the final time.
                 returns = [
-                    pdpyras.HTTPError("D'oh!")
+                    pdpyras.RequestError("D'oh!")
                 ]*sess.max_network_attempts
                 returns.append(Response(200, json.dumps({'user': user})))
                 request.side_effect = returns
@@ -824,7 +825,7 @@ class APISessionTest(unittest.TestCase):
                 # Now test handling a non-transient error when the client
                 # library itself hits odd issues that it can't handle, i.e.
                 # network, and that the raised exception includes context:
-                raises = [pdpyras.RequestException("D'oh!")]*(
+                raises = [pdpyras.RequestError("D'oh!")]*(
                     sess.max_network_attempts+1)
                 request.side_effect = raises
                 try:
