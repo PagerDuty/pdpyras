@@ -13,14 +13,12 @@ from typing import Iterator, Union
 from warnings import warn
 
 # Upstream components on which this client is based:
-from requests import Response, Session
-from requests import __version__ as REQUESTS_VERSION
+from httpx import Client, RequestError, Response
+from httpx import __version__ as HTTPX_VERSION
 
 # HTTP client exceptions:
-from urllib3.exceptions import HTTPError, PoolError
-from requests.exceptions import RequestException
 
-__version__ = '5.3.0'
+__version__ = '6.0.0'
 
 #######################
 ### CLIENT DEFAULTS ###
@@ -624,7 +622,7 @@ def auto_json(method):
     Makes methods return the full response body object after decoding from JSON.
 
     Intended for use on functions that take a URL positional argument followed
-    by keyword arguments and return a `requests.Response`_ object.
+    by keyword arguments and return a `httpx.Response`_ object.
     """
     doc = method.__doc__
     def call(self, url, **kw):
@@ -680,7 +678,7 @@ def wrapped_entities(method):
     the ``json`` keyword argument will be normalized to include the wrapper.
 
     Methods using this decorator will raise a :class:`PDHTTPError` with its
-    ``response`` property being being the `requests.Response`_ object in the
+    ``response`` property being being the `httpx.Response`_ object in the
     case of any error (as of version 4.2 this is subclassed as
     :class:`PDHTTPError`), so that the implementer can access it by catching the
     exception, and thus design their own custom logic around different types of
@@ -689,7 +687,7 @@ def wrapped_entities(method):
     :param method: Method being decorated. Must take one positional argument
         after ``self`` that is the URL/path to the resource, followed by keyword
         any number of keyword arguments, and must return an object of class
-        `requests.Response`_, and be named after the HTTP method but with "r"
+        `httpx.Response`_, and be named after the HTTP method but with "r"
         prepended.
     :returns: A callable object; the reformed method
     """
@@ -862,11 +860,11 @@ def try_decoding(r: Response) -> Union[dict, list, str]:
 ### CLASSES ###
 ###############
 
-class PDSession(Session):
+class PDSession(Client):
     """
     Base class for making HTTP requests to PagerDuty APIs
 
-    This is an opinionated wrapper of `requests.Session`_, with a few additional
+    This is an opinionated wrapper of `httpx.Client`_, with a few additional
     features:
 
     - The client will reattempt the request with auto-increasing cooldown/retry
@@ -911,7 +909,7 @@ class PDSession(Session):
     """
 
     parent = None
-    """The ``super`` object (`requests.Session`_)"""
+    """The ``super`` object (`httpx.Client`_)"""
 
     permitted_methods = ()
     """
@@ -937,7 +935,7 @@ class PDSession(Session):
       encountered first), and then return the final response.
 
     The default behavior is to retry without limit on status 429, raise an
-    exception on a 401, and return the `requests.Response`_ object in any other case
+    exception on a 401, and return the `httpx.Response`_ object in any other case
     (assuming a HTTP response was received from the server).
     """
 
@@ -959,7 +957,7 @@ class PDSession(Session):
 
     timeout = TIMEOUT
     """
-    This is the value sent to `Requests`_ as the ``timeout`` parameter that
+    This is the value sent to `HTTPX`_ as the ``timeout`` parameter that
     determines the TCP read timeout.
     """
 
@@ -969,6 +967,7 @@ class PDSession(Session):
         self.parent = super(PDSession, self)
         self.parent.__init__()
         self.api_key = api_key
+        self.headers.update(self.default_headers)
         self.log = logging.getLogger(__name__)
         self.print_debug = debug
         self.retry = {}
@@ -1008,6 +1007,16 @@ class PDSession(Session):
     def cooldown_factor(self) -> float:
         return self.sleep_timer_base*(1+self.stagger_cooldown*random())
 
+    @property
+    def default_headers(self) -> dict:
+        """
+        Common headers required for accessing PagerDuty APIs
+        """
+        return {
+            'user-agent': self.user_agent,
+            'content-type': 'application/json',
+        }
+
     def normalize_params(self, params) -> dict:
         """
         Modify the user-supplied parameters to ease implementation
@@ -1045,19 +1054,23 @@ class PDSession(Session):
 
     def prepare_headers(self, method, user_headers={}) -> dict:
         """
-        Append special additional per-request headers.
+        Compose default request headers. Deprecated.
+
+        This method enforces the use of default headers required by the API.
+        If the client object's headers are modified with invalid values for these
+        headers, it cannot break all subsequent API access for that client, but the
+        client retains the functionality of allowing header overrides by specifying the
+        headers on a per-request basis.
 
         :param method:
-            The HTTP method, in upper case.
+            The HTTP method
         :param user_headers:
             Headers that can be specified to override default values.
         :returns:
             The final list of headers to use in the request
         """
-        headers = deepcopy(self.headers)
-        if user_headers:
-            headers.update(user_headers)
-        return headers
+        self.log.warn("PDSession.prepare_headers is deprecated.")
+        return self.headers
 
     @property
     def print_debug(self) -> bool:
@@ -1100,11 +1113,11 @@ class PDSession(Session):
             The path/URL to request. If it does not start with the base URL, the
             base URL will be prepended.
         :param **kwargs:
-            Custom keyword arguments to pass to ``requests.Session.request``.
+            Custom keyword arguments to pass to ``httpx.Client.request``.
         :type method: str
         :type url: str
         :returns:
-            The `requests.Response`_ object corresponding to the HTTP response
+            The `httpx.Response`_ object corresponding to the HTTP response
         """
         sleep_timer = self.sleep_timer
         network_attempts = 0
@@ -1121,8 +1134,6 @@ class PDSession(Session):
         # Add in any headers specified in keyword arguments:
         headers = kwargs.get('headers', {})
         req_kw.update({
-            'headers': self.prepare_headers(method, user_headers=headers),
-            'stream': False,
             'timeout': self.timeout
         })
 
@@ -1135,10 +1146,10 @@ class PDSession(Session):
             try:
                 response = self.parent.request(method, full_url, **req_kw)
                 self.postprocess(response)
-            except (HTTPError, PoolError, RequestException) as e:
+            except RequestError as e:
                 network_attempts += 1
                 if network_attempts > self.max_network_attempts:
-                    error_msg = f"{endpoint}: Non-transient network " \
+                    error_msg = f"{endpoint}: Non-transient network or transport " \
                         'error; exceeded maximum number of attempts ' \
                         f"({self.max_network_attempts}) to connect to the API."
                     raise PDClientError(error_msg) from e
@@ -1237,9 +1248,12 @@ class PDSession(Session):
 
     @property
     def user_agent(self) -> str:
-        return 'pdpyras/%s python-requests/%s Python/%d.%d'%(
+        """
+        The User-Agent header sent by clients
+        """
+        return 'pdpyras/%s python-httpx/%s Python/%d.%d'%(
             __version__,
-            REQUESTS_VERSION,
+            HTTPX_VERSION,
             sys.version_info.major,
             sys.version_info.minor
         )
@@ -1283,23 +1297,6 @@ class EventsAPISession(PDSession):
             The deduplication key
         """
         return self.send_event('acknowledge', dedup_key=dedup_key)
-
-    def prepare_headers(self, method, user_headers={}) -> dict:
-        """
-        Add user agent and content type headers for Events API requests.
-
-        :param user_headers: User-supplied headers that will override defaults
-        :returns:
-            The final list of headers to use in the request
-        """
-        headers = {}
-        headers.update(self.headers)
-        headers.update({
-            'Content-Type': 'application/json',
-            'User-Agent': self.user_agent,
-        })
-        headers.update(user_headers)
-        return headers
 
     def resolve(self, dedup_key) -> str:
         """
@@ -1357,7 +1354,7 @@ class EventsAPISession(PDSession):
 
     def post(self, *args, **kw) -> Response:
         """
-        Override of ``requests.Session.post``
+        Override of ``httpx.Client.post``
 
         Adds the ``routing_key`` parameter to the body before sending.
         """
@@ -1455,23 +1452,6 @@ class ChangeEventsAPISession(PDSession):
     def event_timestamp(self) -> str:
         return datetime.utcnow().isoformat()+'Z'
 
-    def prepare_headers(self, method, user_headers={}) -> dict:
-        """
-        Add user agent and content type headers for Change Events API requests.
-
-        :param user_headers: User-supplied headers that will override defaults
-        :returns:
-            The final list of headers to use in the request
-        """
-        headers = deepcopy(self.headers)
-        headers.update({
-            'Content-Type': 'application/json',
-            'User-Agent': self.user_agent,
-        })
-        if user_headers:
-            headers.update(user_headers)
-        return headers
-
     def send_change_event(self, **properties):
         """
         Send a change event to the v2 Change Events API.
@@ -1540,7 +1520,7 @@ class APISession(PDSession):
     PagerDuty REST API v2 session object class.
 
     Implements the most generic and oft-implemented aspects of PagerDuty's REST
-    API v2 as an opinionated wrapper of `requests.Session`_.
+    API v2 as an opinionated wrapper of `httpx.Client`_.
 
     Inherits from :class:`PDSession`.
 
@@ -1583,16 +1563,28 @@ class APISession(PDSession):
     url = 'https://api.pagerduty.com'
     """Base URL of the REST API"""
 
-    def __init__(self, api_key: str, default_from=None,
-            auth_type='token', debug=False):
+    def __init__(self, api_key: str, default_from=None, auth_type='token', debug=False):
         self.api_call_counts = {}
         self.api_time = {}
         self.auth_type = auth_type
-        super(APISession, self).__init__(api_key, debug=debug)
         self.default_from = default_from
-        self.headers.update({
-            'Accept': 'application/vnd.pagerduty+json;version=2',
+        super(APISession, self).__init__(api_key, debug=debug)
+
+    @property
+    def default_headers(self) -> dict:
+        """
+        All headers required for accessing PagerDuty REST API V2 except Authorization
+        """
+        headers = super(APISession, self).default_headers
+        # Set the "From" header, to support endpoints that require a user ID for
+        # attribution when using an admin/account-level API token:
+        if self.default_from:
+            headers.update({'from': self.default_from})
+        # Set the "Accept" header required for REST API V2
+        headers.update({
+            'accept': 'application/vnd.pagerduty+json;version=2',
         })
+        return headers
 
     def after_set_api_key(self):
         self._subdomain = None
@@ -2000,11 +1992,11 @@ class APISession(PDSession):
         Records performance information / request metadata about the API call.
 
         :param response:
-            The `requests.Response`_ object returned by the request method
+            The `httpx.Response`_ object returned by the request method
         :param suffix:
             Optional suffix to append to the key
         :type method: str
-        :type response: `requests.Response`_
+        :type response: `httpx.Response`_
         :type suffix: str or None
         """
         method = response.request.method.upper()
@@ -2036,16 +2028,7 @@ class APISession(PDSession):
                 "and reference x_request_id=%s / date=%s",
                 status, request_id, request_date)
 
-    def prepare_headers(self, method, user_headers={}) -> dict:
-        headers = deepcopy(self.headers)
-        headers['User-Agent'] = self.user_agent
-        if self.default_from is not None:
-            headers['From'] = self.default_from
-        if method in ('POST', 'PUT'):
-            headers['Content-Type'] = 'application/json'
-        if user_headers:
-            headers.update(user_headers)
-        return headers
+
 
     @resource_url
     @requires_success
@@ -2058,7 +2041,7 @@ class APISession(PDSession):
             representing an API resource that contains an item with key ``self``
             whose value is the URL of the resource.
         :param **kw:
-            Custom keyword arguments to pass to ``requests.Session.delete``
+            Custom keyword arguments to pass to ``httpx.Client.delete``
         :type resource: str or dict
         """
         return self.delete(resource, **kw)
@@ -2077,7 +2060,7 @@ class APISession(PDSession):
             representing an API resource that contains an item with key ``self``
             whose value is the URL of the resource.
         :param **kw:
-            Custom keyword arguments to pass to ``requests.Session.get``
+            Custom keyword arguments to pass to ``httpx.Client.get``
         :returns:
             Dictionary representation of the requested object
         :type resource: str or dict
@@ -2095,7 +2078,7 @@ class APISession(PDSession):
             The path/URL to which to send the POST request, which should be an
             index endpoint.
         :param **kw:
-            Custom keyword arguments to pass to ``requests.Session.post``
+            Custom keyword arguments to pass to ``httpx.Client.post``
         :returns:
             Dictionary representation of the created object
         :type path: str
@@ -2115,7 +2098,7 @@ class APISession(PDSession):
             representing an API resource that contains an item with key ``self``
             whose value is the URL of the resource.
         :param **kw:
-            Custom keyword arguments to pass to ``requests.Session.put``
+            Custom keyword arguments to pass to ``httpx.Client.put``
         :returns:
             Dictionary representation of the updated object
         """
@@ -2186,7 +2169,7 @@ class PDHTTPError(PDClientError):
 
     This class was created to make it easier to more cleanly handle errors by
     way of a class that is guaranteed to have its ``response`` be a valid
-    `requests.Response`_ object.
+    `httpx.Response`_ object.
 
     Whereas, the more generic :class:`PDClientError` could also be used
     to denote such things as non-transient network errors wherein no response
