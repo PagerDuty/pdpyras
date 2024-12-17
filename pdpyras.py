@@ -13,12 +13,10 @@ from typing import Iterator, Union
 from warnings import warn
 
 # Upstream components on which this client is based:
-from httpx import Response, Client
+from httpx import Client, RequestError, Response
 from httpx import __version__ as HTTPX_VERSION
 
 # HTTP client exceptions:
-from urllib3.exceptions import HTTPError, PoolError
-from requests.exceptions import RequestException
 
 __version__ = '5.3.0'
 
@@ -1149,10 +1147,10 @@ class PDSession(Client):
             try:
                 response = self.parent.request(method, full_url, **req_kw)
                 self.postprocess(response)
-            except (HTTPError, PoolError, RequestException) as e:
+            except RequestError as e:
                 network_attempts += 1
                 if network_attempts > self.max_network_attempts:
-                    error_msg = f"{endpoint}: Non-transient network " \
+                    error_msg = f"{endpoint}: Non-transient network or transport " \
                         'error; exceeded maximum number of attempts ' \
                         f"({self.max_network_attempts}) to connect to the API."
                     raise PDClientError(error_msg) from e
