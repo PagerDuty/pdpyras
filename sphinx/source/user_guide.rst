@@ -7,18 +7,6 @@ User Guide
 This is a topical guide to general API client usage. :ref:`module_reference`
 has in-depth documentation on client classes and methods.
 
-Installation
-------------
-If ``pip`` is available, it can be installed via:
-
-.. code-block:: shell
-
-    pip install pdpyras
-
-Alternately, if the dependencies (Requests_ and "deprecation" Python libraries)
-have been installed locally, one can download ``pdpyras.py`` into the directory
-where it will be used.
-
 Authentication
 --------------
 The first step is to construct a session object. The first argument to the
