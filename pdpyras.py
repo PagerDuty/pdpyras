@@ -18,7 +18,7 @@ from httpx import __version__ as HTTPX_VERSION
 
 # HTTP client exceptions:
 
-__version__ = '5.3.0'
+__version__ = '6.0.0'
 
 #######################
 ### CLIENT DEFAULTS ###
