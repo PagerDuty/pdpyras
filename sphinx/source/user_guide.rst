@@ -766,7 +766,7 @@ the configured retry limits are reached in the underlying HTTP request methods.
 .. References:
 .. -----------
 
-.. _`HTTPX`: https://docs.python-requests.org/en/master/
+.. _`HTTPX`: https://www.python-httpx.org/
  .. _`Errors`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTYz-errors
 .. _`Events API v2`: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgw-events-api-v2-overview
 .. _`PagerDuty API Reference`: https://developer.pagerduty.com/api-reference/
