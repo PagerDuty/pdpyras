@@ -99,7 +99,7 @@ and having them represented as a dictionary object using three different methods
         print(user['id'], user['email'], user['name'])
 
 **Pagination with query parameters:** set the ``params`` keyword argument, which is 
-converted to URL query parameters by Requests_:
+converted to URL query parameters by HTTPX_:
 
 .. code-block:: python
 
@@ -221,7 +221,7 @@ Events API v2
 Generic Client Features
 -----------------------
 Generally, all of the features of `httpx.Client`_ are available to the user
-as they would be if using the Requests Python library directly, since
+as they would be if using the HTTPX Python library directly, since
 :class:`pdpyras.PDSession` and its subclasses for the REST/Events APIs are
 descendants of it. 
 
@@ -231,11 +231,11 @@ The arguments they accept are the same and they all return `httpx.Response`_
 objects.
 
 Any keyword arguments passed to the ``j*`` or ``r*`` methods will be passed
-through to the analogous method in Requests_, though in some cases the
+through to the analogous method in HTTPX_, though in some cases the
 arguments (i.e. ``json``) are first modified.
 
 For documentation on any generic HTTP client features that are available, refer
-to the Requests_ documentation.
+to the HTTPX_ documentation.
 
 URLs
 ----
@@ -313,7 +313,7 @@ will be the full body of the response from the API after JSON-decoding, and
 the ``json`` keyword argument is not modified.
 
 When using the ``r*`` methods, the ``json`` keyword argument is modified before
-sending to Requests_, if necessary, to encapsulate the body inside an entity
+sending to HTTPX_, if necessary, to encapsulate the body inside an entity
 wrapper.  The response is the decoded body after unwrapping, if the API
 endpoint returns wrapped entities. For more details, refer to :ref:`wrapping`.
 
