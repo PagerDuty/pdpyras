@@ -16,6 +16,10 @@ from unittest.mock import Mock, MagicMock, patch, call
 
 import pdpyras
 
+def assertDictContainsSubset(self, dict1, dict2):
+    self.assertTrue(dict1, dict2, "First dict is not a subset of the second. "\
+        "Keys (1): "+", ".join(dict1.keys())+"; Keys (2): "+", ".join(dict2.keys()))
+
 class Session(object):
     """
     Python reqeusts.Session mockery class
@@ -718,7 +722,7 @@ class APISessionTest(unittest.TestCase):
             request.assert_called()
             req_call = request.mock_calls[0]
             self.assertEqual(req_call.args, ('GET', 'https://api.pagerduty.com/users'))
-            self.assertDictContainsSubset(
+            assertDictContainsSubset(self,
                 {
                     'params': user_query,
                     'stream': False,
@@ -738,7 +742,7 @@ class APISessionTest(unittest.TestCase):
             request.assert_called()
             req_call = request.mock_calls[0]
             self.assertEqual(req_call.args, ('GET', 'https://api.pagerduty.com/users'))
-            self.assertDictContainsSubset(
+            assertDictContainsSubset(self,
                 {
                     'params': modified_user_query,
                     'stream': False,
@@ -761,7 +765,7 @@ class APISessionTest(unittest.TestCase):
                 req_call.args, 
                 ('POST', 'https://api.pagerduty.com/users/PD6LYSO/future_endpoint')
             )
-            self.assertDictContainsSubset(
+            assertDictContainsSubset(self,
                 {
                     'headers': headers_special,
                     'json': {'user': user},
