@@ -1,3 +1,7 @@
+**2024-12-19: Version 5.4.0:**
+
+* The package build now includes a universal Python 3 wheel. Contributed by @ymyzk
+
 **2024-10-04: Version 5.3.0:**
 
 * Add support for searching by non-string fields in :attr:`pdpyras.APISession.find`
