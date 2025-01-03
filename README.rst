@@ -1,6 +1,12 @@
 ===========================================
 PDPYRAS: PagerDuty Python REST API Sessions
 ===========================================
+
+**DEPRECATED:** Please use `python-pagerduty
+<https://pagerduty.github.io/python-pagerduty>`_ for new projects instead, and
+for existing projects, refer to the `PDPYRAS Migration Guide
+<https://pagerduty.github.io/python-pagerduty/pdpyras_migration_guide.html>`_.
+
 A module that supplies lightweight Python clients for the PagerDuty REST API v2 and Events API v2.
 
 For how-to, refer to the `User Guide

@@ -3,6 +3,10 @@
 ==========
 User Guide
 ==========
+**DEPRECATED:** Please use `python-pagerduty
+<https://pagerduty.github.io/python-pagerduty>`_ for new projects instead, and
+for existing projects, refer to the `PDPYRAS Migration Guide
+<https://pagerduty.github.io/python-pagerduty/pdpyras_migration_guide.html>`_.
 
 This is a topical guide to general API client usage. :ref:`module_reference`
 has in-depth documentation on client classes and methods.
