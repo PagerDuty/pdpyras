@@ -1,11 +1,15 @@
 from setuptools import setup
 
-__version__ = '5.4.0'
+__version__ = '5.4.1'
 
 if __name__ == '__main__':
     setup(
         name='pdpyras',
-        description="PagerDuty Python REST API Sessions",
+        description="""
+PagerDuty Python REST API Sessions.
+
+DEPRECATED; please use "pagerduty" instead: https://pypi.org/project/pagerduty/
+""",
         long_description="A basic REST API client for PagerDuty based on Requests' Session class",
         py_modules=['pdpyras'],
         version=__version__,

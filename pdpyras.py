@@ -20,7 +20,9 @@ from requests import __version__ as REQUESTS_VERSION
 from urllib3.exceptions import HTTPError, PoolError
 from requests.exceptions import RequestException
 
-__version__ = '5.4.0'
+__version__ = '5.4.1'
+
+warn('This module is deprecated. Please use "pagerduty" instead: https://pypi.org/project/pagerduty/')
 
 #######################
 ### CLIENT DEFAULTS ###
