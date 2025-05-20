@@ -22,7 +22,11 @@ from requests.exceptions import RequestException
 
 __version__ = '5.4.1'
 
-warn('This module is deprecated. Please use "pagerduty" instead: https://pypi.org/project/pagerduty/')
+warn(
+    'This package is deprecated and will no longer receive updates. Please use ' \
+    '"pagerduty" instead. Migration guide: ' \
+    'https://pagerduty.github.io/python-pagerduty/pdpyras_migration_guide.html'
+)
 
 #######################
 ### CLIENT DEFAULTS ###
