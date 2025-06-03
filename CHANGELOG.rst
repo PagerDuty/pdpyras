@@ -1,3 +1,10 @@
+**2024-06-03: Version 5.4.1: Final bugfix release**
+
+This version backports minor fixes from the new `pagerduty <https://pypi.org/project/pagerduty/>`_ package and adds a deprecation warning at import time:
+
+* The ``r*`` and ``j*`` shorthand request functions no longer error out when the API (i.e. ``PUT /teams/{team_id}/users/{user_id}``) responds with HTTP 204.
+* ``iter_all`` now passes user-supplied arguments thru to ``iter_cursor`` when short-circuiting to that method for cursor-based pagination endpoints.
+
 **2024-12-19: Version 5.4.0:**
 
 * The package build now includes a universal Python 3 wheel. Contributed by @ymyzk
