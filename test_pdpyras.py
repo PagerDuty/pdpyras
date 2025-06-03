@@ -19,6 +19,7 @@ import requests
 import sys
 import unittest
 
+from json.decoder import JSONDecodeError
 from unittest.mock import Mock, MagicMock, patch, call
 
 import pdpyras
@@ -57,7 +58,10 @@ class Response(object):
             'x-request-id': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'}
         self.request.method = method
         self.json = MagicMock()
-        self.json.return_value = json.loads(text)
+        try:
+            self.json.return_value = json.loads(text)
+        except JSONDecodeError as e:
+            self.json.side_effect = e
 
 class URLHandlingTest(unittest.TestCase):
 
@@ -492,7 +496,8 @@ class APISessionTest(SessionTest):
         self.assertTrue(cpath in pdpyras.CURSOR_BASED_PAGINATION_PATHS)
         iter_cursor.return_value = []
         self.assertEqual([], list(sess.iter_all('/audit/records')))
-        iter_cursor.assert_called_once_with('/audit/records', params=None)
+        iter_cursor.assert_called_once_with('/audit/records', params=None,
+            page_size=None, item_hook=None)
 
         # Test: user tries to use iter_all on a singular resource, raise error:
         self.assertRaises(
@@ -984,6 +989,29 @@ class ChangeEventsSessionTest(SessionTest):
                     },
                 },
                 parent.request.call_args[1]['json'])
+
+    def test_try_decoding(self):
+        # Most requests, especially endpoints that follow standard patterns, will
+        # respond with valid JSON:
+        r = Response(200, json.dumps({
+            'service': {
+                'type': 'service_reference',
+                'id': 'POOPBUG',
+                'summary': 'A rare ID obfuscation'
+            }
+        }))
+        self.assertEqual(list(pdpyras.try_decoding(r).keys()), ['service'])
+        # Deletion requests, or PUT /teams/{t_id}/users/{u_id}, will respond with an
+        # empty string; json.loads will error out but try_decoding should return None:
+        r = Response(204, '')
+        self.assertEqual(pdpyras.try_decoding(r), None)
+        # Invalid JSON:
+        r = Response(500, '''<html><head>
+<title>500 Internal Server Error</title></head>
+<body>
+<h1>500 Internal Server Error</h1>
+</body></html>''')
+        self.assertRaises(pdpyras.PDServerError, pdpyras.try_decoding, r)
 
 def main():
     ap=argparse.ArgumentParser()

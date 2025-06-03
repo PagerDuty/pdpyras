@@ -17,10 +17,17 @@ from requests import Response, Session
 from requests import __version__ as REQUESTS_VERSION
 
 # HTTP client exceptions:
+from json.decoder import JSONDecodeError
 from urllib3.exceptions import HTTPError, PoolError
 from requests.exceptions import RequestException
 
-__version__ = '5.4.0'
+__version__ = '5.4.1'
+
+warn(
+    'The package "pdpyras" is deprecated and as of 2025-06-20 will no longer ' \
+    'receive updates. Please use "pagerduty" instead. Migration guide: ' \
+    'https://pagerduty.github.io/python-pagerduty/pdpyras_migration_guide.html'
+)
 
 #######################
 ### CLIENT DEFAULTS ###
@@ -852,11 +859,15 @@ def try_decoding(r: Response) -> Union[dict, list, str]:
     """
     try:
         return r.json()
-    except ValueError as e:
-        raise PDServerError(
-            "API responded with invalid JSON: " + truncate_text(r.text),
-            r,
-        )
+    except (JSONDecodeError, ValueError) as e:
+        if r.text.strip() == '':
+            # Some endpoints return HTTP 204 for request types other than delete
+            return None
+        else:
+            raise PDServerError(
+                "API responded with invalid JSON: " + truncate_text(r.text),
+                r,
+            )
 
 ###############
 ### CLASSES ###
@@ -1775,7 +1786,8 @@ class APISession(PDSession):
 
         # Short-circuit to cursor-based pagination if appropriate:
         if path in CURSOR_BASED_PAGINATION_PATHS:
-            return self.iter_cursor(url, params=params)
+            return self.iter_cursor(url, params=params, page_size=page_size,
+                item_hook=item_hook)
 
         nodes = path.split('/')
         if is_path_param(nodes[-1]):
